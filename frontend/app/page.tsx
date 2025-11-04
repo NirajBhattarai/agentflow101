@@ -1,65 +1,70 @@
-import Image from "next/image";
+"use client";
+
+import { CopilotKit } from "@copilotkit/react-core";
+import { CopilotChat } from "@copilotkit/react-ui";
+import "@copilotkit/react-ui/styles.css";
+import "./copilot.css";
 
 export default function Home() {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
-  );
+	return (
+		<div className="relative flex h-screen overflow-hidden bg-[#DEDEE9] p-2">
+			{/* Background blobs (match ui) */}
+			<div className="absolute w-[445.84px] h-[445.84px] left-[1040px] top-[11px] rounded-full z-0" style={{ background: "rgba(255, 172, 77, 0.2)", filter: "blur(103.196px)" }} />
+			<div className="absolute w-[609.35px] h-[609.35px] left-[1338.97px] top-[624.5px] rounded-full z-0" style={{ background: "#C9C9DA", filter: "blur(103.196px)" }} />
+			<div className="absolute w-[609.35px] h-[609.35px] left-[670px] top-[-365px] rounded-full z-0" style={{ background: "#C9C9DA", filter: "blur(103.196px)" }} />
+			<div className="absolute w-[609.35px] h-[609.35px] left-[507.87px] top-[702.14px] rounded-full z-0" style={{ background: "#F3F3FC", filter: "blur(103.196px)" }} />
+			<div className="absolute w-[445.84px] h-[445.84px] left-[127.91px] top-[331px] rounded-full z-0" style={{ background: "rgba(255, 243, 136, 0.3)", filter: "blur(103.196px)" }} />
+			<div className="absolute w-[445.84px] h-[445.84px] left-[-205px] top-[802.72px] rounded-full z-0" style={{ background: "rgba(255, 172, 77, 0.2)", filter: "blur(103.196px)" }} />
+
+			<div className="flex flex-1 overflow-hidden z-10 gap-2">
+				{/* Left fixed chat card (450px) */}
+				<div className="w-[450px] flex-shrink-0 border-2 border-white bg-white/50 backdrop-blur-md shadow-elevation-lg flex flex-col rounded-lg overflow-hidden">
+					<div className="p-6 border-b border-[#DBDBE5]">
+						<h1 className="text-2xl font-semibold text-[#010507] mb-1">DeFi Orchestrator</h1>
+						<p className="text-sm text-[#57575B] leading-relaxed">
+							Multi-Agent A2A: <span className="text-[#1B936F] font-semibold">Orchestrator</span> +
+							<span className="text-[#BEC2FF] font-semibold"> Liquidity Tools</span>
+						</p>
+						<p className="text-xs text-[#838389] mt-1">Orchestrator-mediated A2A Protocol</p>
+					</div>
+					<div className="flex-1 overflow-hidden">
+						<CopilotKit runtimeUrl="/api/copilotkit" showDevConsole={false} agent="a2a_chat">
+							<div className="h-full">
+								<CopilotChat
+									className="h-full"
+									labels={{
+										initial: "Ask about on-chain liquidity, pools, and cross-chain comparisons.",
+										placeholder: "e.g., Get liquidity for HBAR on Hedera",
+									}}
+								/>
+							</div>
+						</CopilotKit>
+					</div>
+				</div>
+
+				{/* Right content area */}
+				<div className="flex-1 overflow-y-auto rounded-lg bg-white/30 backdrop-blur-sm">
+					<div className="max-w-5xl mx-auto p-8">
+						<div className="mb-8">
+							<h2 className="text-3xl font-semibold text-[#010507] mb-2">Your DeFi Insights</h2>
+							<p className="text-[#57575B]">
+								Multi-agent coordination via A2A with orchestrator-driven liquidity discovery and aggregation.
+							</p>
+						</div>
+
+						{/* Empty state */}
+						<div className="flex items-center justify-center h-[400px] bg-white/60 backdrop-blur-md rounded-xl border-2 border-dashed border-[#DBDBE5] shadow-elevation-sm">
+							<div className="text-center">
+								<div className="text-6xl mb-4">💱</div>
+								<h3 className="text-xl font-semibold text-[#010507] mb-2">Start Exploring Liquidity</h3>
+								<p className="text-[#57575B] max-w-md">
+									Ask the assistant for pools, TVL, reserves and cross-chain comparisons. Results will render here.
+								</p>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	);
 }
