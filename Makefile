@@ -2,7 +2,7 @@
         dev-frontend dev-backend dev build-frontend build-backend test \
         test-liquidity test-liquidity-ethereum test-liquidity-bsc test-liquidity-polygon \
         test-liquidity-hedera test-liquidity-all-chains clean dev-travily dev-liquidity \
-        dev-orchestrator format format-backend backend
+        dev-orchestrator format format-backend format-frontend backend
 
 # Default target
 help:
@@ -41,7 +41,8 @@ help:
 	@echo ""
 	@echo "Formatting:"
 	@echo "  make format-backend      - Auto-format and lint-fix backend (ruff)"
-	@echo "  make format              - Format all (currently backend)"
+	@echo "  make format-frontend     - Auto-format frontend (prettier)"
+	@echo "  make format              - Format all (backend + frontend)"
 
 # Installation
 install: install-frontend install-backend
@@ -108,11 +109,16 @@ build-backend:
 format:
 	@echo "Formatting all workspaces..."
 	$(MAKE) format-backend
+	$(MAKE) format-frontend
 
 format-backend:
 	@echo "Formatting backend (ruff check --fix + ruff format)..."
 	cd backend && uv run ruff check --fix .
 	cd backend && uv run ruff format .
+
+format-frontend:
+	@echo "Formatting frontend (prettier write)..."
+	cd frontend && npm run format --silent
 
 # Convenience so `make format backend` works (multi-target):
 backend: format-backend
