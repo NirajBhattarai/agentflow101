@@ -19,12 +19,24 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
 
 # Virtual Environment
 .venv/
 venv/
 ENV/
 env/
+.uv/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
 
 # IDE
 .vscode/
@@ -32,18 +44,29 @@ env/
 *.swp
 *.swo
 *~
+*.sublime-project
+*.sublime-workspace
 
 # Environment variables
 .env
 .env.local
 .env.*.local
+.env.*.backup
 
 # OS
 .DS_Store
 Thumbs.db
+*.tmp
+*.bak
 
 # Logs
 *.log
+*.log.*
 
-# uv
-.uv/
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
