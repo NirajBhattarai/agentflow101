@@ -12,9 +12,18 @@ dependencies = [
     "uvicorn[standard]>=0.38.0",
     "web3>=6.0.0",
     "requests>=2.31.0",
+    # ag-ui-adk: AG-UI Protocol adapter for Google ADK agents
+    # Allows ADK agents to communicate with the frontend using AG-UI Protocol
+    "ag-ui-adk>=0.0.1",
+    "litellm>=1.0.0",
+    "uvicorn>=0.30.0",
 ]
 [project.optional-dependencies]
 test = [
     "pytest>=7.4.0",
     "pytest-asyncio>=0.21.0",
+]
+dev = [
+    "ruff>=0.6.0",
+    "black>=24.0.0",
 ]

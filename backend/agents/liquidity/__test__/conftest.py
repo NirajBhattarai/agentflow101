@@ -1,6 +1,7 @@
 """
 Pytest configuration and fixtures for liquidity agent tests.
 """
+
 import pytest
 import os
 from typing import Dict
@@ -12,19 +13,19 @@ def rpc_urls() -> Dict[str, str]:
     return {
         "ethereum": os.getenv(
             "ETHEREUM_RPC_URL",
-            "https://eth.llamarpc.com"  # Public RPC
+            "https://eth.llamarpc.com",  # Public RPC
         ),
         "bsc": os.getenv(
             "BSC_RPC_URL",
-            "https://bsc-dataseed1.binance.org"  # Public BSC RPC
+            "https://bsc-dataseed1.binance.org",  # Public BSC RPC
         ),
         "polygon": os.getenv(
             "POLYGON_RPC_URL",
-            "https://polygon.llamarpc.com"  # Public Polygon RPC
+            "https://polygon.llamarpc.com",  # Public Polygon RPC
         ),
         "hedera": os.getenv(
             "HEDERA_RPC_URL",
-            "https://mainnet.hashio.io/api"  # Public Hedera RPC
+            "https://mainnet.hashio.io/api",  # Public Hedera RPC
         ),
     }
 
@@ -68,4 +69,3 @@ def test_pool_addresses() -> Dict[str, Dict[str, str]]:
             "USDC-MATIC_QUICKSWAP": "0x6e7a5FAFcec6BB1e78bAE2A1F0B6121BF5779D35",
         },
     }
-

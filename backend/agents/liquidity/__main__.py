@@ -55,9 +55,8 @@ def main():
         extended_agent_card=liquidity_agent_card,
     )
 
-    uvicorn.run(liquidity_server.build(), host='0.0.0.0', port=9998)
+    uvicorn.run(liquidity_server.build(), host="0.0.0.0", port=9998)
 
 
 if __name__ == "__main__":
     main()
-
