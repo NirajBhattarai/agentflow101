@@ -1,6 +1,9 @@
 from typing import Optional
 from .constants import ETHEREUM_TOKENS, ETHEREUM_POOLS
 
+# TODO: implement liqudity fetch from multiple dex avialble on the chain 
+# user can provide address also try to get pool and get liqudity from pool start with v3 to v2 
+# get the current price with tick if that is v3 
 
 def get_liquidity_ethereum(token_address: str, pool_address: Optional[str] = None) -> dict:
     """Get liquidity information from Ethereum chain."""
