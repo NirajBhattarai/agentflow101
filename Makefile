@@ -1,4 +1,8 @@
-.PHONY: help install-frontend install-backend install dev-frontend dev-backend dev build-frontend build-backend test test-liquidity test-liquidity-ethereum test-liquidity-bsc test-liquidity-polygon test-liquidity-hedera test-liquidity-all-chains clean dev-travily dev-liquidity
+.PHONY: help install-frontend install-backend install-backend-test install-backend-dev install \
+        dev-frontend dev-backend dev build-frontend build-backend test \
+        test-liquidity test-liquidity-ethereum test-liquidity-bsc test-liquidity-polygon \
+        test-liquidity-hedera test-liquidity-all-chains clean dev-travily dev-liquidity \
+        dev-orchestrator format format-backend backend
 
 # Default target
 help:
@@ -17,6 +21,7 @@ help:
 	@echo "Agents:"
 	@echo "  make dev-travily         - Run Travily agent server (port 9999)"
 	@echo "  make dev-liquidity       - Run Liquidity agent server (port 9998)"
+	@echo "  make dev-orchestrator    - Run Orchestrator agent server (port 9000)"
 	@echo ""
 	@echo "Build:"
 	@echo "  make build-frontend      - Build frontend for production"
@@ -33,6 +38,10 @@ help:
 	@echo ""
 	@echo "Utilities:"
 	@echo "  make clean               - Clean build artifacts and dependencies"
+	@echo ""
+	@echo "Formatting:"
+	@echo "  make format-backend      - Auto-format and lint-fix backend (ruff)"
+	@echo "  make format              - Format all (currently backend)"
 
 # Installation
 install: install-frontend install-backend
@@ -48,6 +57,10 @@ install-backend:
 install-backend-test:
 	@echo "Installing backend dependencies with test extras..."
 	cd backend && uv sync --extra test
+
+install-backend-dev:
+	@echo "Installing backend dev dependencies (formatters, linters)..."
+	cd backend && uv sync --extra dev
 
 # Development servers
 dev:
@@ -76,6 +89,12 @@ dev-liquidity:
 	@echo "Liquidity Agent: http://localhost:9998"
 	cd backend && uv run -m agents.liquidity
 
+dev-orchestrator:
+	@echo "Starting Orchestrator agent server..."
+	@echo "Orchestrator Agent: http://localhost:9000"
+	# Ensure environment is loaded from backend/.env, then run from backend
+	cd backend && set -a; [ -f .env ] && . .env; set +a; uv run python agents/orchestrator/orchestrator.py
+
 # Production builds
 build-frontend:
 	@echo "Building frontend for production..."
@@ -84,6 +103,19 @@ build-frontend:
 build-backend:
 	@echo "Checking backend dependencies..."
 	cd backend && uv sync --frozen
+
+# Formatting
+format:
+	@echo "Formatting all workspaces..."
+	$(MAKE) format-backend
+
+format-backend:
+	@echo "Formatting backend (ruff check --fix + ruff format)..."
+	cd backend && uv run ruff check --fix .
+	cd backend && uv run ruff format .
+
+# Convenience so `make format backend` works (multi-target):
+backend: format-backend
 
 # Testing
 test:

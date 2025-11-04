@@ -13,9 +13,8 @@ def get_liquidity_all_chains(token_address: str) -> dict:
             "ethereum": get_liquidity_ethereum(token_address),
             "bsc": get_liquidity_bsc(token_address),
             "polygon": get_liquidity_polygon(token_address),
-            "hedera": get_liquidity_hedera(token_address)
+            "hedera": get_liquidity_hedera(token_address),
         },
         "total_tvl": "$8,550,000",
-        "total_volume_24h": "$455,000"
+        "total_volume_24h": "$455,000",
     }
-

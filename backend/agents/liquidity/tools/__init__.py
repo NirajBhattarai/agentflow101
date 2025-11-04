@@ -13,4 +13,3 @@ __all__ = [
     "get_liquidity_all_chains",
     "log_message",
 ]
-
