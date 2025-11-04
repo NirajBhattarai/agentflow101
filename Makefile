@@ -93,7 +93,7 @@ dev-orchestrator:
 	@echo "Starting Orchestrator agent server..."
 	@echo "Orchestrator Agent: http://localhost:9000"
 	# Ensure environment is loaded from backend/.env, then run from backend
-	cd backend && set -a; [ -f .env ] && . .env; set +a; uv run python agents/orchestrator/orchestrator.py
+	cd backend && set -a; [ -f .env ] && . .env; set +a; uv run -m agents.orchestrator.orchestrator
 
 # Production builds
 build-frontend:
