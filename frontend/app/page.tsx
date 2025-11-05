@@ -1,9 +1,15 @@
 "use client";
 
+import { useState } from "react";
 import DeFiChat from "@/components/defi-chat";
+import { BalanceCard } from "@/components/BalanceCard";
+import type { BalanceData, LiquidityData } from "@/components/types";
 import "./copilot.css";
 
 export default function Home() {
+  const [balanceData, setBalanceData] = useState<BalanceData | null>(null);
+  const [liquidityData, setLiquidityData] = useState<LiquidityData | null>(null);
+
   return (
     <div className="relative flex h-screen overflow-hidden bg-[#DEDEE9] p-2">
       {/* Background blobs (match ui) */}
@@ -36,15 +42,19 @@ export default function Home() {
         {/* Left fixed chat card (450px) */}
         <div className="w-[450px] flex-shrink-0 border-2 border-white bg-white/50 backdrop-blur-md shadow-elevation-lg flex flex-col rounded-lg overflow-hidden">
           <div className="p-6 border-b border-[#DBDBE5]">
-            <h1 className="text-2xl font-semibold text-[#010507] mb-1">DeFi Orchestrator</h1>
+            <h1 className="text-2xl font-semibold text-[#010507] mb-1">DeFi Assistant</h1>
             <p className="text-sm text-[#57575B] leading-relaxed">
-              Multi-Agent A2A: <span className="text-[#1B936F] font-semibold">Orchestrator</span> +
-              <span className="text-[#BEC2FF] font-semibold"> Balance & Liquidity Tools</span>
+              Multi-Agent A2A Demo:{" "}
+              <span className="text-purple-600 font-semibold">Balance Agent</span> +{" "}
+              <span className="text-teal-600 font-semibold">Liquidity Agent</span>
             </p>
             <p className="text-xs text-[#838389] mt-1">Orchestrator-mediated A2A Protocol</p>
           </div>
           <div className="flex-1 overflow-hidden">
-            <DeFiChat />
+            <DeFiChat
+              onBalanceUpdate={setBalanceData}
+              onLiquidityUpdate={setLiquidityData}
+            />
           </div>
         </div>
 
@@ -52,26 +62,43 @@ export default function Home() {
         <div className="flex-1 overflow-y-auto rounded-lg bg-white/30 backdrop-blur-sm">
           <div className="max-w-5xl mx-auto p-8">
             <div className="mb-8">
-              <h2 className="text-3xl font-semibold text-[#010507] mb-2">Your DeFi Insights</h2>
+              <h2 className="text-3xl font-semibold text-[#010507] mb-2">Your DeFi Data</h2>
               <p className="text-[#57575B]">
-                Multi-agent coordination via A2A with orchestrator-driven liquidity discovery and
-                aggregation.
+                Multi-agent coordination: Balance and Liquidity agents with A2A Protocol
               </p>
             </div>
 
-            {/* Empty state */}
-            <div className="flex items-center justify-center h-[400px] bg-white/60 backdrop-blur-md rounded-xl border-2 border-dashed border-[#DBDBE5] shadow-elevation-sm">
-              <div className="text-center">
-                <div className="text-6xl mb-4">💱</div>
-                <h3 className="text-xl font-semibold text-[#010507] mb-2">
-                  Start Exploring Liquidity
-                </h3>
-                <p className="text-[#57575B] max-w-md">
-                  Ask the assistant for pools, TVL, reserves and cross-chain comparisons. Results
-                  will render here.
-                </p>
+            {!balanceData && !liquidityData && (
+              <div className="flex items-center justify-center h-[400px] bg-white/60 backdrop-blur-md rounded-xl border-2 border-dashed border-[#DBDBE5] shadow-elevation-sm">
+                <div className="text-center">
+                  <div className="text-6xl mb-4">💰</div>
+                  <h3 className="text-xl font-semibold text-[#010507] mb-2">
+                    Start Querying Your DeFi Data
+                  </h3>
+                  <p className="text-[#57575B] max-w-md">
+                    Ask the assistant to check your balance or get liquidity information. 
+                    Watch as specialized agents collaborate through A2A Protocol to fetch your on-chain data.
+                  </p>
+                </div>
               </div>
-            </div>
+            )}
+
+            {balanceData && (
+              <div className="mb-4">
+                <BalanceCard data={balanceData} />
+              </div>
+            )}
+
+            {liquidityData && (
+              <div className="mb-4">
+                <div className="bg-white/60 backdrop-blur-md rounded-xl p-6 border-2 border-[#DBDBE5] shadow-elevation-md">
+                  <h3 className="text-xl font-semibold text-[#010507] mb-4">Liquidity Data</h3>
+                  <pre className="text-xs bg-gray-50 p-4 rounded overflow-auto">
+                    {JSON.stringify(liquidityData, null, 2)}
+                  </pre>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
