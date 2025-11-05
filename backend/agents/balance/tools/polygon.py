@@ -1,37 +1,23 @@
 import os
+from pathlib import Path
+from dotenv import load_dotenv
+"""Ensure environment variables are loaded from backend/.env if present."""
+# Load default .env discovery first (current working directory or parents)
+load_dotenv()
+# # Additionally, try the repo's backend/.env explicitly relative to this file
+# _backend_env = Path(__file__).resolve().parents[3] / ".env"
+# if _backend_env.exists():
+#     load_dotenv(dotenv_path=_backend_env, override=False)
 from typing import Optional
 from web3 import Web3
 from .constants import POLYGON_TOKENS
-
-# ERC-20 ABI for balanceOf function
-ERC20_ABI = [
-    {
-        "constant": True,
-        "inputs": [{"name": "_owner", "type": "address"}],
-        "name": "balanceOf",
-        "outputs": [{"name": "balance", "type": "uint256"}],
-        "type": "function",
-    },
-    {
-        "constant": True,
-        "inputs": [],
-        "name": "decimals",
-        "outputs": [{"name": "", "type": "uint8"}],
-        "type": "function",
-    },
-    {
-        "constant": True,
-        "inputs": [],
-        "name": "symbol",
-        "outputs": [{"name": "", "type": "string"}],
-        "type": "function",
-    },
-]
+from .abi.erc20 import ERC20_ABI
 
 
 def _get_web3_instance() -> Web3:
     """Get Web3 instance connected to Polygon RPC."""
-    rpc_url = os.getenv("POLYGON_RPC_URL", "https://polygon.llamarpc.com")
+    rpc_url = os.getenv("POLYGON_RPC_URL", "https://polygon-rpc.com")
+    # print(f"Using RPC URL: {rpc_url}", flush=True)
     return Web3(Web3.HTTPProvider(rpc_url))
 
 

@@ -176,7 +176,7 @@ test-balance:
 
 test-balance-polygon:
 	@echo "Running Polygon balance tests..."
-	cd backend && PYTHONPATH=. uv run pytest agents/balance/__test__/test_polygon.py -v
+	cd backend && PYTHONPATH=. uv run pytest -s agents/balance/__test__/test_polygon.py -v
 
 test-balance-hedera:
 	@echo "Running Hedera balance tests..."
