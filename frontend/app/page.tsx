@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useAppKitAccount } from "@reown/appkit/react";
 import DeFiChat from "@/components/defi-chat";
 import { BalanceCard } from "@/components/BalanceCard";
 import { BridgeCard } from "@/components/BridgeCard";
@@ -12,45 +13,8 @@ export default function Home() {
   const [balanceData, setBalanceData] = useState<BalanceData | null>(null);
   const [liquidityData, setLiquidityData] = useState<LiquidityData | null>(null);
   const [bridgeData, setBridgeData] = useState<BridgeData | null>(null);
-  const [isConnected, setIsConnected] = useState<boolean>(false);
-
-  // Detect wallet connection and react to changes
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const ethereum = (window as any).ethereum;
-
-    async function checkAccounts() {
-      try {
-        if (!ethereum?.request) {
-          setIsConnected(false);
-          return;
-        }
-        const accounts: string[] = await ethereum.request({ method: "eth_accounts" });
-        setIsConnected(Array.isArray(accounts) && accounts.length > 0);
-      } catch {
-        setIsConnected(false);
-      }
-    }
-
-    // Initial check
-    checkAccounts();
-
-    // Listen for account changes
-    const handleAccountsChanged = (accounts: string[]) => {
-      setIsConnected(Array.isArray(accounts) && accounts.length > 0);
-    };
-
-    if (ethereum?.on) {
-      ethereum.on("accountsChanged", handleAccountsChanged);
-    }
-
-    return () => {
-      if (ethereum?.removeListener) {
-        ethereum.removeListener("accountsChanged", handleAccountsChanged);
-      }
-    };
-  }, []);
+  const { address } = useAppKitAccount?.() || ({} as any);
+  const isConnected = Boolean(address);
 
   return (
     <div className="relative flex flex-col h-screen overflow-hidden bg-[#DEDEE9]">

@@ -2,7 +2,7 @@
 
 import { createAppKit } from "@reown/appkit/react";
 import { Ethers5Adapter } from "@reown/appkit-adapter-ethers5";
-import { polygon, mainnet } from "@reown/appkit/networks";
+import { polygon, mainnet, hedera } from "@reown/appkit/networks";
 
 // Delayed, client-only initialization to avoid module-eval side effects
 export function initAppKit() {
@@ -21,18 +21,28 @@ export function initAppKit() {
     icons: ["https://avatars.githubusercontent.com/u/179229932"],
   };
 
-  const ethers5Adapter = new Ethers5Adapter({
-    networks: [polygon, mainnet],
-    projectId,
-  });
+  const ethers5Adapter = new Ethers5Adapter();
 
   createAppKit({
     adapters: [ethers5Adapter],
-    networks: [polygon, mainnet],
+    networks: [polygon, mainnet, hedera],
     metadata,
     projectId,
+    includeWalletIds: ["a29498d225fa4b13468ff4d6cf4ae0ea4adcbd95f07ce8a843a1dee10b632f3f"],
+    // excludeWalletIds: ["coinbase", "injected","socials"],
+    excludeWalletIds: [
+      "c57ca95b47569778a828d19178114f4db188b89b763c899ba0be274e97267d96",
+      "2bd8c14e035c2d48f184aaa168559e86b0e3433228d3c4075900a221785019b0",
+      "541d5dcd4ede02f3afaf75bf8e3e4c4f1fb09edb5fa6c4377ebf31c2785d9adf"
+    ],
+    
+    enableInjected: false,
+    enableCoinbase: false,
+    allWallets: "HIDE",
     features: {
       analytics: true,
+      email:false,
+      socials:[],
     },
   });
 
