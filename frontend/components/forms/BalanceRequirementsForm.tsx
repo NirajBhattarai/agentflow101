@@ -7,6 +7,7 @@
  */
 
 import React, { useState, useEffect, useMemo } from "react";
+import { useAppKitAccount } from "@reown/appkit/react";
 
 interface BalanceRequirementsFormProps {
   args: any;
@@ -93,6 +94,7 @@ export const BalanceRequirementsForm: React.FC<BalanceRequirementsFormProps> = (
   const [showTokenDropdown, setShowTokenDropdown] = useState(false);
   const [tokenSearch, setTokenSearch] = useState("");
   const [useRegex, setUseRegex] = useState(false);
+  const { address: reownAddress } = useAppKitAccount?.() || ({} as any);
 
   // Pre-fill form from orchestrator extraction
   useEffect(() => {
@@ -106,6 +108,12 @@ export const BalanceRequirementsForm: React.FC<BalanceRequirementsFormProps> = (
       setTokenAddress(parsedArgs.tokenAddress);
     }
   }, [parsedArgs?.accountAddress, parsedArgs?.chain, parsedArgs?.tokenAddress]);
+
+  useEffect(() => {
+    if (!accountAddress?.trim() && reownAddress) {
+      setAccountAddress(reownAddress);
+    }
+  }, [accountAddress, reownAddress]);
 
   // Filter tokens based on search with regex support
   const filteredTokens = useMemo(() => {
