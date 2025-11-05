@@ -4,6 +4,7 @@ import { useState } from "react";
 import DeFiChat from "@/components/defi-chat";
 import { BalanceCard } from "@/components/BalanceCard";
 import { BridgeCard } from "@/components/BridgeCard";
+import { WalletConnect } from "@/components/WalletConnect";
 import type { BalanceData, LiquidityData, BridgeData } from "@/components/types";
 import "./copilot.css";
 
@@ -13,8 +14,14 @@ export default function Home() {
   const [bridgeData, setBridgeData] = useState<BridgeData | null>(null);
 
   return (
-    <div className="relative flex h-screen overflow-hidden bg-[#DEDEE9] p-2">
-      {/* Background blobs (match ui) */}
+    <div className="relative flex flex-col h-screen overflow-hidden bg-[#DEDEE9]">
+      {/* Wallet Connection Header */}
+      <div className="flex justify-end items-center p-4 z-20 bg-white/30 backdrop-blur-sm border-b border-[#DBDBE5]">
+        <WalletConnect />
+      </div>
+
+      <div className="relative flex flex-1 overflow-hidden p-2">
+        {/* Background blobs (match ui) */}
       <div
         className="absolute w-[445.84px] h-[445.84px] left-[1040px] top-[11px] rounded-full z-0"
         style={{ background: "rgba(255, 172, 77, 0.2)", filter: "blur(103.196px)" }}
@@ -40,7 +47,7 @@ export default function Home() {
         style={{ background: "rgba(255, 172, 77, 0.2)", filter: "blur(103.196px)" }}
       />
 
-      <div className="flex flex-1 overflow-hidden z-10 gap-2">
+        <div className="flex flex-1 overflow-hidden z-10 gap-2">
         {/* Left fixed chat card (450px) */}
         <div className="w-[450px] flex-shrink-0 border-2 border-white bg-white/50 backdrop-blur-md shadow-elevation-lg flex flex-col rounded-lg overflow-hidden">
           <div className="p-6 border-b border-[#DBDBE5]">
@@ -121,6 +128,7 @@ export default function Home() {
             )}
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

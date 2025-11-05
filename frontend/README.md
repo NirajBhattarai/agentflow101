@@ -2,7 +2,25 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+1. **Reown AppKit Project ID**: You need to create a project at [https://cloud.reown.com](https://cloud.reown.com) to get your project ID.
+
+2. **Environment Variables**: Create a `.env.local` file in the frontend directory with your Reown project ID:
+
+```bash
+NEXT_PUBLIC_REOWN_PROJECT_ID=your_project_id_here
+```
+
+### Installation
+
+First, install the dependencies:
+
+```bash
+npm install
+```
+
+Then, run the development server:
 
 ```bash
 npm run dev
