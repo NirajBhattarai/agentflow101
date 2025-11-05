@@ -10,17 +10,14 @@ export function initAppKit() {
 
   if (!projectId && typeof window !== "undefined") {
     console.warn(
-      "⚠️ Reown AppKit: NEXT_PUBLIC_REOWN_PROJECT_ID is not set. Please create a project at https://cloud.reown.com and add your project ID to .env.local"
+      "⚠️ Reown AppKit: NEXT_PUBLIC_REOWN_PROJECT_ID is not set. Please create a project at https://cloud.reown.com and add your project ID to .env.local",
     );
   }
 
   const metadata = {
     name: "AgentFlow101",
     description: "Multi-Agent DeFi Assistant",
-    url:
-      typeof window !== "undefined"
-        ? window.location.origin
-        : "https://example.com",
+    url: typeof window !== "undefined" ? window.location.origin : "https://example.com",
     icons: ["https://avatars.githubusercontent.com/u/179229932"],
   };
 

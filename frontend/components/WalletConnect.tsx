@@ -8,4 +8,3 @@ export function WalletConnect() {
   if (!hydrated) return null;
   return <appkit-button></appkit-button>;
 }
-
