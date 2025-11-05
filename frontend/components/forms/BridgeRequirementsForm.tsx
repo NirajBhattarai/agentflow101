@@ -7,6 +7,7 @@
  */
 
 import React, { useState, useEffect, useMemo } from "react";
+import { useAppKitAccount } from "@reown/appkit/react";
 
 interface BridgeRequirementsFormProps {
   args: any;
@@ -47,6 +48,7 @@ export const BridgeRequirementsForm: React.FC<BridgeRequirementsFormProps> = ({
   const [showTokenDropdown, setShowTokenDropdown] = useState(false);
   const [tokenSearch, setTokenSearch] = useState("");
   const [useRegex, setUseRegex] = useState(false);
+  const { address: reownAddress } = useAppKitAccount?.() || ({} as any);
 
   // Pre-fill form from orchestrator extraction
   useEffect(() => {
@@ -66,15 +68,16 @@ export const BridgeRequirementsForm: React.FC<BridgeRequirementsFormProps> = ({
     if (parsedArgs && parsedArgs.amount && parsedArgs.amount !== amount) {
       setAmount(parsedArgs.amount);
     }
-    if (parsedArgs && parsedArgs.accountAddress && parsedArgs.accountAddress !== accountAddress) {
-      setAccountAddress(parsedArgs.accountAddress);
+    // Account address must be the connected wallet address and not editable
+    if (reownAddress && reownAddress !== accountAddress) {
+      setAccountAddress(reownAddress);
     }
   }, [
     parsedArgs?.sourceChain,
     parsedArgs?.destinationChain,
     parsedArgs?.tokenSymbol,
     parsedArgs?.amount,
-    parsedArgs?.accountAddress,
+    reownAddress,
   ]);
 
   // Filter tokens based on search with regex support
@@ -208,12 +211,12 @@ export const BridgeRequirementsForm: React.FC<BridgeRequirementsFormProps> = ({
           <input
             type="text"
             value={accountAddress}
-            onChange={(e) => setAccountAddress(e.target.value)}
-            placeholder="e.g., 0.0.123456 (Hedera) or 0x1234... (EVM)"
+            readOnly
+            placeholder="Connected wallet address"
             className={`w-full px-3 py-2 text-sm rounded-lg border-2 transition-colors ${
               errors.accountAddress
                 ? "border-[#FFAC4D] bg-[#FFAC4D]/10"
-                : "border-[#DBDBE5] bg-white/80 backdrop-blur-sm focus:border-[#BEC2FF] focus:outline-none"
+                : "border-[#DBDBE5] bg-gray-50 text-gray-700"
             }`}
           />
           {errors.accountAddress && (
