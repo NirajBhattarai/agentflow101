@@ -3,12 +3,14 @@
 import { useState } from "react";
 import DeFiChat from "@/components/defi-chat";
 import { BalanceCard } from "@/components/BalanceCard";
-import type { BalanceData, LiquidityData } from "@/components/types";
+import { BridgeCard } from "@/components/BridgeCard";
+import type { BalanceData, LiquidityData, BridgeData } from "@/components/types";
 import "./copilot.css";
 
 export default function Home() {
   const [balanceData, setBalanceData] = useState<BalanceData | null>(null);
   const [liquidityData, setLiquidityData] = useState<LiquidityData | null>(null);
+  const [bridgeData, setBridgeData] = useState<BridgeData | null>(null);
 
   return (
     <div className="relative flex h-screen overflow-hidden bg-[#DEDEE9] p-2">
@@ -45,8 +47,9 @@ export default function Home() {
             <h1 className="text-2xl font-semibold text-[#010507] mb-1">DeFi Assistant</h1>
             <p className="text-sm text-[#57575B] leading-relaxed">
               Multi-Agent A2A Demo:{" "}
-              <span className="text-purple-600 font-semibold">Balance Agent</span> +{" "}
-              <span className="text-teal-600 font-semibold">Liquidity Agent</span>
+              <span className="text-purple-600 font-semibold">Balance</span> +{" "}
+              <span className="text-teal-600 font-semibold">Liquidity</span> +{" "}
+              <span className="text-orange-600 font-semibold">Bridge</span>
             </p>
             <p className="text-xs text-[#838389] mt-1">Orchestrator-mediated A2A Protocol</p>
           </div>
@@ -54,6 +57,7 @@ export default function Home() {
             <DeFiChat
               onBalanceUpdate={setBalanceData}
               onLiquidityUpdate={setLiquidityData}
+              onBridgeUpdate={setBridgeData}
             />
           </div>
         </div>
@@ -64,11 +68,11 @@ export default function Home() {
             <div className="mb-8">
               <h2 className="text-3xl font-semibold text-[#010507] mb-2">Your DeFi Data</h2>
               <p className="text-[#57575B]">
-                Multi-agent coordination: Balance and Liquidity agents with A2A Protocol
+                Multi-agent coordination: Balance, Liquidity, and Bridge agents with A2A Protocol
               </p>
             </div>
 
-            {!balanceData && !liquidityData && (
+            {!balanceData && !liquidityData && !bridgeData && (
               <div className="flex items-center justify-center h-[400px] bg-white/60 backdrop-blur-md rounded-xl border-2 border-dashed border-[#DBDBE5] shadow-elevation-sm">
                 <div className="text-center">
                   <div className="text-6xl mb-4">💰</div>
@@ -97,6 +101,23 @@ export default function Home() {
                     {JSON.stringify(liquidityData, null, 2)}
                   </pre>
                 </div>
+              </div>
+            )}
+
+            {bridgeData && (
+              <div className="mb-4">
+                <BridgeCard 
+                  data={bridgeData}
+                  onBridgeInitiate={(protocol) => {
+                    // When user clicks "Bridge" button, send a message to the chat
+                    // to trigger the orchestrator to initiate the bridge
+                    console.log("Initiating bridge with protocol:", protocol);
+                    // The orchestrator will handle this via chat message
+                    // In a real implementation, you might want to send a message programmatically
+                    // For now, the user can click the button and the UI will show the state
+                    // The actual bridge initiation happens via orchestrator when user says "do with [protocol]"
+                  }}
+                />
               </div>
             )}
           </div>

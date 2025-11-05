@@ -10,24 +10,27 @@
  */
 
 import React, { useState, useEffect } from "react";
-import { CopilotKit, useCopilotChat } from "@copilotkit/react-core";
+import { CopilotKit, useCopilotChat, useCopilotReadable } from "@copilotkit/react-core";
 import { CopilotChat } from "@copilotkit/react-ui";
 import { useCopilotAction } from "@copilotkit/react-core";
 import "@copilotkit/react-ui/styles.css";
 import { BalanceRequirementsForm } from "./forms/BalanceRequirementsForm";
 import { LiquidityRequirementsForm } from "./forms/LiquidityRequirementsForm";
+import { BridgeRequirementsForm } from "./forms/BridgeRequirementsForm";
 import { MessageToA2A } from "./a2a/MessageToA2A";
 import { MessageFromA2A } from "./a2a/MessageFromA2A";
 import type {
   DeFiChatProps,
   BalanceData,
   LiquidityData,
+  BridgeData,
   MessageActionRenderProps,
 } from "./types";
 
 const ChatInner = ({
   onBalanceUpdate,
   onLiquidityUpdate,
+  onBridgeUpdate,
 }: DeFiChatProps) => {
   const { visibleMessages } = useCopilotChat();
 
@@ -61,6 +64,11 @@ const ChatInner = ({
               else if (parsed.type === "liquidity" && parsed.pairs && Array.isArray(parsed.pairs)) {
                 onLiquidityUpdate?.(parsed as LiquidityData);
               }
+              // Check if it's bridge data
+              // Bridge data can have transaction OR bridge_options (or both)
+              else if (parsed.type === "bridge") {
+                onBridgeUpdate?.(parsed as BridgeData);
+              }
             }
           } catch (e) {
             // Silently ignore parsing errors
@@ -70,7 +78,7 @@ const ChatInner = ({
     };
 
     extractDataFromMessages();
-  }, [visibleMessages, onBalanceUpdate, onLiquidityUpdate]);
+  }, [visibleMessages, onBalanceUpdate, onLiquidityUpdate, onBridgeUpdate]);
 
   // Register HITL balance requirements form (collects account info at start)
   useCopilotAction({
@@ -129,6 +137,48 @@ const ChatInner = ({
     },
   });
 
+  // Register HITL bridge requirements form (collects bridge details at start)
+  useCopilotAction({
+    name: "gather_bridge_requirements",
+    description:
+      "Gather bridge requirements from the user (account address, source chain, destination chain, token, amount)",
+    parameters: [
+      {
+        name: "accountAddress",
+        type: "string",
+        description: "The account address to bridge from (Hedera format: 0.0.123456 or EVM format: 0x...). May be pre-filled from user message.",
+        required: false,
+      },
+      {
+        name: "sourceChain",
+        type: "string",
+        description: "Source chain: hedera or polygon. May be pre-filled from user message.",
+        required: false,
+      },
+      {
+        name: "destinationChain",
+        type: "string",
+        description: "Destination chain: hedera or polygon. May be pre-filled from user message.",
+        required: false,
+      },
+      {
+        name: "tokenSymbol",
+        type: "string",
+        description: "Token symbol to bridge (e.g., USDC, HBAR, MATIC). May be pre-filled from user message.",
+        required: false,
+      },
+      {
+        name: "amount",
+        type: "string",
+        description: "Amount to bridge (e.g., 100.0). May be pre-filled from user message.",
+        required: false,
+      },
+    ],
+    renderAndWaitForResponse: ({ args, respond }) => {
+      return <BridgeRequirementsForm args={args} respond={respond} />;
+    },
+  });
+
   // Register A2A message visualizer (renders green/blue communication boxes)
   useCopilotAction({
     name: "send_message_to_a2a_agent",
@@ -173,10 +223,15 @@ const ChatInner = ({
 export default function DeFiChat({
   onBalanceUpdate,
   onLiquidityUpdate,
+  onBridgeUpdate,
 }: DeFiChatProps) {
   return (
     <CopilotKit runtimeUrl="/api/copilotkit" showDevConsole={false} agent="a2a_chat">
-      <ChatInner onBalanceUpdate={onBalanceUpdate} onLiquidityUpdate={onLiquidityUpdate} />
+      <ChatInner 
+        onBalanceUpdate={onBalanceUpdate} 
+        onLiquidityUpdate={onLiquidityUpdate}
+        onBridgeUpdate={onBridgeUpdate}
+      />
     </CopilotKit>
   );
 }

@@ -23,8 +23,9 @@ help:
 	@echo "  make dev-travily         - Run Travily agent server (port 9999)"
 	@echo "  make dev-liquidity       - Run Liquidity agent server (port 9998)"
 	@echo "  make dev-balance         - Run Balance agent server (port 9997)"
+	@echo "  make dev-bridge          - Run Bridge agent server (port 9996)"
 	@echo "  make dev-orchestrator    - Run Orchestrator agent server (port 9000)"
-	@echo "  make dev-all-agents      - Run all agents (orchestrator, balance, liquidity)"
+	@echo "  make dev-all-agents      - Run all agents (orchestrator, balance, liquidity, bridge)"
 	@echo ""
 	@echo "Build:"
 	@echo "  make build-frontend      - Build frontend for production"
@@ -100,6 +101,11 @@ dev-balance:
 	@echo "Balance Agent: http://localhost:9997"
 	cd backend && uv run -m agents.balance
 
+dev-bridge:
+	@echo "Starting Bridge agent server..."
+	@echo "Bridge Agent: http://localhost:9996"
+	cd backend && uv run -m agents.bridge
+
 dev-orchestrator:
 	@echo "Starting Orchestrator agent server..."
 	@echo "Orchestrator Agent: http://localhost:9000"
@@ -111,9 +117,10 @@ dev-all-agents:
 	@echo "Orchestrator: http://localhost:9000"
 	@echo "Balance Agent: http://localhost:9997"
 	@echo "Liquidity Agent: http://localhost:9998"
+	@echo "Bridge Agent: http://localhost:9996"
 	@echo ""
 	@echo "Starting all agents in parallel..."
-	@make -j3 dev-orchestrator dev-balance dev-liquidity
+	@make -j4 dev-orchestrator dev-balance dev-liquidity dev-bridge
 
 # Production builds
 build-frontend:

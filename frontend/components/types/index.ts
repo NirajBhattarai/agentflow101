@@ -55,6 +55,39 @@ export type BalanceRequirementsActionRenderProps = ActionRenderProps<
   ]
 >;
 
+/**
+ * Type for bridge requirements action parameters
+ */
+export type BridgeRequirementsActionRenderProps = ActionRenderProps<
+  [
+    {
+      readonly name: "accountAddress";
+      readonly type: "string";
+      readonly description: "The account address to bridge from (Hedera format: 0.0.123456 or EVM format: 0x...)";
+    },
+    {
+      readonly name: "sourceChain";
+      readonly type: "string";
+      readonly description: "Source chain: hedera or polygon";
+    },
+    {
+      readonly name: "destinationChain";
+      readonly type: "string";
+      readonly description: "Destination chain: hedera or polygon";
+    },
+    {
+      readonly name: "tokenSymbol";
+      readonly type: "string";
+      readonly description: "Token symbol to bridge (e.g., USDC, HBAR, MATIC)";
+    },
+    {
+      readonly name: "amount";
+      readonly type: "string";
+      readonly description: "Amount to bridge (e.g., 100.0)";
+    }
+  ]
+>;
+
 // ============================================================================
 // Agent Data Structures
 // ============================================================================
@@ -112,6 +145,65 @@ export interface LiquidityData {
   error?: string;
 }
 
+/**
+ * Bridge transaction details
+ */
+export interface BridgeTransaction {
+  source_chain: string;
+  destination_chain: string;
+  token_symbol: string;
+  token_address: string;
+  amount: string;
+  bridge_fee: string;
+  estimated_time: string;
+  bridge_protocol: string;
+  transaction_hash?: string | null;
+  status: string;
+}
+
+/**
+ * Bridge option (for comparison)
+ */
+export interface BridgeOption {
+  bridge_protocol: string;
+  bridge_fee: string;
+  bridge_fee_usd: number; // For sorting
+  estimated_time: string;
+  min_amount?: string;
+  max_amount?: string;
+  is_recommended?: boolean;
+}
+
+/**
+ * Balance check result for bridge
+ */
+export interface BridgeBalanceCheck {
+  account_address: string;
+  token_symbol: string;
+  balance: string;
+  balance_sufficient: boolean;
+  required_amount: string;
+}
+
+/**
+ * Complete bridge data from Bridge Agent
+ */
+export interface BridgeData {
+  type: string;
+  source_chain: string;
+  destination_chain: string;
+  token_symbol: string;
+  amount: string;
+  account_address?: string;
+  balance_check?: BridgeBalanceCheck;
+  bridge_options?: BridgeOption[];
+  transaction?: BridgeTransaction;
+  requires_confirmation?: boolean;
+  confirmation_threshold?: number;
+  amount_exceeds_threshold?: boolean;
+  error?: string;
+}
+
 // ============================================================================
 // Component Props
 // ============================================================================
@@ -123,6 +215,7 @@ export interface LiquidityData {
 export interface DeFiChatProps {
   onBalanceUpdate?: (data: BalanceData | null) => void;
   onLiquidityUpdate?: (data: LiquidityData | null) => void;
+  onBridgeUpdate?: (data: BridgeData | null) => void;
 }
 
 /**

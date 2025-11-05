@@ -52,6 +52,17 @@ export function getAgentStyle(agentName: string): AgentStyle {
     };
   }
 
+  // Bridge Agent - Orange/Amber branding
+  if (nameLower.includes("bridge")) {
+    return {
+      bgColor: "bg-gradient-to-r from-orange-100 to-amber-100",
+      textColor: "text-orange-800",
+      borderColor: "border-orange-400",
+      icon: "🌉",
+      framework: "ADK",
+    };
+  }
+
   // Default/Unknown agent
   return {
     bgColor: "bg-gray-100",
