@@ -53,7 +53,11 @@ export const BridgeRequirementsForm: React.FC<BridgeRequirementsFormProps> = ({
     if (parsedArgs && parsedArgs.sourceChain && parsedArgs.sourceChain !== sourceChain) {
       setSourceChain(parsedArgs.sourceChain);
     }
-    if (parsedArgs && parsedArgs.destinationChain && parsedArgs.destinationChain !== destinationChain) {
+    if (
+      parsedArgs &&
+      parsedArgs.destinationChain &&
+      parsedArgs.destinationChain !== destinationChain
+    ) {
       setDestinationChain(parsedArgs.destinationChain);
     }
     if (parsedArgs && parsedArgs.tokenSymbol && parsedArgs.tokenSymbol !== tokenSymbol) {
@@ -65,7 +69,13 @@ export const BridgeRequirementsForm: React.FC<BridgeRequirementsFormProps> = ({
     if (parsedArgs && parsedArgs.accountAddress && parsedArgs.accountAddress !== accountAddress) {
       setAccountAddress(parsedArgs.accountAddress);
     }
-  }, [parsedArgs?.sourceChain, parsedArgs?.destinationChain, parsedArgs?.tokenSymbol, parsedArgs?.amount, parsedArgs?.accountAddress]);
+  }, [
+    parsedArgs?.sourceChain,
+    parsedArgs?.destinationChain,
+    parsedArgs?.tokenSymbol,
+    parsedArgs?.amount,
+    parsedArgs?.accountAddress,
+  ]);
 
   // Filter tokens based on search with regex support
   const filteredTokens = useMemo(() => {
@@ -75,16 +85,14 @@ export const BridgeRequirementsForm: React.FC<BridgeRequirementsFormProps> = ({
       if (useRegex) {
         const regex = new RegExp(tokenSearch, "i");
         return BRIDGEABLE_TOKENS.filter(
-          (token) =>
-            regex.test(token.symbol) ||
-            regex.test(token.name)
+          (token) => regex.test(token.symbol) || regex.test(token.name),
         );
       } else {
         const searchLower = tokenSearch.toLowerCase();
         return BRIDGEABLE_TOKENS.filter(
           (token) =>
             token.symbol.toLowerCase().includes(searchLower) ||
-            token.name.toLowerCase().includes(searchLower)
+            token.name.toLowerCase().includes(searchLower),
         );
       }
     } catch (e) {
@@ -92,12 +100,12 @@ export const BridgeRequirementsForm: React.FC<BridgeRequirementsFormProps> = ({
       return BRIDGEABLE_TOKENS.filter(
         (token) =>
           token.symbol.toLowerCase().includes(searchLower) ||
-          token.name.toLowerCase().includes(searchLower)
+          token.name.toLowerCase().includes(searchLower),
       );
     }
   }, [tokenSearch, useRegex]);
 
-  const handleTokenSelect = (token: typeof BRIDGEABLE_TOKENS[0]) => {
+  const handleTokenSelect = (token: (typeof BRIDGEABLE_TOKENS)[0]) => {
     setTokenSymbol(token.symbol);
     setShowTokenDropdown(false);
     setTokenSearch("");
@@ -173,7 +181,8 @@ export const BridgeRequirementsForm: React.FC<BridgeRequirementsFormProps> = ({
           <div>
             <h3 className="text-base font-semibold text-[#010507]">Bridge Request Submitted</h3>
             <p className="text-xs text-[#57575B]">
-              Checking balance and finding best bridge options for {amount} {tokenSymbol} from {sourceChain} to {destinationChain}...
+              Checking balance and finding best bridge options for {amount} {tokenSymbol} from{" "}
+              {sourceChain} to {destinationChain}...
             </p>
           </div>
         </div>
@@ -236,7 +245,9 @@ export const BridgeRequirementsForm: React.FC<BridgeRequirementsFormProps> = ({
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-[#010507] mb-1.5">Destination Chain *</label>
+          <label className="block text-xs font-medium text-[#010507] mb-1.5">
+            Destination Chain *
+          </label>
           <div className="grid grid-cols-2 gap-2">
             {[
               { value: "hedera", label: "Hedera", icon: "🔷" },
@@ -349,9 +360,7 @@ export const BridgeRequirementsForm: React.FC<BridgeRequirementsFormProps> = ({
                 : "border-[#DBDBE5] bg-white/80 backdrop-blur-sm focus:border-[#BEC2FF] focus:outline-none"
             }`}
           />
-          {errors.amount && (
-            <p className="text-xs text-[#FFAC4D] mt-1">{errors.amount}</p>
-          )}
+          {errors.amount && <p className="text-xs text-[#FFAC4D] mt-1">{errors.amount}</p>}
         </div>
       </div>
 
@@ -366,4 +375,3 @@ export const BridgeRequirementsForm: React.FC<BridgeRequirementsFormProps> = ({
     </div>
   );
 };
-

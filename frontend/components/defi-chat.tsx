@@ -27,11 +27,7 @@ import type {
   MessageActionRenderProps,
 } from "./types";
 
-const ChatInner = ({
-  onBalanceUpdate,
-  onLiquidityUpdate,
-  onBridgeUpdate,
-}: DeFiChatProps) => {
+const ChatInner = ({ onBalanceUpdate, onLiquidityUpdate, onBridgeUpdate }: DeFiChatProps) => {
   const { visibleMessages } = useCopilotChat();
 
   // Extract structured data from A2A agent responses
@@ -102,8 +98,7 @@ const ChatInner = ({
       {
         name: "tokenAddress",
         type: "string",
-        description:
-          "Optional token address or symbol to query. Leave empty for all tokens.",
+        description: "Optional token address or symbol to query. Leave empty for all tokens.",
         required: false,
       },
     ],
@@ -115,13 +110,13 @@ const ChatInner = ({
   // Register HITL liquidity requirements form (collects chain and token pair info at start)
   useCopilotAction({
     name: "gather_liquidity_requirements",
-    description:
-      "Gather liquidity query requirements from the user (chain, optional token pair)",
+    description: "Gather liquidity query requirements from the user (chain, optional token pair)",
     parameters: [
       {
         name: "chain",
         type: "string",
-        description: "The blockchain chain to query: hedera, polygon, or all. May be pre-filled from user message.",
+        description:
+          "The blockchain chain to query: hedera, polygon, or all. May be pre-filled from user message.",
         required: false,
       },
       {
@@ -146,7 +141,8 @@ const ChatInner = ({
       {
         name: "accountAddress",
         type: "string",
-        description: "The account address to bridge from (Hedera format: 0.0.123456 or EVM format: 0x...). May be pre-filled from user message.",
+        description:
+          "The account address to bridge from (Hedera format: 0.0.123456 or EVM format: 0x...). May be pre-filled from user message.",
         required: false,
       },
       {
@@ -164,7 +160,8 @@ const ChatInner = ({
       {
         name: "tokenSymbol",
         type: "string",
-        description: "Token symbol to bridge (e.g., USDC, HBAR, MATIC). May be pre-filled from user message.",
+        description:
+          "Token symbol to bridge (e.g., USDC, HBAR, MATIC). May be pre-filled from user message.",
         required: false,
       },
       {
@@ -227,12 +224,11 @@ export default function DeFiChat({
 }: DeFiChatProps) {
   return (
     <CopilotKit runtimeUrl="/api/copilotkit" showDevConsole={false} agent="a2a_chat">
-      <ChatInner 
-        onBalanceUpdate={onBalanceUpdate} 
+      <ChatInner
+        onBalanceUpdate={onBalanceUpdate}
         onLiquidityUpdate={onLiquidityUpdate}
         onBridgeUpdate={onBridgeUpdate}
       />
     </CopilotKit>
   );
 }
-

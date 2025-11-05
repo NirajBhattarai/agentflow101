@@ -122,8 +122,8 @@ Return a structured JSON response with bridge transaction details.
         # It ALWAYS returns hardcoded JSON data, bypassing all LLM calls
         
         print(f"🌉 Bridge Agent received query: {query}")
-        print(f"⚠️  Using HARDCODED response - LLM is NOT being called")
-        print(f"🔒 Bypassing LLM completely - returning hardcoded JSON response")
+        print("⚠️  Using HARDCODED response - LLM is NOT being called")
+        print("🔒 Bypassing LLM completely - returning hardcoded JSON response")
         
         # Parse query to extract bridge parameters
         source_chain = "hedera"  # Default
@@ -351,7 +351,7 @@ Return a structured JSON response with bridge transaction details.
         try:
             validated_bridge = StructuredBridge(**hardcoded_bridge)
             final_response = json.dumps(validated_bridge.model_dump(), indent=2)
-            print(f"✅ Returning hardcoded bridge response")
+            print("✅ Returning hardcoded bridge response")
             print(f"📦 Response length: {len(final_response)} chars")
             print(f"📄 Response preview: {final_response[:200]}...")
             

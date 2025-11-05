@@ -53,4 +53,3 @@ export const MessageFromA2A: React.FC<MessageActionRenderProps> = ({ status, arg
     </div>
   );
 };
-

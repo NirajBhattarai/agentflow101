@@ -9,12 +9,9 @@ import { A2AMiddlewareAgent } from "@ag-ui/a2a-middleware";
 
 export async function POST(request: NextRequest) {
   // STEP 1: Define A2A agent URLs
-  const balanceAgentUrl =
-    process.env.BALANCE_AGENT_URL || "http://localhost:9997";
-  const liquidityAgentUrl =
-    process.env.LIQUIDITY_AGENT_URL || "http://localhost:9998";
-  const bridgeAgentUrl =
-    process.env.BRIDGE_AGENT_URL || "http://localhost:9996";
+  const balanceAgentUrl = process.env.BALANCE_AGENT_URL || "http://localhost:9997";
+  const liquidityAgentUrl = process.env.LIQUIDITY_AGENT_URL || "http://localhost:9998";
+  const bridgeAgentUrl = process.env.BRIDGE_AGENT_URL || "http://localhost:9996";
 
   // STEP 2: Define orchestrator URL (speaks AG-UI Protocol)
   const orchestratorUrl = process.env.ORCHESTRATOR_URL || "http://localhost:9000";
@@ -29,8 +26,7 @@ export async function POST(request: NextRequest) {
   // 3. Injecting send_message_to_a2a_agent tool
   // 4. Routing messages between orchestrator and A2A agents
   const a2aMiddlewareAgent = new A2AMiddlewareAgent({
-    description:
-      "DeFi orchestrator with balance, liquidity, and bridge agents (Hedera, Polygon)",
+    description: "DeFi orchestrator with balance, liquidity, and bridge agents (Hedera, Polygon)",
     agentUrls: [
       balanceAgentUrl, // Balance Agent (ADK) - Port 9997
       liquidityAgentUrl, // Liquidity Agent (ADK) - Port 9998

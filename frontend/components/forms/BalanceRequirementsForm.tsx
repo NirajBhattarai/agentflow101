@@ -16,15 +16,60 @@ interface BalanceRequirementsFormProps {
 // Standard tokens for dropdown
 const STANDARD_TOKENS = [
   { symbol: "HBAR", name: "Hedera Hashgraph", address: "0.0.0", type: "native" },
-  { symbol: "MATIC", name: "Polygon", address: "0x0000000000000000000000000000000000000000", type: "native" },
-  { symbol: "USDC", name: "USD Coin", address: "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174", type: "token" },
-  { symbol: "USDT", name: "Tether USD", address: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F", type: "token" },
-  { symbol: "ETH", name: "Ethereum", address: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619", type: "token" },
-  { symbol: "WBTC", name: "Wrapped Bitcoin", address: "0x1BFD67037B42Cf73acF2047067bd4F2C47D9BfD6", type: "token" },
-  { symbol: "DAI", name: "Dai Stablecoin", address: "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063", type: "token" },
-  { symbol: "AAVE", name: "Aave Token", address: "0xD6DF932A45C0f255f85145f286eA0b292B21C90B", type: "token" },
-  { symbol: "UNI", name: "Uniswap", address: "0xb33EaAd8d922B1083446DC23f610c2567fB5180f", type: "token" },
-  { symbol: "LINK", name: "Chainlink", address: "0x53E0bca35eC356BD5ddDFebbD1Fc0fD03FaBad39", type: "token" },
+  {
+    symbol: "MATIC",
+    name: "Polygon",
+    address: "0x0000000000000000000000000000000000000000",
+    type: "native",
+  },
+  {
+    symbol: "USDC",
+    name: "USD Coin",
+    address: "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
+    type: "token",
+  },
+  {
+    symbol: "USDT",
+    name: "Tether USD",
+    address: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
+    type: "token",
+  },
+  {
+    symbol: "ETH",
+    name: "Ethereum",
+    address: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619",
+    type: "token",
+  },
+  {
+    symbol: "WBTC",
+    name: "Wrapped Bitcoin",
+    address: "0x1BFD67037B42Cf73acF2047067bd4F2C47D9BfD6",
+    type: "token",
+  },
+  {
+    symbol: "DAI",
+    name: "Dai Stablecoin",
+    address: "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063",
+    type: "token",
+  },
+  {
+    symbol: "AAVE",
+    name: "Aave Token",
+    address: "0xD6DF932A45C0f255f85145f286eA0b292B21C90B",
+    type: "token",
+  },
+  {
+    symbol: "UNI",
+    name: "Uniswap",
+    address: "0xb33EaAd8d922B1083446DC23f610c2567fB5180f",
+    type: "token",
+  },
+  {
+    symbol: "LINK",
+    name: "Chainlink",
+    address: "0x53E0bca35eC356BD5ddDFebbD1Fc0fD03FaBad39",
+    type: "token",
+  },
 ];
 
 export const BalanceRequirementsForm: React.FC<BalanceRequirementsFormProps> = ({
@@ -71,9 +116,7 @@ export const BalanceRequirementsForm: React.FC<BalanceRequirementsFormProps> = (
         const regex = new RegExp(tokenSearch, "i");
         return STANDARD_TOKENS.filter(
           (token) =>
-            regex.test(token.symbol) ||
-            regex.test(token.name) ||
-            regex.test(token.address)
+            regex.test(token.symbol) || regex.test(token.name) || regex.test(token.address),
         );
       } else {
         const searchLower = tokenSearch.toLowerCase();
@@ -81,7 +124,7 @@ export const BalanceRequirementsForm: React.FC<BalanceRequirementsFormProps> = (
           (token) =>
             token.symbol.toLowerCase().includes(searchLower) ||
             token.name.toLowerCase().includes(searchLower) ||
-            token.address.toLowerCase().includes(searchLower)
+            token.address.toLowerCase().includes(searchLower),
         );
       }
     } catch (e) {
@@ -90,12 +133,12 @@ export const BalanceRequirementsForm: React.FC<BalanceRequirementsFormProps> = (
       return STANDARD_TOKENS.filter(
         (token) =>
           token.symbol.toLowerCase().includes(searchLower) ||
-          token.name.toLowerCase().includes(searchLower)
+          token.name.toLowerCase().includes(searchLower),
       );
     }
   }, [tokenSearch, useRegex]);
 
-  const handleTokenSelect = (token: typeof STANDARD_TOKENS[0]) => {
+  const handleTokenSelect = (token: (typeof STANDARD_TOKENS)[0]) => {
     setTokenAddress(token.symbol);
     setShowTokenDropdown(false);
     setTokenSearch("");
@@ -171,7 +214,9 @@ export const BalanceRequirementsForm: React.FC<BalanceRequirementsFormProps> = (
         <div className="text-2xl">💱</div>
         <div>
           <h3 className="text-base font-semibold text-[#010507]">Balance Query Details</h3>
-          <p className="text-xs text-[#57575B]">Please provide account information to check balance</p>
+          <p className="text-xs text-[#57575B]">
+            Please provide account information to check balance
+          </p>
         </div>
       </div>
 
@@ -327,4 +372,3 @@ export const BalanceRequirementsForm: React.FC<BalanceRequirementsFormProps> = (
     </div>
   );
 };
-

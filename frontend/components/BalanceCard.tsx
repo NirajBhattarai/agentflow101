@@ -68,14 +68,18 @@ const getTokenIcon = (symbol: string, tokenType: string): string => {
 
 export const BalanceCard: React.FC<BalanceCardProps> = ({ data }) => {
   // Group balances by chain if multiple chains
-  const balancesByChain = data.chain === "all" 
-    ? data.balances.reduce((acc, balance) => {
-        const chain = balance.chain || "unknown";
-        if (!acc[chain]) acc[chain] = [];
-        acc[chain].push(balance);
-        return acc;
-      }, {} as Record<string, typeof data.balances>)
-    : { [data.chain]: data.balances };
+  const balancesByChain =
+    data.chain === "all"
+      ? data.balances.reduce(
+          (acc, balance) => {
+            const chain = balance.chain || "unknown";
+            if (!acc[chain]) acc[chain] = [];
+            acc[chain].push(balance);
+            return acc;
+          },
+          {} as Record<string, typeof data.balances>,
+        )
+      : { [data.chain]: data.balances };
 
   const chainInfo = data.chain !== "all" ? getChainColor(data.chain) : null;
 
@@ -83,7 +87,9 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({ data }) => {
     <div className="bg-white/60 backdrop-blur-md rounded-xl p-6 my-3 border-2 border-[#DBDBE5] shadow-elevation-md animate-fade-in-up">
       {/* Header with Gradient Background */}
       <div className="mb-6">
-        <div className={`${chainInfo?.light || "bg-gradient-to-r from-purple-50 to-indigo-50"} rounded-xl p-4 mb-4 border ${chainInfo?.border || "border-purple-200"}`}>
+        <div
+          className={`${chainInfo?.light || "bg-gradient-to-r from-purple-50 to-indigo-50"} rounded-xl p-4 mb-4 border ${chainInfo?.border || "border-purple-200"}`}
+        >
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
               <div className="flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-r from-purple-400 to-indigo-400 shadow-lg">
@@ -96,7 +102,9 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({ data }) => {
                     {data.account_address.slice(0, 10)}...{data.account_address.slice(-8)}
                   </span>
                   {data.chain !== "all" && chainInfo && (
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold text-white shadow-sm ${chainInfo.gradient} flex items-center gap-1`}>
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-bold text-white shadow-sm ${chainInfo.gradient} flex items-center gap-1`}
+                    >
                       <span>{chainInfo.icon}</span>
                       <span>{data.chain.toUpperCase()}</span>
                     </span>
@@ -130,7 +138,9 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({ data }) => {
           <div key={chain} className="mb-6">
             {data.chain === "all" && (
               <div className="mb-4">
-                <div className={`${chainStyle.light} rounded-lg p-3 border ${chainStyle.border} inline-flex items-center gap-2`}>
+                <div
+                  className={`${chainStyle.light} rounded-lg p-3 border ${chainStyle.border} inline-flex items-center gap-2`}
+                >
                   <span className="text-lg">{chainStyle.icon}</span>
                   <h3 className={`text-base font-bold ${chainStyle.text}`}>
                     {chain.toUpperCase()} Chain
@@ -144,7 +154,7 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({ data }) => {
               {balances.map((balance, index) => {
                 const tokenIcon = getTokenIcon(balance.token_symbol, balance.token_type);
                 const isNative = balance.token_type === "native";
-                
+
                 return (
                   <div
                     key={index}
@@ -153,11 +163,13 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({ data }) => {
                     {/* Token Header */}
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-3 flex-1">
-                        <div className={`flex items-center justify-center w-12 h-12 rounded-xl ${
-                          isNative 
-                            ? "bg-gradient-to-br from-purple-400 to-indigo-500 shadow-lg" 
-                            : "bg-gradient-to-br from-indigo-400 to-blue-500 shadow-lg"
-                        } group-hover:scale-110 transition-transform duration-200`}>
+                        <div
+                          className={`flex items-center justify-center w-12 h-12 rounded-xl ${
+                            isNative
+                              ? "bg-gradient-to-br from-purple-400 to-indigo-500 shadow-lg"
+                              : "bg-gradient-to-br from-indigo-400 to-blue-500 shadow-lg"
+                          } group-hover:scale-110 transition-transform duration-200`}
+                        >
                           <span className="text-2xl">{tokenIcon}</span>
                         </div>
                         <div className="flex-1 min-w-0">
@@ -175,7 +187,10 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({ data }) => {
                               </span>
                             )}
                           </div>
-                          <div className="text-[10px] text-[#838389] font-mono truncate" title={balance.token_address}>
+                          <div
+                            className="text-[10px] text-[#838389] font-mono truncate"
+                            title={balance.token_address}
+                          >
                             {balance.token_address}
                           </div>
                         </div>
@@ -183,7 +198,9 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({ data }) => {
                     </div>
 
                     {/* Balance Amount */}
-                    <div className={`${chainStyle.light} rounded-lg p-3 mb-3 border ${chainStyle.border}`}>
+                    <div
+                      className={`${chainStyle.light} rounded-lg p-3 mb-3 border ${chainStyle.border}`}
+                    >
                       <div className="text-xs text-[#57575B] mb-1">Balance</div>
                       <div className="text-2xl font-bold text-[#010507] mb-1">
                         {balance.balance}
@@ -201,7 +218,9 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({ data }) => {
                       </div>
                       <div className="bg-gray-50 rounded-lg p-2 text-center">
                         <div className="text-[10px] text-[#57575B] mb-1">Type</div>
-                        <div className="text-sm font-bold text-[#010507] capitalize">{balance.token_type}</div>
+                        <div className="text-sm font-bold text-[#010507] capitalize">
+                          {balance.token_type}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -217,10 +236,11 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({ data }) => {
         <div className="bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-dashed border-gray-300 rounded-xl p-8 text-center">
           <div className="text-5xl mb-3">💸</div>
           <p className="text-base font-semibold text-gray-700 mb-1">No balances found</p>
-          <p className="text-sm text-gray-500">This account has no tokens on {data.chain !== "all" ? data.chain : "these chains"}</p>
+          <p className="text-sm text-gray-500">
+            This account has no tokens on {data.chain !== "all" ? data.chain : "these chains"}
+          </p>
         </div>
       )}
     </div>
   );
 };
-

@@ -46,8 +46,7 @@ export default function Home() {
           <div className="p-6 border-b border-[#DBDBE5]">
             <h1 className="text-2xl font-semibold text-[#010507] mb-1">DeFi Assistant</h1>
             <p className="text-sm text-[#57575B] leading-relaxed">
-              Multi-Agent A2A Demo:{" "}
-              <span className="text-purple-600 font-semibold">Balance</span> +{" "}
+              Multi-Agent A2A Demo: <span className="text-purple-600 font-semibold">Balance</span> +{" "}
               <span className="text-teal-600 font-semibold">Liquidity</span> +{" "}
               <span className="text-orange-600 font-semibold">Bridge</span>
             </p>
@@ -80,8 +79,8 @@ export default function Home() {
                     Start Querying Your DeFi Data
                   </h3>
                   <p className="text-[#57575B] max-w-md">
-                    Ask the assistant to check your balance or get liquidity information. 
-                    Watch as specialized agents collaborate through A2A Protocol to fetch your on-chain data.
+                    Ask the assistant to check your balance or get liquidity information. Watch as
+                    specialized agents collaborate through A2A Protocol to fetch your on-chain data.
                   </p>
                 </div>
               </div>
@@ -106,7 +105,7 @@ export default function Home() {
 
             {bridgeData && (
               <div className="mb-4">
-                <BridgeCard 
+                <BridgeCard
                   data={bridgeData}
                   onBridgeInitiate={(protocol) => {
                     // When user clicks "Bridge" button, send a message to the chat

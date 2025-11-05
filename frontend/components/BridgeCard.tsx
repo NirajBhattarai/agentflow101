@@ -63,16 +63,22 @@ export const BridgeCard: React.FC<BridgeCardProps> = ({ data, onBridgeInitiate }
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
-            <span className={`px-3 py-1 rounded-full text-xs font-bold text-white ${getChainColor(data.source_chain)}`}>
+            <span
+              className={`px-3 py-1 rounded-full text-xs font-bold text-white ${getChainColor(data.source_chain)}`}
+            >
               {data.source_chain.toUpperCase()}
             </span>
             <span className="text-gray-400 text-lg">→</span>
-            <span className={`px-3 py-1 rounded-full text-xs font-bold text-white ${getChainColor(data.destination_chain)}`}>
+            <span
+              className={`px-3 py-1 rounded-full text-xs font-bold text-white ${getChainColor(data.destination_chain)}`}
+            >
               {data.destination_chain.toUpperCase()}
             </span>
           </div>
           {transaction && (
-            <span className={`px-3 py-1 rounded-full text-xs font-bold border-2 ${getStatusColor(transaction.status)}`}>
+            <span
+              className={`px-3 py-1 rounded-full text-xs font-bold border-2 ${getStatusColor(transaction.status)}`}
+            >
               {transaction.status.toUpperCase()}
             </span>
           )}
@@ -88,11 +94,13 @@ export const BridgeCard: React.FC<BridgeCardProps> = ({ data, onBridgeInitiate }
 
       {/* Balance Check */}
       {balance_check && (
-        <div className={`rounded-xl p-4 mb-4 border ${
-          balance_check.balance_sufficient 
-            ? "bg-green-50 border-green-200" 
-            : "bg-red-50 border-red-200"
-        }`}>
+        <div
+          className={`rounded-xl p-4 mb-4 border ${
+            balance_check.balance_sufficient
+              ? "bg-green-50 border-green-200"
+              : "bg-red-50 border-red-200"
+          }`}
+        >
           <div className="flex items-center justify-between">
             <div>
               <div className="text-xs text-[#57575B] mb-1">Balance Check</div>
@@ -104,13 +112,11 @@ export const BridgeCard: React.FC<BridgeCardProps> = ({ data, onBridgeInitiate }
                 )}
               </div>
               <div className="text-xs text-[#57575B] mt-1">
-                Available: {balance_check.balance} {balance_check.token_symbol} | 
-                Required: {balance_check.required_amount} {balance_check.token_symbol}
+                Available: {balance_check.balance} {balance_check.token_symbol} | Required:{" "}
+                {balance_check.required_amount} {balance_check.token_symbol}
               </div>
             </div>
-            {!balance_check.balance_sufficient && (
-              <div className="text-red-600 font-bold">⚠️</div>
-            )}
+            {!balance_check.balance_sufficient && <div className="text-red-600 font-bold">⚠️</div>}
           </div>
         </div>
       )}
@@ -143,8 +149,9 @@ export const BridgeCard: React.FC<BridgeCardProps> = ({ data, onBridgeInitiate }
             <div className="flex-1">
               <h4 className="text-sm font-semibold text-yellow-900 mb-1">Confirmation Required</h4>
               <p className="text-xs text-yellow-800">
-                The bridge amount ({data.amount} {data.token_symbol}) exceeds the threshold of {data.confirmation_threshold} {data.token_symbol}.
-                Please review the options below and confirm before proceeding.
+                The bridge amount ({data.amount} {data.token_symbol}) exceeds the threshold of{" "}
+                {data.confirmation_threshold} {data.token_symbol}. Please review the options below
+                and confirm before proceeding.
               </p>
             </div>
           </div>
@@ -155,7 +162,9 @@ export const BridgeCard: React.FC<BridgeCardProps> = ({ data, onBridgeInitiate }
       {bridge_options && bridge_options.length > 0 && !transaction && !showConfirmation && (
         <div className="mb-4">
           <div className="bg-white/90 backdrop-blur-md rounded-xl p-5 border-2 border-[#DBDBE5] shadow-elevation-md">
-            <h3 className="text-lg font-semibold text-[#010507] mb-2">Available Bridge Protocols</h3>
+            <h3 className="text-lg font-semibold text-[#010507] mb-2">
+              Available Bridge Protocols
+            </h3>
             <p className="text-sm text-[#57575B] mb-4">
               {data.requires_confirmation && data.amount_exceeds_threshold
                 ? "Please select a protocol and confirm to proceed with the bridge."
@@ -174,14 +183,16 @@ export const BridgeCard: React.FC<BridgeCardProps> = ({ data, onBridgeInitiate }
                     selectedProtocol === option.bridge_protocol
                       ? "border-orange-500 bg-orange-50 ring-2 ring-orange-200"
                       : option.is_recommended
-                      ? "border-orange-300 bg-orange-50/50 hover:border-orange-400 hover:bg-orange-50"
-                      : "border-[#E9E9EF] bg-white/80 hover:border-orange-200 hover:bg-orange-50/30"
+                        ? "border-orange-300 bg-orange-50/50 hover:border-orange-400 hover:bg-orange-50"
+                        : "border-[#E9E9EF] bg-white/80 hover:border-orange-200 hover:bg-orange-50/30"
                   } ${!balance_check?.balance_sufficient ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
-                        <span className="text-base font-bold text-[#010507]">{option.bridge_protocol}</span>
+                        <span className="text-base font-bold text-[#010507]">
+                          {option.bridge_protocol}
+                        </span>
                         {option.is_recommended && (
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-500 text-white">
                             RECOMMENDED
@@ -195,7 +206,9 @@ export const BridgeCard: React.FC<BridgeCardProps> = ({ data, onBridgeInitiate }
                         </div>
                         <div>
                           <span className="text-[#57575B]">Estimated Time: </span>
-                          <span className="font-semibold text-[#010507]">{option.estimated_time}</span>
+                          <span className="font-semibold text-[#010507]">
+                            {option.estimated_time}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -215,7 +228,9 @@ export const BridgeCard: React.FC<BridgeCardProps> = ({ data, onBridgeInitiate }
             {selectedProtocol && (
               <div className="mt-4 pt-4 border-t border-[#E9E9EF]">
                 {(() => {
-                  const option = bridge_options.find((opt) => opt.bridge_protocol === selectedProtocol);
+                  const option = bridge_options.find(
+                    (opt) => opt.bridge_protocol === selectedProtocol,
+                  );
                   if (!option) return null;
                   return (
                     <button
@@ -247,11 +262,15 @@ export const BridgeCard: React.FC<BridgeCardProps> = ({ data, onBridgeInitiate }
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <div className="text-xs text-[#57575B] mb-1">Bridge Protocol</div>
-                <div className="text-sm font-semibold text-[#010507]">{transaction.bridge_protocol}</div>
+                <div className="text-sm font-semibold text-[#010507]">
+                  {transaction.bridge_protocol}
+                </div>
               </div>
               <div>
                 <div className="text-xs text-[#57575B] mb-1">Estimated Time</div>
-                <div className="text-sm font-semibold text-[#010507]">{transaction.estimated_time}</div>
+                <div className="text-sm font-semibold text-[#010507]">
+                  {transaction.estimated_time}
+                </div>
               </div>
             </div>
             <div className="mt-3 pt-3 border-t border-[#E9E9EF]">
@@ -263,13 +282,17 @@ export const BridgeCard: React.FC<BridgeCardProps> = ({ data, onBridgeInitiate }
           {transaction.transaction_hash && (
             <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 shadow-elevation-sm border border-[#E9E9EF]">
               <div className="text-xs text-[#57575B] mb-1">Transaction Hash</div>
-              <div className="text-sm font-mono text-[#010507] break-all">{transaction.transaction_hash}</div>
+              <div className="text-sm font-mono text-[#010507] break-all">
+                {transaction.transaction_hash}
+              </div>
             </div>
           )}
 
           <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 shadow-elevation-sm border border-[#E9E9EF]">
             <div className="text-xs text-[#57575B] mb-1">Token Address (Source Chain)</div>
-            <div className="text-sm font-mono text-[#010507] break-all">{transaction.token_address}</div>
+            <div className="text-sm font-mono text-[#010507] break-all">
+              {transaction.token_address}
+            </div>
           </div>
         </div>
       )}
@@ -278,7 +301,8 @@ export const BridgeCard: React.FC<BridgeCardProps> = ({ data, onBridgeInitiate }
       {transaction && transaction.status === "pending" && (
         <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
           <p className="text-sm text-yellow-800">
-            ⏳ Bridge transaction is pending. It will be completed in approximately {transaction.estimated_time}.
+            ⏳ Bridge transaction is pending. It will be completed in approximately{" "}
+            {transaction.estimated_time}.
           </p>
         </div>
       )}
@@ -291,7 +315,8 @@ export const BridgeCard: React.FC<BridgeCardProps> = ({ data, onBridgeInitiate }
                 ✅ Bridge transaction completed successfully!
               </p>
               <p className="text-xs text-green-700">
-                Your {transaction.amount} {transaction.token_symbol} have been bridged to {transaction.destination_chain}.
+                Your {transaction.amount} {transaction.token_symbol} have been bridged to{" "}
+                {transaction.destination_chain}.
               </p>
             </div>
           </div>
@@ -299,7 +324,7 @@ export const BridgeCard: React.FC<BridgeCardProps> = ({ data, onBridgeInitiate }
             onClick={() => {
               setInitiating(transaction.bridge_protocol);
               setBridgingState("bridging");
-              
+
               // Simulate bridge confirmation process
               setTimeout(() => {
                 setBridgingState("done");
@@ -314,8 +339,8 @@ export const BridgeCard: React.FC<BridgeCardProps> = ({ data, onBridgeInitiate }
               initiating === null || bridgingState === "idle"
                 ? "bg-green-600 hover:bg-green-700 text-white shadow-md hover:shadow-lg"
                 : bridgingState === "bridging"
-                ? "bg-yellow-500 text-white cursor-not-allowed"
-                : "bg-green-500 text-white cursor-not-allowed"
+                  ? "bg-yellow-500 text-white cursor-not-allowed"
+                  : "bg-green-500 text-white cursor-not-allowed"
             }`}
           >
             {bridgingState === "bridging" && initiating === transaction.bridge_protocol ? (
@@ -324,9 +349,7 @@ export const BridgeCard: React.FC<BridgeCardProps> = ({ data, onBridgeInitiate }
                 Bridging...
               </span>
             ) : bridgingState === "done" && initiating === transaction.bridge_protocol ? (
-              <span className="flex items-center justify-center gap-2">
-                ✓ Done
-              </span>
+              <span className="flex items-center justify-center gap-2">✓ Done</span>
             ) : (
               `Bridge with ${transaction.bridge_protocol}`
             )}
@@ -354,4 +377,3 @@ export const BridgeCard: React.FC<BridgeCardProps> = ({ data, onBridgeInitiate }
     </div>
   );
 };
-

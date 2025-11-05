@@ -25,7 +25,6 @@ from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.adk.memory.in_memory_memory_service import InMemoryMemoryService
 from google.adk.artifacts import InMemoryArtifactService
-from google.genai import types
 
 from .tools import (
     get_liquidity_polygon,
@@ -127,8 +126,8 @@ Always use the tools to fetch real data. Return ONLY valid JSON, no markdown cod
         # It ALWAYS returns hardcoded JSON data, bypassing all LLM calls
         
         print(f"🔍 Liquidity Agent received query: {query}")
-        print(f"⚠️  Using HARDCODED response - LLM is NOT being called")
-        print(f"🔒 Bypassing LLM completely - returning hardcoded JSON response")
+        print("⚠️  Using HARDCODED response - LLM is NOT being called")
+        print("🔒 Bypassing LLM completely - returning hardcoded JSON response")
         
         # Early return to ensure we never accidentally call LLM code
         # All logic below is hardcoded and never touches self._runner or self._agent

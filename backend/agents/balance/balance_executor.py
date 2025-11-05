@@ -25,7 +25,6 @@ from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.adk.memory.in_memory_memory_service import InMemoryMemoryService
 from google.adk.artifacts import InMemoryArtifactService
-from google.genai import types
 
 from .tools import (
     get_balance_polygon,

@@ -72,16 +72,12 @@ export const LiquidityRequirementsForm: React.FC<LiquidityRequirementsFormProps>
         return STANDARD_PAIRS.filter((pair) => regex.test(pair));
       } else {
         const searchLower = pairSearch.toLowerCase();
-        return STANDARD_PAIRS.filter((pair) =>
-          pair.toLowerCase().includes(searchLower)
-        );
+        return STANDARD_PAIRS.filter((pair) => pair.toLowerCase().includes(searchLower));
       }
     } catch (e) {
       // Invalid regex, fallback to simple search
       const searchLower = pairSearch.toLowerCase();
-      return STANDARD_PAIRS.filter((pair) =>
-        pair.toLowerCase().includes(searchLower)
-      );
+      return STANDARD_PAIRS.filter((pair) => pair.toLowerCase().includes(searchLower));
     }
   }, [pairSearch, useRegex]);
 
@@ -113,8 +109,7 @@ export const LiquidityRequirementsForm: React.FC<LiquidityRequirementsFormProps>
       // Validate token pair format (e.g., HBAR/USDC, MATIC/USDC)
       const pairPattern = /^[A-Z0-9]+\/[A-Z0-9]+$/i;
       if (!pairPattern.test(tokenPair.trim())) {
-        newErrors.tokenPair =
-          "Invalid format. Use format: TOKEN1/TOKEN2 (e.g., HBAR/USDC)";
+        newErrors.tokenPair = "Invalid format. Use format: TOKEN1/TOKEN2 (e.g., HBAR/USDC)";
       }
     }
 
@@ -271,9 +266,7 @@ export const LiquidityRequirementsForm: React.FC<LiquidityRequirementsFormProps>
               </div>
             )}
           </div>
-          {errors.tokenPair && (
-            <p className="text-xs text-[#FFAC4D] mt-1">{errors.tokenPair}</p>
-          )}
+          {errors.tokenPair && <p className="text-xs text-[#FFAC4D] mt-1">{errors.tokenPair}</p>}
           <p className="text-xs text-[#57575B] mt-1">
             Leave empty to get all liquidity pairs, or specify a pair (e.g., HBAR/USDC)
           </p>
@@ -291,4 +284,3 @@ export const LiquidityRequirementsForm: React.FC<LiquidityRequirementsFormProps>
     </div>
   );
 };
-

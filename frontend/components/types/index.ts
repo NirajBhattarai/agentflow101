@@ -27,7 +27,7 @@ export type MessageActionRenderProps = ActionRenderProps<
       readonly name: "task";
       readonly type: "string";
       readonly description: "The message to send to the A2A agent";
-    }
+    },
   ]
 >;
 
@@ -51,7 +51,7 @@ export type BalanceRequirementsActionRenderProps = ActionRenderProps<
       readonly name: "tokenAddress";
       readonly type: "string";
       readonly description: "Optional token address or symbol to query";
-    }
+    },
   ]
 >;
 
@@ -84,7 +84,7 @@ export type BridgeRequirementsActionRenderProps = ActionRenderProps<
       readonly name: "amount";
       readonly type: "string";
       readonly description: "Amount to bridge (e.g., 100.0)";
-    }
+    },
   ]
 >;
 
@@ -229,4 +229,3 @@ export interface AgentStyle {
   icon: string;
   framework: string;
 }
-
