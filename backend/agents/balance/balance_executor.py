@@ -15,18 +15,18 @@ from pydantic import BaseModel, Field
 load_dotenv()
 
 # A2A Protocol imports
-from a2a.server.agent_execution import AgentExecutor, RequestContext
-from a2a.server.events import EventQueue
-from a2a.utils import new_agent_text_message
+from a2a.server.agent_execution import AgentExecutor, RequestContext  # noqa: E402
+from a2a.server.events import EventQueue  # noqa: E402
+from a2a.utils import new_agent_text_message  # noqa: E402
 
 # Google ADK imports
-from google.adk.agents.llm_agent import LlmAgent
-from google.adk.runners import Runner
-from google.adk.sessions import InMemorySessionService
-from google.adk.memory.in_memory_memory_service import InMemoryMemoryService
-from google.adk.artifacts import InMemoryArtifactService
+from google.adk.agents.llm_agent import LlmAgent  # noqa: E402
+from google.adk.runners import Runner  # noqa: E402
+from google.adk.sessions import InMemorySessionService  # noqa: E402
+from google.adk.memory.in_memory_memory_service import InMemoryMemoryService  # noqa: E402
+from google.adk.artifacts import InMemoryArtifactService  # noqa: E402
 
-from .tools import (
+from .tools import (  # noqa: E402
     get_balance_polygon,
     get_balance_hedera,
     get_balance_all_chains,
@@ -70,9 +70,7 @@ class BalanceAgent:
         model_name = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
         # Fallback to GOOGLE_API_KEY if GEMINI_MODEL not set
         if not os.getenv("GOOGLE_API_KEY") and not os.getenv("GEMINI_API_KEY"):
-            print(
-                "⚠️  Warning: No API key found! Set GOOGLE_API_KEY or GEMINI_API_KEY"
-            )
+            print("⚠️  Warning: No API key found! Set GOOGLE_API_KEY or GEMINI_API_KEY")
 
         return LlmAgent(
             model=model_name,
@@ -130,13 +128,13 @@ Always use the tools to fetch real data. Return ONLY valid JSON, no markdown cod
     async def invoke(self, query: str, session_id: str) -> str:
         # HARDCODED RESPONSE FOR TESTING
         # TODO: Replace with actual agent execution once connection issues are resolved
-        
+
         print(f"🔍 Balance Agent received query: {query}")
-        
+
         # Parse query to extract account address and chain
         account_address = "0.0.123456"  # Default
         chain = "hedera"  # Default
-        
+
         if "0.0." in query or "0x" in query.lower():
             # Extract account address
             hedera_match = re.search(r"0\.0\.\d+", query)
@@ -147,14 +145,14 @@ Always use the tools to fetch real data. Return ONLY valid JSON, no markdown cod
             elif evm_match:
                 account_address = evm_match.group()
                 chain = "polygon"
-        
+
         if "polygon" in query.lower():
             chain = "polygon"
         elif "hedera" in query.lower():
             chain = "hedera"
         elif "all" in query.lower():
             chain = "all"
-        
+
         # Hardcoded balance response
         hardcoded_balance = {
             "type": "balance",
@@ -164,23 +162,27 @@ Always use the tools to fetch real data. Return ONLY valid JSON, no markdown cod
                 {
                     "token_type": "native",
                     "token_symbol": "HBAR" if chain in ["hedera", "all"] else "MATIC",
-                    "token_address": "0.0.0" if chain in ["hedera", "all"] else "0x0000000000000000000000000000000000000000",
+                    "token_address": "0.0.0"
+                    if chain in ["hedera", "all"]
+                    else "0x0000000000000000000000000000000000000000",
                     "balance": "1500.0",
                     "balance_raw": "150000000000",
-                    "decimals": 8
+                    "decimals": 8,
                 },
                 {
                     "token_type": "token",
                     "token_symbol": "USDC",
-                    "token_address": "0.0.123456" if chain in ["hedera", "all"] else "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
+                    "token_address": "0.0.123456"
+                    if chain in ["hedera", "all"]
+                    else "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
                     "balance": "5000.0",
                     "balance_raw": "5000000000",
-                    "decimals": 6
-                }
+                    "decimals": 6,
+                },
             ],
-            "total_usd_value": "$6,500.00"
+            "total_usd_value": "$6,500.00",
         }
-        
+
         if chain == "all":
             # Return cross-chain balance - flatten to match expected structure
             hardcoded_balance = {
@@ -195,7 +197,7 @@ Always use the tools to fetch real data. Return ONLY valid JSON, no markdown cod
                         "balance": "1500.0",
                         "balance_raw": "150000000000",
                         "decimals": 8,
-                        "chain": "hedera"
+                        "chain": "hedera",
                     },
                     {
                         "token_type": "token",
@@ -204,7 +206,7 @@ Always use the tools to fetch real data. Return ONLY valid JSON, no markdown cod
                         "balance": "5000.0",
                         "balance_raw": "5000000000",
                         "decimals": 6,
-                        "chain": "hedera"
+                        "chain": "hedera",
                     },
                     {
                         "token_type": "native",
@@ -213,24 +215,26 @@ Always use the tools to fetch real data. Return ONLY valid JSON, no markdown cod
                         "balance": "200.0",
                         "balance_raw": "200000000000000000000",
                         "decimals": 18,
-                        "chain": "polygon"
-                    }
+                        "chain": "polygon",
+                    },
                 ],
-                "total_usd_value": "$6,700.00"
+                "total_usd_value": "$6,700.00",
             }
-        
+
         try:
             # Validate and return the response
             validated_balance = StructuredBalance(**hardcoded_balance)
             final_response = json.dumps(validated_balance.model_dump(), indent=2)
-            
-            print(f"✅ Returning hardcoded balance response for {account_address} on {chain}")
+
+            print(
+                f"✅ Returning hardcoded balance response for {account_address} on {chain}"
+            )
             print(f"📦 Response length: {len(final_response)} chars")
             print(f"📄 Response preview: {final_response[:200]}...")
-            
+
             # Ensure the response is valid JSON
             json.loads(final_response)  # Validate it's parseable
-            
+
             return final_response
         except Exception as e:
             print(f"❌ Validation error: {e}")
@@ -243,7 +247,7 @@ Always use the tools to fetch real data. Return ONLY valid JSON, no markdown cod
                     "total_usd_value": "$0.00",
                     "error": f"Validation failed: {str(e)}",
                 },
-                indent=2
+                indent=2,
             )
             return error_response
 
@@ -259,62 +263,70 @@ class BalanceExecutor(AgentExecutor):
     ) -> None:
         query = context.get_user_input()
         session_id = getattr(context, "context_id", "default_session")
-        
+
         try:
             final_content = await self.agent.invoke(query, session_id)
-            
+
             # Validate that final_content is not empty
             if not final_content or not final_content.strip():
                 print("⚠️  Warning: Empty response from agent, using fallback")
-                final_content = json.dumps({
-                    "type": "balance",
-                    "chain": "unknown",
-                    "account_address": "unknown",
-                    "balances": [],
-                    "total_usd_value": "$0.00",
-                    "error": "Empty response from agent"
-                }, indent=2)
-            
+                final_content = json.dumps(
+                    {
+                        "type": "balance",
+                        "chain": "unknown",
+                        "account_address": "unknown",
+                        "balances": [],
+                        "total_usd_value": "$0.00",
+                        "error": "Empty response from agent",
+                    },
+                    indent=2,
+                )
+
             # Ensure it's valid JSON
             try:
-                parsed = json.loads(final_content)
+                json.loads(final_content)  # Validate it's parseable
                 print(f"✅ Validated JSON response: {len(final_content)} chars")
             except json.JSONDecodeError as e:
                 print(f"⚠️  Warning: Response is not valid JSON: {e}")
                 print(f"Response content (first 500 chars): {final_content[:500]}")
                 # Wrap it in a JSON structure
-                final_content = json.dumps({
+                final_content = json.dumps(
+                    {
+                        "type": "balance",
+                        "chain": "unknown",
+                        "account_address": "unknown",
+                        "balances": [],
+                        "total_usd_value": "$0.00",
+                        "error": f"Invalid JSON response: {str(e)}",
+                        "raw_response": final_content[:500],
+                    },
+                    indent=2,
+                )
+
+            print(f"📤 Sending response to event queue: {len(final_content)} chars")
+            print(f"📄 First 100 chars: {final_content[:100]}")
+
+            # Send the message
+            await event_queue.enqueue_event(new_agent_text_message(final_content))
+            print("✅ Successfully enqueued response")
+
+        except Exception as e:
+            print(f"❌ Error in execute: {e}")
+            import traceback
+
+            traceback.print_exc()
+            error_response = json.dumps(
+                {
                     "type": "balance",
                     "chain": "unknown",
                     "account_address": "unknown",
                     "balances": [],
                     "total_usd_value": "$0.00",
-                    "error": f"Invalid JSON response: {str(e)}",
-                    "raw_response": final_content[:500]
-                }, indent=2)
-            
-            print(f"📤 Sending response to event queue: {len(final_content)} chars")
-            print(f"📄 First 100 chars: {final_content[:100]}")
-            
-            # Send the message
-            await event_queue.enqueue_event(new_agent_text_message(final_content))
-            print("✅ Successfully enqueued response")
-            
-        except Exception as e:
-            print(f"❌ Error in execute: {e}")
-            import traceback
-            traceback.print_exc()
-            error_response = json.dumps({
-                "type": "balance",
-                "chain": "unknown",
-                "account_address": "unknown",
-                "balances": [],
-                "total_usd_value": "$0.00",
-                "error": f"Execution error: {str(e)}"
-            }, indent=2)
+                    "error": f"Execution error: {str(e)}",
+                },
+                indent=2,
+            )
             await event_queue.enqueue_event(new_agent_text_message(error_response))
 
-    async def cancel(
-        self, context: RequestContext, event_queue: EventQueue
-    ) -> None:
+    async def cancel(self, context: RequestContext, event_queue: EventQueue) -> None:
         raise Exception("cancel not supported")
