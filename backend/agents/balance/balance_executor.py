@@ -165,64 +165,32 @@ Always use the tools to fetch real data. Return ONLY valid JSON, no markdown cod
                 "total_usd_value": polygon_result.get("total_usd_value", "$0.00"),
             }
         elif chain == "hedera":
-            # Keep Hedera response hardcoded as-is for now
+            # Fetch real Hedera balances using the tool (Mirror Node)
+            hedera_result = get_balance_hedera(account_address)
             hardcoded_balance = {
                 "type": "balance",
-                "chain": chain,
-                "account_address": account_address,
-                "balances": [
-                    {
-                        "token_type": "native",
-                        "token_symbol": "HBAR",
-                        "token_address": "0.0.0",
-                        "balance": "1500.0",
-                        "balance_raw": "150000000000",
-                        "decimals": 8,
-                    },
-                    {
-                        "token_type": "token",
-                        "token_symbol": "USDC",
-                        "token_address": "0.0.123456",
-                        "balance": "5000.0",
-                        "balance_raw": "5000000000",
-                        "decimals": 6,
-                    },
-                ],
-                "total_usd_value": "$6,500.00",
+                "chain": "hedera",
+                "account_address": hedera_result.get("account_address", account_address),
+                "balances": hedera_result.get("balances", []),
+                "total_usd_value": hedera_result.get("total_usd_value", "$0.00"),
             }
         elif chain == "all":
-            # Combine: Hedera stays hardcoded, Polygon fetched remotely and flattened with chain tags
+            # Fetch both chains remotely and flatten
             polygon_result = get_balance_polygon(account_address)
+            hedera_result = get_balance_hedera(account_address)
             polygon_balances = [
                 {**b, "chain": "polygon"} for b in polygon_result.get("balances", [])
+            ]
+            hedera_balances = [
+                {**b, "chain": "hedera"} for b in hedera_result.get("balances", [])
             ]
 
             hardcoded_balance = {
                 "type": "balance",
                 "chain": "all",
                 "account_address": account_address,
-                "balances": [
-                    {
-                        "token_type": "native",
-                        "token_symbol": "HBAR",
-                        "token_address": "0.0.0",
-                        "balance": "1500.0",
-                        "balance_raw": "150000000000",
-                        "decimals": 8,
-                        "chain": "hedera",
-                    },
-                    {
-                        "token_type": "token",
-                        "token_symbol": "USDC",
-                        "token_address": "0.0.123456",
-                        "balance": "5000.0",
-                        "balance_raw": "5000000000",
-                        "decimals": 6,
-                        "chain": "hedera",
-                    },
-                    *polygon_balances,
-                ],
-                "total_usd_value": "$6,700.00",
+                "balances": [*hedera_balances, *polygon_balances],
+                "total_usd_value": "$0.00",
             }
         else:
             # Default to Hedera hardcoded if chain is unknown
@@ -234,43 +202,7 @@ Always use the tools to fetch real data. Return ONLY valid JSON, no markdown cod
                 "total_usd_value": "$0.00",
             }
 
-        if chain == "all":
-            # Return cross-chain balance - flatten to match expected structure
-            hardcoded_balance = {
-                "type": "balance",
-                "chain": "all",
-                "account_address": account_address,
-                "balances": [
-                    {
-                        "token_type": "native",
-                        "token_symbol": "HBAR",
-                        "token_address": "0.0.0",
-                        "balance": "1500.0",
-                        "balance_raw": "150000000000",
-                        "decimals": 8,
-                        "chain": "hedera",
-                    },
-                    {
-                        "token_type": "token",
-                        "token_symbol": "USDC",
-                        "token_address": "0.0.123456",
-                        "balance": "5000.0",
-                        "balance_raw": "5000000000",
-                        "decimals": 6,
-                        "chain": "hedera",
-                    },
-                    {
-                        "token_type": "native",
-                        "token_symbol": "MATIC",
-                        "token_address": "0x0000000000000000000000000000000000000000",
-                        "balance": "200.0",
-                        "balance_raw": "200000000000000000000",
-                        "decimals": 18,
-                        "chain": "polygon",
-                    },
-                ],
-                "total_usd_value": "$6,700.00",
-            }
+        # no post-processing override; return as built above
 
         try:
             # Validate and return the response

@@ -16,17 +16,41 @@ def _get_hedera_api_base() -> str:
     return HEDERA_MAINNET_API
 
 
+def _resolve_hedera_account_id(identifier: str, api_base: str) -> str:
+    """Accepts Hedera account in '0.0.x' or EVM '0x...' and returns '0.0.x'."""
+    identifier = identifier.strip()
+    if identifier.startswith("0x") and len(identifier) == 42:
+        # Resolve EVM address to Hedera account via Mirror Node
+        resp = requests.get(f"{api_base}/api/v1/accounts/{identifier}", timeout=10)
+        if resp.status_code == 200:
+            data = resp.json()
+            account_id = data.get("account") or data.get("account_id")
+            if account_id:
+                return str(account_id)
+        raise ValueError(f"Unable to resolve Hedera account from EVM address: {identifier}")
+
+    # Validate 0.0.x format
+    parts = identifier.split(".")
+    if len(parts) != 3:
+        raise ValueError(
+            f"Invalid Hedera account ID format: {identifier}. Expected format: 0.0.123456"
+        )
+    try:
+        int(parts[0]); int(parts[1]); int(parts[2])
+    except ValueError:
+        raise ValueError(f"Invalid Hedera account ID format: {identifier}")
+    return identifier
+
+
 def _parse_hedera_account_id(account_id: str) -> str:
-    """Parse and validate Hedera account ID format (e.g., 0.0.123456)."""
+    """Validate strict Hedera account ID format (0.0.x). Does not resolve EVM."""
     parts = account_id.split(".")
     if len(parts) != 3:
         raise ValueError(
             f"Invalid Hedera account ID format: {account_id}. Expected format: 0.0.123456"
         )
     try:
-        int(parts[0])
-        int(parts[1])
-        int(parts[2])
+        int(parts[0]); int(parts[1]); int(parts[2])
     except ValueError:
         raise ValueError(f"Invalid Hedera account ID format: {account_id}")
     return account_id
@@ -53,7 +77,7 @@ def get_balance_hedera(
     """
     try:
         api_base = _get_hedera_api_base()
-        account_id = _parse_hedera_account_id(account_address)
+        account_id = _resolve_hedera_account_id(account_address, api_base)
 
         balances = []
 
@@ -110,7 +134,7 @@ def get_balance_hedera(
 
             # Validate token address format
             try:
-                _parse_hedera_account_id(token_address)
+                _resolve_hedera_account_id(token_address, api_base)
             except ValueError:
                 raise ValueError(f"Invalid Hedera token address: {token_address}")
 
