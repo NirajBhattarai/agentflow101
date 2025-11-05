@@ -20,17 +20,50 @@ const formatTokenSymbol = (symbol: string): string => {
 };
 
 /**
- * Get chain badge color
+ * Get chain badge color and styling
  */
 const getChainColor = (chain: string) => {
   const chainLower = chain.toLowerCase();
   if (chainLower === "hedera") {
-    return "bg-gradient-to-r from-purple-500 to-indigo-500";
+    return {
+      gradient: "bg-gradient-to-r from-purple-500 to-indigo-500",
+      light: "bg-purple-50",
+      border: "border-purple-200",
+      text: "text-purple-700",
+      icon: "🟣",
+    };
   }
   if (chainLower === "polygon") {
-    return "bg-gradient-to-r from-blue-500 to-purple-500";
+    return {
+      gradient: "bg-gradient-to-r from-blue-500 to-purple-500",
+      light: "bg-blue-50",
+      border: "border-blue-200",
+      text: "text-blue-700",
+      icon: "🔵",
+    };
   }
-  return "bg-gradient-to-r from-gray-500 to-gray-600";
+  return {
+    gradient: "bg-gradient-to-r from-gray-500 to-gray-600",
+    light: "bg-gray-50",
+    border: "border-gray-200",
+    text: "text-gray-700",
+    icon: "⚪",
+  };
+};
+
+/**
+ * Get token icon based on symbol
+ */
+const getTokenIcon = (symbol: string, tokenType: string): string => {
+  const sym = symbol.toUpperCase();
+  if (tokenType === "native") {
+    if (sym === "HBAR") return "💎";
+    if (sym === "MATIC" || sym === "ETH") return "💠";
+    return "🪙";
+  }
+  if (sym === "USDC" || sym === "USDT") return "💵";
+  if (sym.includes("USD")) return "💲";
+  return "🪙";
 };
 
 export const BalanceCard: React.FC<BalanceCardProps> = ({ data }) => {
@@ -44,28 +77,43 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({ data }) => {
       }, {} as Record<string, typeof data.balances>)
     : { [data.chain]: data.balances };
 
+  const chainInfo = data.chain !== "all" ? getChainColor(data.chain) : null;
+
   return (
     <div className="bg-white/60 backdrop-blur-md rounded-xl p-6 my-3 border-2 border-[#DBDBE5] shadow-elevation-md animate-fade-in-up">
-      {/* Header */}
-      <div className="mb-4">
-        <div className="flex items-center gap-2 mb-2">
-          <span className="text-2xl">💰</span>
-          <h2 className="text-2xl font-semibold text-[#010507]">Account Balance</h2>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-[#57575B] font-mono">{data.account_address}</span>
-          {data.chain !== "all" && (
-            <span className={`px-2 py-1 rounded-full text-xs font-semibold text-white ${getChainColor(data.chain)}`}>
-              {data.chain.toUpperCase()}
-            </span>
-          )}
-        </div>
-        {data.total_usd_value && (
-          <div className="mt-2">
-            <span className="text-3xl font-bold text-[#010507]">{data.total_usd_value}</span>
-            <span className="text-sm text-[#57575B] ml-2">Total Value</span>
+      {/* Header with Gradient Background */}
+      <div className="mb-6">
+        <div className={`${chainInfo?.light || "bg-gradient-to-r from-purple-50 to-indigo-50"} rounded-xl p-4 mb-4 border ${chainInfo?.border || "border-purple-200"}`}>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-r from-purple-400 to-indigo-400 shadow-lg">
+                <span className="text-2xl">💰</span>
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-[#010507] mb-1">Account Balance</h2>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-[#838389] font-mono bg-white/60 px-2 py-1 rounded">
+                    {data.account_address.slice(0, 10)}...{data.account_address.slice(-8)}
+                  </span>
+                  {data.chain !== "all" && chainInfo && (
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold text-white shadow-sm ${chainInfo.gradient} flex items-center gap-1`}>
+                      <span>{chainInfo.icon}</span>
+                      <span>{data.chain.toUpperCase()}</span>
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+            {data.total_usd_value && (
+              <div className="text-right">
+                <div className="text-sm text-[#57575B] mb-1">Total Value</div>
+                <div className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                  {data.total_usd_value}
+                </div>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
 
       {/* Error Message */}
@@ -76,78 +124,100 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({ data }) => {
       )}
 
       {/* Balances by Chain */}
-      {Object.entries(balancesByChain).map(([chain, balances]) => (
-        <div key={chain} className="mb-4">
-          {data.chain === "all" && (
-            <div className="mb-3">
-              <h3 className={`text-lg font-semibold text-white px-3 py-1 rounded-lg inline-block ${getChainColor(chain)}`}>
-                {chain.toUpperCase()}
-              </h3>
-            </div>
-          )}
-
-          {/* Token Balances */}
-          <div className="space-y-2">
-            {balances.map((balance, index) => (
-              <div
-                key={index}
-                className="bg-white/80 backdrop-blur-sm rounded-lg p-4 shadow-elevation-sm border border-[#E9E9EF]"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-r from-purple-100 to-indigo-100 border-2 border-purple-300">
-                      <span className="text-lg">{balance.token_type === "native" ? "🪙" : "🪙"}</span>
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg font-bold text-[#010507]">
-                          {formatTokenSymbol(balance.token_symbol)}
-                        </span>
-                        {balance.token_type === "native" && (
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-semibold">
-                            Native
-                          </span>
-                        )}
-                        {balance.token_type === "token" && (
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 font-semibold">
-                            Token
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-xs text-[#838389] font-mono">{balance.token_address}</span>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-xl font-bold text-[#010507]">{balance.balance}</div>
-                    <div className="text-xs text-[#838389]">
-                      Raw: {balance.balance_raw}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Token Details */}
-                <div className="mt-2 pt-2 border-t border-[#E9E9EF]">
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div>
-                      <span className="text-[#57575B]">Decimals: </span>
-                      <span className="font-semibold text-[#010507]">{balance.decimals}</span>
-                    </div>
-                    <div>
-                      <span className="text-[#57575B]">Type: </span>
-                      <span className="font-semibold text-[#010507] capitalize">{balance.token_type}</span>
-                    </div>
-                  </div>
+      {Object.entries(balancesByChain).map(([chain, balances]) => {
+        const chainStyle = getChainColor(chain);
+        return (
+          <div key={chain} className="mb-6">
+            {data.chain === "all" && (
+              <div className="mb-4">
+                <div className={`${chainStyle.light} rounded-lg p-3 border ${chainStyle.border} inline-flex items-center gap-2`}>
+                  <span className="text-lg">{chainStyle.icon}</span>
+                  <h3 className={`text-base font-bold ${chainStyle.text}`}>
+                    {chain.toUpperCase()} Chain
+                  </h3>
                 </div>
               </div>
-            ))}
+            )}
+
+            {/* Token Balances Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {balances.map((balance, index) => {
+                const tokenIcon = getTokenIcon(balance.token_symbol, balance.token_type);
+                const isNative = balance.token_type === "native";
+                
+                return (
+                  <div
+                    key={index}
+                    className="bg-white/90 backdrop-blur-sm rounded-xl p-4 shadow-elevation-sm border-2 border-[#E9E9EF] hover:border-purple-300 hover:shadow-elevation-md transition-all duration-200 group"
+                  >
+                    {/* Token Header */}
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-3 flex-1">
+                        <div className={`flex items-center justify-center w-12 h-12 rounded-xl ${
+                          isNative 
+                            ? "bg-gradient-to-br from-purple-400 to-indigo-500 shadow-lg" 
+                            : "bg-gradient-to-br from-indigo-400 to-blue-500 shadow-lg"
+                        } group-hover:scale-110 transition-transform duration-200`}>
+                          <span className="text-2xl">{tokenIcon}</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-xl font-bold text-[#010507]">
+                              {formatTokenSymbol(balance.token_symbol)}
+                            </span>
+                            {isNative ? (
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-gradient-to-r from-purple-100 to-purple-200 text-purple-700 font-bold border border-purple-300">
+                                NATIVE
+                              </span>
+                            ) : (
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-gradient-to-r from-indigo-100 to-indigo-200 text-indigo-700 font-bold border border-indigo-300">
+                                ERC-20
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-[10px] text-[#838389] font-mono truncate" title={balance.token_address}>
+                            {balance.token_address}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Balance Amount */}
+                    <div className={`${chainStyle.light} rounded-lg p-3 mb-3 border ${chainStyle.border}`}>
+                      <div className="text-xs text-[#57575B] mb-1">Balance</div>
+                      <div className="text-2xl font-bold text-[#010507] mb-1">
+                        {balance.balance}
+                      </div>
+                      <div className="text-[10px] text-[#838389] font-mono">
+                        Raw: {balance.balance_raw}
+                      </div>
+                    </div>
+
+                    {/* Token Metadata */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="bg-gray-50 rounded-lg p-2 text-center">
+                        <div className="text-[10px] text-[#57575B] mb-1">Decimals</div>
+                        <div className="text-sm font-bold text-[#010507]">{balance.decimals}</div>
+                      </div>
+                      <div className="bg-gray-50 rounded-lg p-2 text-center">
+                        <div className="text-[10px] text-[#57575B] mb-1">Type</div>
+                        <div className="text-sm font-bold text-[#010507] capitalize">{balance.token_type}</div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
 
       {/* Empty State */}
       {data.balances.length === 0 && !data.error && (
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
-          <p className="text-sm text-gray-600">No balances found for this account</p>
+        <div className="bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-dashed border-gray-300 rounded-xl p-8 text-center">
+          <div className="text-5xl mb-3">💸</div>
+          <p className="text-base font-semibold text-gray-700 mb-1">No balances found</p>
+          <p className="text-sm text-gray-500">This account has no tokens on {data.chain !== "all" ? data.chain : "these chains"}</p>
         </div>
       )}
     </div>
