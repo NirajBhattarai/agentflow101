@@ -1,5 +1,5 @@
 """
-Pytest configuration and fixtures for liquidity agent tests.
+Pytest configuration and fixtures for balance agent tests.
 """
 
 import pytest
@@ -17,7 +17,22 @@ def rpc_urls() -> Dict[str, str]:
         ),
         "hedera": os.getenv(
             "HEDERA_RPC_URL",
-            "https://mainnet.hashio.io/api",  # Public Hedera RPC
+            "https://mainnet-public.mirrornode.hedera.com",  # Public Hedera Mirror Node
+        ),
+    }
+
+
+@pytest.fixture
+def test_account_addresses() -> Dict[str, str]:
+    """Test account addresses for each chain."""
+    return {
+        "polygon": os.getenv(
+            "TEST_POLYGON_ACCOUNT",
+            "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",  # Vitalik's address (public)
+        ),
+        "hedera": os.getenv(
+            "TEST_HEDERA_ACCOUNT",
+            "0.0.2",  # Public Hedera account (treasury)
         ),
     }
 
@@ -33,15 +48,5 @@ def test_token_addresses() -> Dict[str, Dict[str, str]]:
         "hedera": {
             "USDC": "0.0.456858",
             "HBAR": "0.0.0",
-        },
-    }
-
-
-@pytest.fixture
-def test_pool_addresses() -> Dict[str, Dict[str, str]]:
-    """Test pool addresses for each chain."""
-    return {
-        "polygon": {
-            "USDC-MATIC_QUICKSWAP": "0x6e7a5FAFcec6BB1e78bAE2A1F0B6121BF5779D35",
         },
     }

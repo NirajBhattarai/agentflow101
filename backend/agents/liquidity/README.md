@@ -3,10 +3,7 @@
 ### Description
 
 The Liquidity Agent retrieves liquidity information from multiple blockchain chains including:
-- **Ethereum** (Uniswap, SushiSwap)
-- **Binance Smart Chain (BSC)** (PancakeSwap)
 - **Polygon** (QuickSwap)
-- **Solana** (Raydium, Orca)
 - **Hedera** (SaucerSwap, HeliSwap, Silk Suite)
 
 ### Run the agent server
@@ -33,7 +30,7 @@ curl --location 'http://0.0.0.0:9998/' \
         "message_id": "00000000-0000-0000-0000-000000000001",
         "role": "user",
         "parts": [
-          { "kind": "text", "text": "Get liquidity for USDC token on Ethereum" }
+          { "kind": "text", "text": "Get liquidity for USDC token on Hedera" }
         ]
       }
     }
@@ -66,22 +63,18 @@ curl --location 'http://0.0.0.0:9998/' \
 
 ### Example Queries
 
-- "Get liquidity for USDC token on Ethereum"
+- "Get liquidity for USDC token on Hedera"
 - "Find all liquidity pools for HBAR on Hedera"
 - "Compare liquidity across all chains for a token"
-- "Get liquidity information from Solana"
-- "Get liquidity from BSC for token address 0x1234..."
+- "Get liquidity information from Polygon"
 
 ### Agent Tools
 
 The agent has access to the following tools:
 
-1. **get_liquidity_ethereum** - Get liquidity from Ethereum chain
-2. **get_liquidity_bsc** - Get liquidity from Binance Smart Chain
-3. **get_liquidity_polygon** - Get liquidity from Polygon chain
-4. **get_liquidity_solana** - Get liquidity from Solana chain
-5. **get_liquidity_hedera** - Get liquidity from Hedera chain
-6. **get_liquidity_all_chains** - Get liquidity from all supported chains
+1. **get_liquidity_polygon** - Get liquidity from Polygon chain
+2. **get_liquidity_hedera** - Get liquidity from Hedera chain
+3. **get_liquidity_all_chains** - Get liquidity from all supported chains
 
 Each tool returns information about:
 - Pool addresses
@@ -94,9 +87,6 @@ Each tool returns information about:
 
 The current implementation uses mock data. To integrate with real DEX APIs, replace the mock implementations in `liquidity_executor.py` with actual API calls to:
 
-- **Ethereum**: Uniswap V3 API, SushiSwap API
-- **BSC**: PancakeSwap API
 - **Polygon**: QuickSwap API
-- **Solana**: Raydium API, Orca API
 - **Hedera**: SaucerSwap API, HeliSwap API, Silk Suite API
 

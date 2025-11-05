@@ -1,8 +1,6 @@
 "use client";
 
-import { CopilotKit } from "@copilotkit/react-core";
-import { CopilotChat } from "@copilotkit/react-ui";
-import "@copilotkit/react-ui/styles.css";
+import DeFiChat from "@/components/defi-chat";
 import "./copilot.css";
 
 export default function Home() {
@@ -41,22 +39,12 @@ export default function Home() {
             <h1 className="text-2xl font-semibold text-[#010507] mb-1">DeFi Orchestrator</h1>
             <p className="text-sm text-[#57575B] leading-relaxed">
               Multi-Agent A2A: <span className="text-[#1B936F] font-semibold">Orchestrator</span> +
-              <span className="text-[#BEC2FF] font-semibold"> Liquidity Tools</span>
+              <span className="text-[#BEC2FF] font-semibold"> Balance & Liquidity Tools</span>
             </p>
             <p className="text-xs text-[#838389] mt-1">Orchestrator-mediated A2A Protocol</p>
           </div>
           <div className="flex-1 overflow-hidden">
-            <CopilotKit runtimeUrl="/api/copilotkit" showDevConsole={false} agent="a2a_chat">
-              <div className="h-full">
-                <CopilotChat
-                  className="h-full"
-                  labels={{
-                    initial: "Ask about on-chain liquidity, pools, and cross-chain comparisons.",
-                    placeholder: "e.g., Get liquidity for HBAR on Hedera",
-                  }}
-                />
-              </div>
-            </CopilotKit>
+            <DeFiChat />
           </div>
         </div>
 

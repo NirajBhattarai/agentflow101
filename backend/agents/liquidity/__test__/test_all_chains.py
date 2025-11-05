@@ -5,8 +5,6 @@ Tests the aggregation of liquidity across all chains.
 
 from agents.liquidity.tools.all_chains import get_liquidity_all_chains
 from agents.liquidity.tools.constants import (
-    ETHEREUM_TOKENS,
-    BSC_TOKENS,
     POLYGON_TOKENS,
     HEDERA_TOKENS,
 )
@@ -28,8 +26,6 @@ class TestAllChainsLiquidity:
         """Test that all supported chains are included."""
         result = get_liquidity_all_chains("USDC")
         chains = result["chains"]
-        assert "ethereum" in chains
-        assert "bsc" in chains
         assert "polygon" in chains
         assert "hedera" in chains
 
@@ -38,8 +34,6 @@ class TestAllChainsLiquidity:
         result = get_liquidity_all_chains("USDC")
         chains = result["chains"]
 
-        assert chains["ethereum"]["token_address"] == ETHEREUM_TOKENS["USDC"]
-        assert chains["bsc"]["token_address"] == BSC_TOKENS["USDC"]
         assert chains["polygon"]["token_address"] == POLYGON_TOKENS["USDC"]
         assert chains["hedera"]["token_address"] == HEDERA_TOKENS["USDC"]
 

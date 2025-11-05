@@ -8,27 +8,107 @@ import { HttpAgent } from "@ag-ui/client";
 import { A2AMiddlewareAgent } from "@ag-ui/a2a-middleware";
 
 export async function POST(request: NextRequest) {
-  // Orchestrator speaking AG-UI protocol
+  // STEP 1: Define A2A agent URLs
+  const balanceAgentUrl =
+    process.env.BALANCE_AGENT_URL || "http://localhost:9997";
+  const liquidityAgentUrl =
+    process.env.LIQUIDITY_AGENT_URL || "http://localhost:9998";
+
+  // STEP 2: Define orchestrator URL (speaks AG-UI Protocol)
   const orchestratorUrl = process.env.ORCHESTRATOR_URL || "http://localhost:9000";
 
-  // Wrap orchestrator
+  // STEP 3: Wrap orchestrator with HttpAgent (AG-UI client)
   const orchestrationAgent = new HttpAgent({ url: orchestratorUrl });
 
-  // A2A middleware: for now, no downstream A2A agents registered; just the orchestrator bridge
+  // STEP 4: Create A2A Middleware Agent
+  // This bridges AG-UI and A2A protocols by:
+  // 1. Wrapping the orchestrator
+  // 2. Registering all A2A agents
+  // 3. Injecting send_message_to_a2a_agent tool
+  // 4. Routing messages between orchestrator and A2A agents
   const a2aMiddlewareAgent = new A2AMiddlewareAgent({
     description:
-      "DeFi liquidity orchestrator with future chain-specific agents (Hedera, Ethereum, Polygon, BSC)",
+      "DeFi liquidity orchestrator with balance and liquidity agents (Hedera, Polygon)",
     agentUrls: [
-      // Future: register chain-specific agents here
+      balanceAgentUrl, // Balance Agent (ADK) - Port 9997
+      liquidityAgentUrl, // Liquidity Agent (ADK) - Port 9998
     ],
     orchestrationAgent,
     instructions: `
-		  You are a DeFi liquidity orchestrator that coordinates specialized liquidity agents/tools to fetch and aggregate on-chain liquidity information across chains (Hedera, Ethereum, Polygon, BSC). Use tools one at a time, wait for results, and return concise summaries plus structured JSON for pools, tokens, TVL, reserves, and fees.
-		`,
+      You are a DeFi liquidity orchestrator that coordinates specialized agents to fetch and aggregate on-chain balance and liquidity information across chains (Hedera, Polygon).
+
+      AVAILABLE SPECIALIZED AGENTS:
+
+      1. **Balance Agent** (ADK)
+         - Fetches account balance information from multiple blockchain chains including Polygon and Hedera
+         - Can query specific chains or get balances from all chains
+         - Provides comprehensive balance data including native token balances, token balances, and USD values
+
+      2. **Liquidity Agent** (ADK)
+         - Fetches liquidity information from different blockchain chains including Polygon and Hedera
+         - Can query specific chains or get liquidity from all chains
+         - Provides comprehensive liquidity data including pool addresses, DEX names, TVL, and 24h volume
+
+      WORKFLOW STRATEGY (SEQUENTIAL - ONE AT A TIME):
+
+      0. **FIRST STEP - Gather Balance Requirements** (for balance queries):
+         - Before doing ANYTHING else when user asks for balance, call 'gather_balance_requirements' to collect essential information
+         - Try to extract any mentioned details from the user's message (account address, chain, token)
+         - Pass any extracted values as parameters to pre-fill the form:
+           * accountAddress: Extract account address if mentioned (e.g., "0.0.123456", "0x1234...")
+           * chain: Extract chain if mentioned (e.g., "hedera", "polygon") or default to "all"
+           * tokenAddress: Extract token if mentioned (e.g., "USDC", "HBAR")
+         - Wait for the user to submit the complete requirements
+         - Use the returned values for all subsequent agent calls
+
+      1. **Balance Agent** - If user requests balance information
+         - Pass: wallet address and chain (polygon, hedera, or all) from gathered requirements
+         - Wait for balance data including native tokens, ERC20 tokens, and USD values
+         - Present balance information in a clear, organized format
+
+      2. **Liquidity Agent** - If user requests liquidity information
+         - Pass: chain (polygon, hedera, or all) and optional token pairs
+         - Wait for liquidity data including pools, DEXs, TVL, reserves, and fees
+
+      CRITICAL RULES:
+      - **ALWAYS START by calling 'gather_balance_requirements' FIRST when user asks for balance information**
+      - For balance queries, always gather requirements before calling agents
+      - For liquidity queries, you can proceed directly if the user provides chain/pair information
+      - Call tools/agents ONE AT A TIME - never make multiple tool calls simultaneously
+      - After making a tool call, WAIT for the result before making the next call
+      - Pass information from gathered requirements to subsequent agent calls
+
+      ERROR HANDLING AND LOOP PREVENTION:
+      - **CRITICAL**: If an agent call succeeds (returns any response), DO NOT call it again
+      - **CRITICAL**: If an agent call fails or returns an error, DO NOT retry - present the error to the user and stop
+      - **CRITICAL**: If you receive a response from an agent (even if it's not perfect), use it and move on
+      - **CRITICAL**: DO NOT make multiple attempts to call the same agent for the same request
+      - **CRITICAL**: If you get "Invalid JSON" or parsing errors, IGNORE the error message and use the response text as-is
+      - **CRITICAL**: The tool result from send_message_to_a2a_agent contains the agent's response - use it directly
+      - **CRITICAL**: Do NOT try to parse JSON from tool results - the response is already formatted as text/JSON
+      - **CRITICAL**: Maximum ONE call per agent per user request - never loop or retry
+      - **CRITICAL**: When you see "Invalid JSON" warnings, these are just warnings - the actual response data is still available in the tool result
+      - If an agent returns data (even partial), acknowledge it and present it to the user
+      - If an agent returns an error message, show it to the user and explain what happened
+      - Never call the same agent multiple times for the same query
+      - Tool results may contain JSON strings - use them directly without additional parsing attempts
+
+      REQUEST EXTRACTION EXAMPLES:
+      - "Show me my balance on Polygon" -> gather_balance_requirements with chain: "polygon"
+      - "What's my HBAR balance for account 0.0.123456?" -> gather_balance_requirements with accountAddress: "0.0.123456", chain: "hedera"
+      - "Get balance for 0x1234... on all chains" -> gather_balance_requirements with accountAddress: "0x1234...", chain: "all"
+      - "Check USDC balance" -> gather_balance_requirements with tokenAddress: "USDC"
+      - "Get liquidity for HBAR/USDC" -> Liquidity Agent, chain: "all", pair: "HBAR/USDC"
+      - "Show me all pools on Hedera" -> Liquidity Agent, chain: "hedera"
+
+      **LOOP PREVENTION**: Once you have received ANY response from an agent (success, error, or partial), 
+      do NOT call that agent again. Use what you received and present it to the user. 
+      Never retry failed calls. Never call the same agent twice for the same request.
+    `,
   });
 
   const runtime = new CopilotRuntime({
-    agents: { a2a_chat: a2aMiddlewareAgent },
+    agents: { a2a_chat: a2aMiddlewareAgent as any },
   });
 
   const { handleRequest } = copilotRuntimeNextJSAppRouterEndpoint({

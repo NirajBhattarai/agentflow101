@@ -24,7 +24,7 @@ orchestrator_agent = LlmAgent(
 # Expose the agent via AG-UI Protocol
 adk_orchestrator_agent = ADKAgent(
     adk_agent=orchestrator_agent,
-    app_name="orchestrator_app",
+    app_name="agents",  # Changed to match the expected app name
     user_id="demo_user",
     session_timeout_seconds=3600,
     use_in_memory_services=True,

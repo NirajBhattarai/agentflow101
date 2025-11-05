@@ -4,8 +4,6 @@ This directory contains unit tests for the liquidity agent tools. Each test file
 
 ## Test Structure
 
-- `test_ethereum.py` - Tests for Ethereum chain liquidity tools
-- `test_bsc.py` - Tests for Binance Smart Chain liquidity tools
 - `test_polygon.py` - Tests for Polygon chain liquidity tools
 - `test_hedera.py` - Tests for Hedera chain liquidity tools
 - `test_all_chains.py` - Tests for all chains aggregation tool
@@ -32,16 +30,6 @@ make test-liquidity
 ```
 
 ### Run Tests for Specific Chain
-
-**Ethereum:**
-```bash
-make test-liquidity-ethereum
-```
-
-**BSC:**
-```bash
-make test-liquidity-bsc
-```
 
 **Polygon:**
 ```bash
@@ -70,15 +58,11 @@ uv run pytest agents/liquidity/__test__ -v
 Tests use RPC endpoints to fetch actual data from chains. You can configure custom RPC URLs via environment variables:
 
 ```bash
-export ETHEREUM_RPC_URL="https://your-ethereum-rpc-url"
-export BSC_RPC_URL="https://your-bsc-rpc-url"
 export POLYGON_RPC_URL="https://your-polygon-rpc-url"
 export HEDERA_RPC_URL="https://your-hedera-rpc-url"
 ```
 
 Default RPC URLs (public endpoints):
-- Ethereum: `https://eth.llamarpc.com`
-- BSC: `https://bsc-dataseed1.binance.org`
 - Polygon: `https://polygon.llamarpc.com`
 - Hedera: `https://mainnet.hashio.io/api`
 

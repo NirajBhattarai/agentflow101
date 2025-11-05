@@ -1,8 +1,9 @@
 .PHONY: help install-frontend install-backend install-backend-test install-backend-dev install \
         dev-frontend dev-backend dev build-frontend build-backend test \
-        test-liquidity test-liquidity-ethereum test-liquidity-bsc test-liquidity-polygon \
-        test-liquidity-hedera test-liquidity-all-chains clean dev-travily dev-liquidity \
-        dev-orchestrator format format-backend format-frontend backend
+        test-liquidity test-liquidity-polygon test-liquidity-hedera \
+        test-liquidity-all-chains test-balance test-balance-polygon test-balance-hedera \
+        test-balance-all-chains clean dev-travily dev-liquidity dev-balance \
+        dev-orchestrator dev-all-agents format format-backend format-frontend backend
 
 # Default target
 help:
@@ -21,7 +22,9 @@ help:
 	@echo "Agents:"
 	@echo "  make dev-travily         - Run Travily agent server (port 9999)"
 	@echo "  make dev-liquidity       - Run Liquidity agent server (port 9998)"
+	@echo "  make dev-balance         - Run Balance agent server (port 9997)"
 	@echo "  make dev-orchestrator    - Run Orchestrator agent server (port 9000)"
+	@echo "  make dev-all-agents      - Run all agents (orchestrator, balance, liquidity)"
 	@echo ""
 	@echo "Build:"
 	@echo "  make build-frontend      - Build frontend for production"
@@ -30,11 +33,13 @@ help:
 	@echo "Testing:"
 	@echo "  make test                - Run all tests"
 	@echo "  make test-liquidity      - Run all liquidity agent tests"
-	@echo "  make test-liquidity-ethereum - Run Ethereum liquidity tests"
-	@echo "  make test-liquidity-bsc  - Run BSC liquidity tests"
 	@echo "  make test-liquidity-polygon - Run Polygon liquidity tests"
 	@echo "  make test-liquidity-hedera - Run Hedera liquidity tests"
 	@echo "  make test-liquidity-all-chains - Run all chains aggregation tests"
+	@echo "  make test-balance        - Run all balance agent tests"
+	@echo "  make test-balance-polygon - Run Polygon balance tests"
+	@echo "  make test-balance-hedera - Run Hedera balance tests"
+	@echo "  make test-balance-all-chains - Run all chains balance aggregation tests"
 	@echo ""
 	@echo "Utilities:"
 	@echo "  make clean               - Clean build artifacts and dependencies"
@@ -90,11 +95,25 @@ dev-liquidity:
 	@echo "Liquidity Agent: http://localhost:9998"
 	cd backend && uv run -m agents.liquidity
 
+dev-balance:
+	@echo "Starting Balance agent server..."
+	@echo "Balance Agent: http://localhost:9997"
+	cd backend && uv run -m agents.balance
+
 dev-orchestrator:
 	@echo "Starting Orchestrator agent server..."
 	@echo "Orchestrator Agent: http://localhost:9000"
 	# Ensure environment is loaded from backend/.env, then run from backend
 	cd backend && set -a; [ -f .env ] && . .env; set +a; uv run -m agents.orchestrator.orchestrator
+
+dev-all-agents:
+	@echo "Starting all agent servers..."
+	@echo "Orchestrator: http://localhost:9000"
+	@echo "Balance Agent: http://localhost:9997"
+	@echo "Liquidity Agent: http://localhost:9998"
+	@echo ""
+	@echo "Starting all agents in parallel..."
+	@make -j3 dev-orchestrator dev-balance dev-liquidity
 
 # Production builds
 build-frontend:
@@ -132,14 +151,6 @@ test-liquidity:
 	@echo "Running liquidity agent tests..."
 	cd backend && PYTHONPATH=. uv run pytest agents/liquidity/__test__ -v
 
-test-liquidity-ethereum:
-	@echo "Running Ethereum liquidity tests..."
-	cd backend && PYTHONPATH=. uv run pytest agents/liquidity/__test__/test_ethereum.py -v
-
-test-liquidity-bsc:
-	@echo "Running BSC liquidity tests..."
-	cd backend && PYTHONPATH=. uv run pytest agents/liquidity/__test__/test_bsc.py -v
-
 test-liquidity-polygon:
 	@echo "Running Polygon liquidity tests..."
 	cd backend && PYTHONPATH=. uv run pytest agents/liquidity/__test__/test_polygon.py -v
@@ -151,6 +162,22 @@ test-liquidity-hedera:
 test-liquidity-all-chains:
 	@echo "Running all chains liquidity tests..."
 	cd backend && PYTHONPATH=. uv run pytest agents/liquidity/__test__/test_all_chains.py -v
+
+test-balance:
+	@echo "Running balance agent tests..."
+	cd backend && PYTHONPATH=. uv run pytest agents/balance/__test__ -v
+
+test-balance-polygon:
+	@echo "Running Polygon balance tests..."
+	cd backend && PYTHONPATH=. uv run pytest agents/balance/__test__/test_polygon.py -v
+
+test-balance-hedera:
+	@echo "Running Hedera balance tests..."
+	cd backend && PYTHONPATH=. uv run pytest agents/balance/__test__/test_hedera.py -v
+
+test-balance-all-chains:
+	@echo "Running all chains balance tests..."
+	cd backend && PYTHONPATH=. uv run pytest agents/balance/__test__/test_all_chains.py -v
 
 # Cleanup
 clean:
