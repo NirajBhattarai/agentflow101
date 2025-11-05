@@ -15,6 +15,7 @@ import { CopilotChat } from "@copilotkit/react-ui";
 import { useCopilotAction } from "@copilotkit/react-core";
 import "@copilotkit/react-ui/styles.css";
 import { BalanceRequirementsForm } from "./forms/BalanceRequirementsForm";
+import { LiquidityRequirementsForm } from "./forms/LiquidityRequirementsForm";
 import { MessageToA2A } from "./a2a/MessageToA2A";
 import { MessageFromA2A } from "./a2a/MessageFromA2A";
 import type {
@@ -100,6 +101,31 @@ const ChatInner = ({
     ],
     renderAndWaitForResponse: ({ args, respond }) => {
       return <BalanceRequirementsForm args={args} respond={respond} />;
+    },
+  });
+
+  // Register HITL liquidity requirements form (collects chain and token pair info at start)
+  useCopilotAction({
+    name: "gather_liquidity_requirements",
+    description:
+      "Gather liquidity query requirements from the user (chain, optional token pair)",
+    parameters: [
+      {
+        name: "chain",
+        type: "string",
+        description: "The blockchain chain to query: hedera, polygon, or all. May be pre-filled from user message.",
+        required: false,
+      },
+      {
+        name: "tokenPair",
+        type: "string",
+        description:
+          "Optional token pair to query (e.g., HBAR/USDC). May be pre-filled from user message.",
+        required: false,
+      },
+    ],
+    renderAndWaitForResponse: ({ args, respond }) => {
+      return <LiquidityRequirementsForm args={args} respond={respond} />;
     },
   });
 

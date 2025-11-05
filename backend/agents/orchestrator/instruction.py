@@ -41,13 +41,24 @@ ORCHESTRATOR_INSTRUCTION = """
 
     RECOMMENDED WORKFLOW FOR DEFI QUERIES:
 
-    0. **FIRST STEP - Gather Balance Requirements** (for balance queries):
+    0. **FIRST STEP - Gather Requirements**:
+       
+       **For Balance Queries**:
        - Before doing ANYTHING else when user asks for balance, call 'gather_balance_requirements' to collect essential information
        - Try to extract any mentioned details from the user's message (account address, chain, token)
        - Pass any extracted values as parameters to pre-fill the form:
          * accountAddress: Extract account address if mentioned (e.g., "0.0.123456", "0x1234...")
          * chain: Extract chain if mentioned (e.g., "hedera", "polygon") or default to "all"
          * tokenAddress: Extract token if mentioned (e.g., "USDC", "HBAR")
+       - Wait for the user to submit the complete requirements
+       - Use the returned values for all subsequent agent calls
+
+       **For Liquidity Queries**:
+       - Before doing ANYTHING else when user asks for liquidity, call 'gather_liquidity_requirements' to collect essential information
+       - Try to extract any mentioned details from the user's message (chain, token pair)
+       - Pass any extracted values as parameters to pre-fill the form:
+         * chain: Extract chain if mentioned (e.g., "hedera", "polygon") or default to "all"
+         * tokenPair: Extract token pair if mentioned (e.g., "HBAR/USDC", "MATIC/USDC")
        - Wait for the user to submit the complete requirements
        - Use the returned values for all subsequent agent calls
 
@@ -59,11 +70,21 @@ ORCHESTRATOR_INSTRUCTION = """
        - Present the balance information to the user in a clear format
        - DO NOT call the Balance Agent again after receiving a response
 
-    2. **Liquidity Agent** - If user requests liquidity information
-       - Pass: chain (polygon, hedera, or all) and optional token pairs
-       - If 'all' is requested, call the All-Chains Liquidity Agent
-       - Otherwise, call the specific chain agent (Polygon, Hedera)
-       - Wait for liquidity data including pools, DEXs, TVL, reserves, and fees
+    2. **Liquidity Agent** - If you need liquidity information
+       - After gathering requirements from 'gather_liquidity_requirements', construct the query as:
+         "Get liquidity for chain: [chain], pair: [pair]" where:
+         * [chain] is the chain value from the form (hedera, polygon, or all)
+         * [pair] is the tokenPair from the form if provided (e.g., HBAR/USDC), or omit if not provided
+       - Examples:
+         * If chain="polygon" and pair="HBAR/USDC": "Get liquidity for chain: polygon, pair: HBAR/USDC"
+         * If chain="all" and no pair: "Get liquidity for chain: all"
+         * If chain="hedera": "Get liquidity for chain: hedera"
+       - Call send_message_to_a2a_agent with agentName="Liquidity Agent" and this formatted query
+       - The tool result will contain the liquidity data as text/JSON
+       - IMPORTANT: The tool result IS the response - use it directly without parsing
+       - If you see "Invalid JSON" warnings, IGNORE them - the actual response data is in the tool result text
+       - Present the liquidity information to the user in a clear format
+       - DO NOT call the Liquidity Agent again after receiving a response
 
     3. **Normalize Results**:
        - Validate and normalize into a unified schema across chains
@@ -76,7 +97,9 @@ ORCHESTRATOR_INSTRUCTION = """
 
     IMPORTANT WORKFLOW DETAILS:
     - **ALWAYS START by calling 'gather_balance_requirements' FIRST when user asks for balance information**
+    - **ALWAYS START by calling 'gather_liquidity_requirements' FIRST when user asks for liquidity information**
     - For balance queries, always gather requirements before calling agents
+    - For liquidity queries, always gather requirements before calling agents
     - For liquidity queries, you can proceed directly if the user provides chain/pair information
     - Determine the user's intent first (balance vs liquidity)
     - For balance queries, always require a wallet address (gathered via form)

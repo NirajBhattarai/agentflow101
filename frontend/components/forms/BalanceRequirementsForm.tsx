@@ -6,12 +6,26 @@
  * and validates input before submission.
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 
 interface BalanceRequirementsFormProps {
   args: any;
   respond: any;
 }
+
+// Standard tokens for dropdown
+const STANDARD_TOKENS = [
+  { symbol: "HBAR", name: "Hedera Hashgraph", address: "0.0.0", type: "native" },
+  { symbol: "MATIC", name: "Polygon", address: "0x0000000000000000000000000000000000000000", type: "native" },
+  { symbol: "USDC", name: "USD Coin", address: "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174", type: "token" },
+  { symbol: "USDT", name: "Tether USD", address: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F", type: "token" },
+  { symbol: "ETH", name: "Ethereum", address: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619", type: "token" },
+  { symbol: "WBTC", name: "Wrapped Bitcoin", address: "0x1BFD67037B42Cf73acF2047067bd4F2C47D9BfD6", type: "token" },
+  { symbol: "DAI", name: "Dai Stablecoin", address: "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063", type: "token" },
+  { symbol: "AAVE", name: "Aave Token", address: "0xD6DF932A45C0f255f85145f286eA0b292B21C90B", type: "token" },
+  { symbol: "UNI", name: "Uniswap", address: "0xb33EaAd8d922B1083446DC23f610c2567fB5180f", type: "token" },
+  { symbol: "LINK", name: "Chainlink", address: "0x53E0bca35eC356BD5ddDFebbD1Fc0fD03FaBad39", type: "token" },
+];
 
 export const BalanceRequirementsForm: React.FC<BalanceRequirementsFormProps> = ({
   args,
@@ -31,6 +45,9 @@ export const BalanceRequirementsForm: React.FC<BalanceRequirementsFormProps> = (
   const [tokenAddress, setTokenAddress] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showTokenDropdown, setShowTokenDropdown] = useState(false);
+  const [tokenSearch, setTokenSearch] = useState("");
+  const [useRegex, setUseRegex] = useState(false);
 
   // Pre-fill form from orchestrator extraction
   useEffect(() => {
@@ -44,6 +61,60 @@ export const BalanceRequirementsForm: React.FC<BalanceRequirementsFormProps> = (
       setTokenAddress(parsedArgs.tokenAddress);
     }
   }, [parsedArgs?.accountAddress, parsedArgs?.chain, parsedArgs?.tokenAddress]);
+
+  // Filter tokens based on search with regex support
+  const filteredTokens = useMemo(() => {
+    if (!tokenSearch.trim()) return STANDARD_TOKENS;
+
+    try {
+      if (useRegex) {
+        const regex = new RegExp(tokenSearch, "i");
+        return STANDARD_TOKENS.filter(
+          (token) =>
+            regex.test(token.symbol) ||
+            regex.test(token.name) ||
+            regex.test(token.address)
+        );
+      } else {
+        const searchLower = tokenSearch.toLowerCase();
+        return STANDARD_TOKENS.filter(
+          (token) =>
+            token.symbol.toLowerCase().includes(searchLower) ||
+            token.name.toLowerCase().includes(searchLower) ||
+            token.address.toLowerCase().includes(searchLower)
+        );
+      }
+    } catch (e) {
+      // Invalid regex, fallback to simple search
+      const searchLower = tokenSearch.toLowerCase();
+      return STANDARD_TOKENS.filter(
+        (token) =>
+          token.symbol.toLowerCase().includes(searchLower) ||
+          token.name.toLowerCase().includes(searchLower)
+      );
+    }
+  }, [tokenSearch, useRegex]);
+
+  const handleTokenSelect = (token: typeof STANDARD_TOKENS[0]) => {
+    setTokenAddress(token.symbol);
+    setShowTokenDropdown(false);
+    setTokenSearch("");
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest(".token-dropdown-container")) {
+        setShowTokenDropdown(false);
+      }
+    };
+
+    if (showTokenDropdown) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [showTokenDropdown]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -153,13 +224,92 @@ export const BalanceRequirementsForm: React.FC<BalanceRequirementsFormProps> = (
           <label className="block text-xs font-medium text-[#010507] mb-1.5">
             Token Address (Optional)
           </label>
-          <input
-            type="text"
-            value={tokenAddress}
-            onChange={(e) => setTokenAddress(e.target.value)}
-            placeholder="e.g., USDC, 0x2791... (leave empty for all tokens)"
-            className="w-full px-3 py-2 text-sm rounded-lg border-2 border-[#DBDBE5] bg-white/80 backdrop-blur-sm focus:border-[#BEC2FF] focus:outline-none transition-colors"
-          />
+          <div className="relative token-dropdown-container">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={tokenAddress}
+                onChange={(e) => setTokenAddress(e.target.value)}
+                onFocus={() => setShowTokenDropdown(true)}
+                placeholder="e.g., USDC, 0x2791... (leave empty for all tokens)"
+                className="flex-1 px-3 py-2 text-sm rounded-lg border-2 border-[#DBDBE5] bg-white/80 backdrop-blur-sm focus:border-[#BEC2FF] focus:outline-none transition-colors"
+              />
+              <button
+                type="button"
+                onClick={() => setShowTokenDropdown(!showTokenDropdown)}
+                className="px-3 py-2 bg-[#BEC2FF] hover:bg-[#A5A9FF] text-white rounded-lg text-xs font-semibold transition-colors shadow-sm"
+                title="Select from standard tokens"
+              >
+                🔽
+              </button>
+            </div>
+
+            {showTokenDropdown && (
+              <div className="absolute z-50 w-full mt-2 bg-white/95 backdrop-blur-md rounded-lg border-2 border-[#DBDBE5] shadow-elevation-lg max-h-80 overflow-hidden flex flex-col">
+                {/* Search Bar with Regex Toggle */}
+                <div className="p-2 border-b border-[#DBDBE5]">
+                  <div className="flex gap-2 mb-2">
+                    <input
+                      type="text"
+                      value={tokenSearch}
+                      onChange={(e) => setTokenSearch(e.target.value)}
+                      placeholder={useRegex ? "Regex pattern..." : "Search tokens..."}
+                      className="flex-1 px-2 py-1.5 text-xs rounded border border-[#DBDBE5] bg-white focus:border-[#BEC2FF] focus:outline-none"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setUseRegex(!useRegex)}
+                      className={`px-2 py-1.5 text-xs rounded border transition-colors ${
+                        useRegex
+                          ? "bg-purple-100 border-purple-300 text-purple-700 font-semibold"
+                          : "bg-gray-100 border-gray-300 text-gray-600"
+                      }`}
+                      title={useRegex ? "Using regex search" : "Click to enable regex"}
+                    >
+                      {useRegex ? ".*" : ".*"}
+                    </button>
+                  </div>
+                  {useRegex && (
+                    <p className="text-[10px] text-[#57575B]">
+                      Regex enabled. Use patterns like: ^USDC$, HBAR|MATIC, etc.
+                    </p>
+                  )}
+                </div>
+
+                {/* Token List */}
+                <div className="overflow-y-auto flex-1">
+                  {filteredTokens.length > 0 ? (
+                    filteredTokens.map((token, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => handleTokenSelect(token)}
+                        className="w-full px-3 py-2 text-left hover:bg-[#BEC2FF]/20 transition-colors border-b border-[#E9E9EF] last:border-b-0"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-bold text-[#010507]">{token.symbol}</span>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">
+                              {token.type}
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-[#838389] font-mono truncate max-w-[120px]">
+                            {token.address.slice(0, 10)}...
+                          </span>
+                        </div>
+                        <div className="text-[10px] text-[#57575B] mt-0.5">{token.name}</div>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="px-3 py-4 text-center text-xs text-[#57575B]">
+                      No tokens found matching "{tokenSearch}"
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
           <p className="text-xs text-[#57575B] mt-1">
             Leave empty to get all token balances, or specify a token symbol/address
           </p>

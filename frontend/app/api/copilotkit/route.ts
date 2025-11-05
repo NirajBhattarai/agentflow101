@@ -51,7 +51,9 @@ export async function POST(request: NextRequest) {
 
       WORKFLOW STRATEGY (SEQUENTIAL - ONE AT A TIME):
 
-      0. **FIRST STEP - Gather Balance Requirements** (for balance queries):
+      0. **FIRST STEP - Gather Requirements**:
+         
+         **For Balance Queries**:
          - Before doing ANYTHING else when user asks for balance, call 'gather_balance_requirements' to collect essential information
          - Try to extract any mentioned details from the user's message (account address, chain, token)
          - Pass any extracted values as parameters to pre-fill the form:
@@ -61,19 +63,32 @@ export async function POST(request: NextRequest) {
          - Wait for the user to submit the complete requirements
          - Use the returned values for all subsequent agent calls
 
+         **For Liquidity Queries**:
+         - Before doing ANYTHING else when user asks for liquidity, call 'gather_liquidity_requirements' to collect essential information
+         - Try to extract any mentioned details from the user's message (chain, token pair)
+         - Pass any extracted values as parameters to pre-fill the form:
+           * chain: Extract chain if mentioned (e.g., "hedera", "polygon") or default to "all"
+           * tokenPair: Extract token pair if mentioned (e.g., "HBAR/USDC", "MATIC/USDC")
+         - Wait for the user to submit the complete requirements
+         - Use the returned values for all subsequent agent calls
+
       1. **Balance Agent** - If user requests balance information
          - Pass: wallet address and chain (polygon, hedera, or all) from gathered requirements
          - Wait for balance data including native tokens, ERC20 tokens, and USD values
          - Present balance information in a clear, organized format
 
       2. **Liquidity Agent** - If user requests liquidity information
-         - Pass: chain (polygon, hedera, or all) and optional token pairs
+         - Pass: chain (polygon, hedera, or all) and optional token pair from gathered requirements
+         - Format the query as: "Get liquidity for chain: [chain], pair: [pair]" (pair is optional)
+         - Example: "Get liquidity for chain: polygon, pair: HBAR/USDC" or "Get liquidity on all chains"
          - Wait for liquidity data including pools, DEXs, TVL, reserves, and fees
+         - Present liquidity information in a clear, organized format
 
       CRITICAL RULES:
       - **ALWAYS START by calling 'gather_balance_requirements' FIRST when user asks for balance information**
+      - **ALWAYS START by calling 'gather_liquidity_requirements' FIRST when user asks for liquidity information**
       - For balance queries, always gather requirements before calling agents
-      - For liquidity queries, you can proceed directly if the user provides chain/pair information
+      - For liquidity queries, always gather requirements before calling agents
       - Call tools/agents ONE AT A TIME - never make multiple tool calls simultaneously
       - After making a tool call, WAIT for the result before making the next call
       - Pass information from gathered requirements to subsequent agent calls
