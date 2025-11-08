@@ -12,6 +12,7 @@ export async function POST(request: NextRequest) {
   const balanceAgentUrl = process.env.BALANCE_AGENT_URL || "http://localhost:9997";
   const liquidityAgentUrl = process.env.LIQUIDITY_AGENT_URL || "http://localhost:9998";
   const bridgeAgentUrl = process.env.BRIDGE_AGENT_URL || "http://localhost:9996";
+  const swapAgentUrl = process.env.SWAP_AGENT_URL || "http://localhost:9995";
 
   // STEP 2: Define orchestrator URL (speaks AG-UI Protocol)
   const orchestratorUrl = process.env.ORCHESTRATOR_URL || "http://localhost:9000";
@@ -26,15 +27,17 @@ export async function POST(request: NextRequest) {
   // 3. Injecting send_message_to_a2a_agent tool
   // 4. Routing messages between orchestrator and A2A agents
   const a2aMiddlewareAgent = new A2AMiddlewareAgent({
-    description: "DeFi orchestrator with balance, liquidity, and bridge agents (Hedera, Polygon)",
+    description:
+      "DeFi orchestrator with balance, liquidity, bridge, and swap agents (Hedera, Polygon)",
     agentUrls: [
       balanceAgentUrl, // Balance Agent (ADK) - Port 9997
       liquidityAgentUrl, // Liquidity Agent (ADK) - Port 9998
       bridgeAgentUrl, // Bridge Agent (ADK) - Port 9996
+      swapAgentUrl, // Swap Agent (ADK) - Port 9995
     ],
     orchestrationAgent,
     instructions: `
-      You are a DeFi orchestrator that coordinates specialized agents to fetch and aggregate on-chain balance, liquidity, and bridge information across chains (Hedera, Polygon).
+      You are a DeFi orchestrator that coordinates specialized agents to fetch and aggregate on-chain balance, liquidity, bridge, and swap information across chains (Hedera, Polygon).
 
       AVAILABLE SPECIALIZED AGENTS:
 
@@ -52,6 +55,12 @@ export async function POST(request: NextRequest) {
          - Handles token bridging across blockchain chains (Hedera ↔ Polygon)
          - Supports bridging various tokens (USDC, USDT, HBAR, MATIC, ETH, WBTC, DAI)
          - Provides bridge quotes, fees, estimated time, and transaction status
+
+      4. **Swap Agent** (ADK)
+         - Handles token swaps on blockchain chains (Hedera and Polygon)
+         - Supports swapping various tokens (USDC, USDT, HBAR, MATIC, ETH, WBTC, DAI)
+         - TEMPORARY: Direct swap execution without quotes
+         - Creates swap transactions and tracks their status
 
       WORKFLOW STRATEGY (SEQUENTIAL - ONE AT A TIME):
 
@@ -85,6 +94,19 @@ export async function POST(request: NextRequest) {
            * destinationChain: Extract destination chain if mentioned (e.g., "hedera", "polygon")
            * tokenSymbol: Extract token symbol if mentioned (e.g., "USDC", "HBAR")
            * amount: Extract amount if mentioned (e.g., "100", "100.0")
+         - Wait for the user to submit the complete requirements
+         - Use the returned values for all subsequent agent calls
+
+         **For Swap Queries**:
+         - Before doing ANYTHING else when user asks to swap tokens, call 'gather_swap_requirements' to collect essential information
+         - Try to extract any mentioned details from the user's message (account address, chain, token in, token out, amount, slippage)
+         - Pass any extracted values as parameters to pre-fill the form:
+           * accountAddress: Extract account address if mentioned (e.g., "0.0.123456", "0x1234...")
+           * chain: Extract chain if mentioned (e.g., "hedera", "polygon")
+           * tokenInSymbol: Extract token symbol to swap from if mentioned (e.g., "HBAR", "USDC", "MATIC")
+           * tokenOutSymbol: Extract token symbol to swap to if mentioned (e.g., "USDC", "HBAR", "MATIC")
+           * amountIn: Extract amount to swap if mentioned (e.g., "100", "100.0")
+           * slippageTolerance: Extract slippage if mentioned (e.g., "0.5" for 0.5%) or default to "0.5"
          - Wait for the user to submit the complete requirements
          - Use the returned values for all subsequent agent calls
          
@@ -130,13 +152,28 @@ export async function POST(request: NextRequest) {
            * Wait for bridge transaction details including transaction hash and status
            * Present bridge transaction information in a clear, organized format
 
+      4. **Swap Agent** - If user requests to swap tokens
+         - **Step 1**: First check balance using Balance Agent:
+           * Query: "Get balance for account [accountAddress] on [chain] for token [tokenInSymbol]"
+           * Verify the user has sufficient balance
+         
+         - **Step 2**: TEMPORARY: Direct swap execution (no quotes):
+           * Format: "Swap [amountIn] [tokenIn] to [tokenOut] on [chain] for account [accountAddress] with slippage [slippageTolerance]%"
+           * Example: "Swap 0.01 HBAR to USDC on hedera for account 0.0.123456 with slippage 0.5%"
+           * Swap Agent will execute swap directly and return transaction details
+           * Present swap transaction information in a clear, organized format
+         
+         - **Note**: TEMPORARY - Swap Agent executes directly without getting quotes first. This will be updated later to include quote comparison.
+
       CRITICAL RULES:
       - **ALWAYS START by calling 'gather_balance_requirements' FIRST when user asks for balance information**
       - **ALWAYS START by calling 'gather_liquidity_requirements' FIRST when user asks for liquidity information**
       - **ALWAYS START by calling 'gather_bridge_requirements' FIRST when user asks to bridge tokens**
+      - **ALWAYS START by calling 'gather_swap_requirements' FIRST when user asks to swap tokens**
       - For balance queries, always gather requirements before calling agents
       - For liquidity queries, always gather requirements before calling agents
       - For bridge queries, always gather requirements before calling agents
+      - For swap queries, always gather requirements before calling agents
       - Call tools/agents ONE AT A TIME - never make multiple tool calls simultaneously
       - After making a tool call, WAIT for the result before making the next call
       - Pass information from gathered requirements to subsequent agent calls
@@ -163,6 +200,9 @@ export async function POST(request: NextRequest) {
       - "Check USDC balance" -> gather_balance_requirements with tokenAddress: "USDC"
       - "Get liquidity for HBAR/USDC" -> Liquidity Agent, chain: "all", pair: "HBAR/USDC"
       - "Show me all pools on Hedera" -> Liquidity Agent, chain: "hedera"
+      - "Swap 0.01 HBAR to USDC" -> gather_swap_requirements, then Swap Agent
+      - "I want to swap USDC for HBAR on Hedera" -> gather_swap_requirements, then Swap Agent
+      - "Swap 50 MATIC to USDC on Polygon" -> gather_swap_requirements, then Swap Agent
 
       **LOOP PREVENTION**: Once you have received ANY response from an agent (success, error, or partial), 
       do NOT call that agent again. Use what you received and present it to the user. 

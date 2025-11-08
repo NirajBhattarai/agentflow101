@@ -27,7 +27,9 @@ def _resolve_hedera_account_id(identifier: str, api_base: str) -> str:
             account_id = data.get("account") or data.get("account_id")
             if account_id:
                 return str(account_id)
-        raise ValueError(f"Unable to resolve Hedera account from EVM address: {identifier}")
+        raise ValueError(
+            f"Unable to resolve Hedera account from EVM address: {identifier}"
+        )
 
     # Validate 0.0.x format
     parts = identifier.split(".")
@@ -36,7 +38,9 @@ def _resolve_hedera_account_id(identifier: str, api_base: str) -> str:
             f"Invalid Hedera account ID format: {identifier}. Expected format: 0.0.123456"
         )
     try:
-        int(parts[0]); int(parts[1]); int(parts[2])
+        int(parts[0])
+        int(parts[1])
+        int(parts[2])
     except ValueError:
         raise ValueError(f"Invalid Hedera account ID format: {identifier}")
     return identifier
@@ -50,7 +54,9 @@ def _parse_hedera_account_id(account_id: str) -> str:
             f"Invalid Hedera account ID format: {account_id}. Expected format: 0.0.123456"
         )
     try:
-        int(parts[0]); int(parts[1]); int(parts[2])
+        int(parts[0])
+        int(parts[1])
+        int(parts[2])
     except ValueError:
         raise ValueError(f"Invalid Hedera account ID format: {account_id}")
     return account_id

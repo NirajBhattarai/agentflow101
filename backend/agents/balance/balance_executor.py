@@ -160,7 +160,9 @@ Always use the tools to fetch real data. Return ONLY valid JSON, no markdown cod
             hardcoded_balance = {
                 "type": "balance",
                 "chain": "polygon",
-                "account_address": polygon_result.get("account_address", account_address),
+                "account_address": polygon_result.get(
+                    "account_address", account_address
+                ),
                 "balances": polygon_result.get("balances", []),
                 "total_usd_value": polygon_result.get("total_usd_value", "$0.00"),
             }
@@ -170,7 +172,9 @@ Always use the tools to fetch real data. Return ONLY valid JSON, no markdown cod
             hardcoded_balance = {
                 "type": "balance",
                 "chain": "hedera",
-                "account_address": hedera_result.get("account_address", account_address),
+                "account_address": hedera_result.get(
+                    "account_address", account_address
+                ),
                 "balances": hedera_result.get("balances", []),
                 "total_usd_value": hedera_result.get("total_usd_value", "$0.00"),
             }

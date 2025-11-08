@@ -8,7 +8,7 @@ from agents.balance.balance_executor import BalanceAgent
 @pytest.mark.asyncio
 async def test_polygon_uses_remote_balances(rpc_urls, test_account_addresses):
     # Ensure RPC URL available for remote call
-    os.environ.setdefault("POLYGON_RPC_URL", rpc_urls["polygon"]) 
+    os.environ.setdefault("POLYGON_RPC_URL", rpc_urls["polygon"])
 
     agent = BalanceAgent()
     # Query with explicit polygon + a known EVM address
@@ -42,14 +42,21 @@ async def test_hedera_uses_remote_balances(test_account_addresses):
     assert isinstance(data["balances"], list)
 
     # Check native HBAR exists and fields are present (no fixed values)
-    hbar = next((b for b in data["balances"] if b["token_type"] == "native" and b["token_symbol"] == "HBAR"), None)
+    hbar = next(
+        (
+            b
+            for b in data["balances"]
+            if b["token_type"] == "native" and b["token_symbol"] == "HBAR"
+        ),
+        None,
+    )
     assert hbar is not None
     assert "balance" in hbar and "balance_raw" in hbar and hbar["decimals"] == 8
 
 
 @pytest.mark.asyncio
 async def test_all_combines_polygon_and_hedera_remote(rpc_urls, test_account_addresses):
-    os.environ.setdefault("POLYGON_RPC_URL", rpc_urls["polygon"]) 
+    os.environ.setdefault("POLYGON_RPC_URL", rpc_urls["polygon"])
 
     agent = BalanceAgent()
     # Address can be either; we still expect both chains
@@ -68,6 +75,12 @@ async def test_all_combines_polygon_and_hedera_remote(rpc_urls, test_account_add
     assert hbar is not None
 
     # Polygon remote presence (native MATIC expected)
-    matic = next((b for b in balances if b["token_type"] == "native" and b["token_symbol"] == "MATIC"), None)
+    matic = next(
+        (
+            b
+            for b in balances
+            if b["token_type"] == "native" and b["token_symbol"] == "MATIC"
+        ),
+        None,
+    )
     assert matic is not None
-

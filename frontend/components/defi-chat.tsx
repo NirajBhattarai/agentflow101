@@ -17,6 +17,7 @@ import "@copilotkit/react-ui/styles.css";
 import { BalanceRequirementsForm } from "./forms/BalanceRequirementsForm";
 import { LiquidityRequirementsForm } from "./forms/LiquidityRequirementsForm";
 import { BridgeRequirementsForm } from "./forms/BridgeRequirementsForm";
+import { SwapRequirementsForm } from "./forms/SwapRequirementsForm";
 import { MessageToA2A } from "./a2a/MessageToA2A";
 import { MessageFromA2A } from "./a2a/MessageFromA2A";
 import type {
@@ -24,10 +25,16 @@ import type {
   BalanceData,
   LiquidityData,
   BridgeData,
+  SwapData,
   MessageActionRenderProps,
 } from "./types";
 
-const ChatInner = ({ onBalanceUpdate, onLiquidityUpdate, onBridgeUpdate }: DeFiChatProps) => {
+const ChatInner = ({
+  onBalanceUpdate,
+  onLiquidityUpdate,
+  onBridgeUpdate,
+  onSwapUpdate,
+}: DeFiChatProps) => {
   const { visibleMessages } = useCopilotChat();
 
   // Extract structured data from A2A agent responses
@@ -65,6 +72,11 @@ const ChatInner = ({ onBalanceUpdate, onLiquidityUpdate, onBridgeUpdate }: DeFiC
               else if (parsed.type === "bridge") {
                 onBridgeUpdate?.(parsed as BridgeData);
               }
+              // Check if it's swap data
+              // Swap data can have transaction OR swap_options (or both)
+              else if (parsed.type === "swap") {
+                onSwapUpdate?.(parsed as SwapData);
+              }
             }
           } catch (e) {
             // Silently ignore parsing errors
@@ -74,7 +86,7 @@ const ChatInner = ({ onBalanceUpdate, onLiquidityUpdate, onBridgeUpdate }: DeFiC
     };
 
     extractDataFromMessages();
-  }, [visibleMessages, onBalanceUpdate, onLiquidityUpdate, onBridgeUpdate]);
+  }, [visibleMessages, onBalanceUpdate, onLiquidityUpdate, onBridgeUpdate, onSwapUpdate]);
 
   // Register HITL balance requirements form (collects account info at start)
   useCopilotAction({
@@ -176,6 +188,58 @@ const ChatInner = ({ onBalanceUpdate, onLiquidityUpdate, onBridgeUpdate }: DeFiC
     },
   });
 
+  // Register HITL swap requirements form (collects swap details at start)
+  useCopilotAction({
+    name: "gather_swap_requirements",
+    description:
+      "Gather swap requirements from the user (account address, chain, token in, token out, amount, slippage tolerance)",
+    parameters: [
+      {
+        name: "accountAddress",
+        type: "string",
+        description:
+          "The account address to swap from (Hedera format: 0.0.123456 or EVM format: 0x...). May be pre-filled from user message.",
+        required: false,
+      },
+      {
+        name: "chain",
+        type: "string",
+        description: "Chain: hedera or polygon. May be pre-filled from user message.",
+        required: false,
+      },
+      {
+        name: "tokenInSymbol",
+        type: "string",
+        description:
+          "Token symbol to swap from (e.g., USDC, HBAR, MATIC). May be pre-filled from user message.",
+        required: false,
+      },
+      {
+        name: "tokenOutSymbol",
+        type: "string",
+        description:
+          "Token symbol to swap to (e.g., USDC, HBAR, MATIC). May be pre-filled from user message.",
+        required: false,
+      },
+      {
+        name: "amountIn",
+        type: "string",
+        description: "Amount to swap (e.g., 100.0). May be pre-filled from user message.",
+        required: false,
+      },
+      {
+        name: "slippageTolerance",
+        type: "string",
+        description:
+          "Slippage tolerance percentage (e.g., 0.5 for 0.5%). May be pre-filled from user message.",
+        required: false,
+      },
+    ],
+    renderAndWaitForResponse: ({ args, respond }) => {
+      return <SwapRequirementsForm args={args} respond={respond} />;
+    },
+  });
+
   // Register A2A message visualizer (renders green/blue communication boxes)
   useCopilotAction({
     name: "send_message_to_a2a_agent",
@@ -221,6 +285,7 @@ export default function DeFiChat({
   onBalanceUpdate,
   onLiquidityUpdate,
   onBridgeUpdate,
+  onSwapUpdate,
 }: DeFiChatProps) {
   return (
     <CopilotKit runtimeUrl="/api/copilotkit" showDevConsole={false} agent="a2a_chat">
@@ -228,6 +293,7 @@ export default function DeFiChat({
         onBalanceUpdate={onBalanceUpdate}
         onLiquidityUpdate={onLiquidityUpdate}
         onBridgeUpdate={onBridgeUpdate}
+        onSwapUpdate={onSwapUpdate}
       />
     </CopilotKit>
   );

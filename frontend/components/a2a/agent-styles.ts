@@ -63,6 +63,17 @@ export function getAgentStyle(agentName: string): AgentStyle {
     };
   }
 
+  // Swap Agent - Green/Teal branding
+  if (nameLower.includes("swap")) {
+    return {
+      bgColor: "bg-gradient-to-r from-green-100 to-teal-100",
+      textColor: "text-green-800",
+      borderColor: "border-green-400",
+      icon: "💱",
+      framework: "ADK",
+    };
+  }
+
   // Default/Unknown agent
   return {
     bgColor: "bg-gray-100",

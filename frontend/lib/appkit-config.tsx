@@ -1,8 +1,10 @@
 "use client";
 
 import { createAppKit } from "@reown/appkit/react";
-import { Ethers5Adapter } from "@reown/appkit-adapter-ethers5";
+import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
+import { cookieStorage, createStorage } from "@wagmi/core";
 import { polygon, mainnet, hedera } from "@reown/appkit/networks";
+import type { AppKitNetwork } from "@reown/appkit/networks";
 
 // Delayed, client-only initialization to avoid module-eval side effects
 export function initAppKit() {
@@ -21,11 +23,21 @@ export function initAppKit() {
     icons: ["https://avatars.githubusercontent.com/u/179229932"],
   };
 
-  const ethers5Adapter = new Ethers5Adapter();
+  const appKitNetworks: [AppKitNetwork, ...AppKitNetwork[]] = [polygon, mainnet, hedera];
+  const wagmiNetworks = [polygon, mainnet, hedera];
+
+  const wagmiAdapter = new WagmiAdapter({
+    storage: createStorage({
+      storage: cookieStorage,
+    }),
+    ssr: true,
+    projectId,
+    networks: wagmiNetworks,
+  });
 
   createAppKit({
-    adapters: [ethers5Adapter],
-    networks: [polygon, mainnet, hedera],
+    adapters: [wagmiAdapter],
+    networks: appKitNetworks,
     metadata,
     projectId,
     includeWalletIds: [
@@ -37,7 +49,7 @@ export function initAppKit() {
       "541d5dcd4ede02f3afaf75bf8e3e4c4f1fb09edb5fa6c4377ebf31c2785d9adf",
     ],
 
-    enableInjected: false,
+    enableInjected: true,
     enableCoinbase: false,
     allWallets: "HIDE",
     features: {
@@ -47,5 +59,5 @@ export function initAppKit() {
     },
   });
 
-  return ethers5Adapter;
+  return wagmiAdapter;
 }

@@ -3,17 +3,12 @@
 import { useEffect, useState } from "react";
 import { useAppKitAccount } from "@reown/appkit/react";
 import DeFiChat from "@/components/defi-chat";
-import { BalanceCard } from "@/components/BalanceCard";
-import { BridgeCard } from "@/components/BridgeCard";
 import { SwapCard } from "@/components/SwapCard";
 import { WalletConnect } from "@/components/WalletConnect";
-import type { BalanceData, LiquidityData, BridgeData, SwapData } from "@/components/types";
-import "./copilot.css";
+import type { SwapData } from "@/components/types";
+import "../copilot.css";
 
-export default function Home() {
-  const [balanceData, setBalanceData] = useState<BalanceData | null>(null);
-  const [liquidityData, setLiquidityData] = useState<LiquidityData | null>(null);
-  const [bridgeData, setBridgeData] = useState<BridgeData | null>(null);
+export default function SwapPage() {
   const [swapData, setSwapData] = useState<SwapData | null>(null);
   const { address } = useAppKitAccount?.() || ({} as any);
   const isConnected = Boolean(address);
@@ -40,7 +35,7 @@ export default function Home() {
 
               <div className="p-6 sm:p-8">
                 {/* Icon */}
-                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-fuchsia-600 text-white shadow-lg shadow-fuchsia-500/25">
+                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-green-500 to-teal-600 text-white shadow-lg shadow-green-500/25">
                   <svg
                     viewBox="0 0 24 24"
                     fill="none"
@@ -48,53 +43,44 @@ export default function Home() {
                     className="h-6 w-6"
                   >
                     <path
-                      d="M4 12c0-4.418 3.582-8 8-8a8 8 0 1 1-7.071 11.314"
+                      d="M7 16V4M7 4L3 8M7 4L11 8M17 8V20M17 20L21 16M17 20L13 16"
                       stroke="currentColor"
                       strokeWidth="1.5"
                       strokeLinecap="round"
-                    />
-                    <path
-                      d="M8.5 12A3.5 3.5 0 1 0 12 8.5V7m0 10v-3"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
+                      strokeLinejoin="round"
                     />
                   </svg>
                 </div>
 
                 <div className="text-center text-[11px] font-semibold tracking-wider text-[#6B6B75] uppercase">
-                  Multi‑chain DeFi assistant
+                  Multi‑chain Token Swap
                 </div>
                 <h2 className="mt-1 text-center text-2xl font-semibold tracking-tight text-[#010507]">
                   Connect your wallet
                 </h2>
                 <p className="mt-2 text-center text-sm leading-relaxed text-[#57575B]">
-                  View balances, scan liquidity, bridge tokens, and swap tokens for your address.
+                  Swap tokens on Hedera and Polygon chains with the best rates.
                 </p>
 
                 {/* Benefits / bullets */}
-                <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-[#57575B]">
-                  <div className="flex items-center gap-2 rounded-lg border border-[#E7E7F2] bg-white/70 px-2.5 py-2">
-                    <span className="text-[13px]">💰</span>
-                    <span className="font-medium">Balance insights</span>
-                  </div>
-                  <div className="flex items-center gap-2 rounded-lg border border-[#E7E7F2] bg-white/70 px-2.5 py-2">
-                    <span className="text-[13px]">📊</span>
-                    <span className="font-medium">Liquidity scan</span>
-                  </div>
-                  <div className="flex items-center gap-2 rounded-lg border border-[#E7E7F2] bg-white/70 px-2.5 py-2">
-                    <span className="text-[13px]">🌉</span>
-                    <span className="font-medium">Bridge simulation</span>
-                  </div>
+                <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px] text-[#57575B]">
                   <div className="flex items-center gap-2 rounded-lg border border-[#E7E7F2] bg-white/70 px-2.5 py-2">
                     <span className="text-[13px]">💱</span>
                     <span className="font-medium">Token swaps</span>
+                  </div>
+                  <div className="flex items-center gap-2 rounded-lg border border-[#E7E7F2] bg-white/70 px-2.5 py-2">
+                    <span className="text-[13px]">📊</span>
+                    <span className="font-medium">Best rates</span>
+                  </div>
+                  <div className="flex items-center gap-2 rounded-lg border border-[#E7E7F2] bg-white/70 px-2.5 py-2">
+                    <span className="text-[13px]">⚡</span>
+                    <span className="font-medium">Fast execution</span>
                   </div>
                 </div>
 
                 {/* CTA */}
                 <div className="mt-6 flex justify-center">
-                  <div className="[&>appkit-button]:!px-5 [&>appkit-button]:!py-2.5 [&>appkit-button]:!rounded-xl [&>appkit-button]:!text-sm [&>appkit-button]:!bg-gradient-to-r [&>appkit-button]:from-purple-600 [&>appkit-button]:to-fuchsia-600 [&>appkit-button]:hover:from-purple-500 [&>appkit-button]:hover:to-fuchsia-500 [&>appkit-button]:!text-white">
+                  <div className="[&>appkit-button]:!px-5 [&>appkit-button]:!py-2.5 [&>appkit-button]:!rounded-xl [&>appkit-button]:!text-sm [&>appkit-button]:!bg-gradient-to-r [&>appkit-button]:from-green-600 [&>appkit-button]:to-teal-600 [&>appkit-button]:hover:from-green-500 [&>appkit-button]:hover:to-teal-500 [&>appkit-button]:!text-white">
                     <WalletConnect />
                   </div>
                 </div>
@@ -135,22 +121,15 @@ export default function Home() {
           {/* Left fixed chat card (450px) */}
           <div className="w-[450px] flex-shrink-0 border-2 border-white bg-white/50 backdrop-blur-md shadow-elevation-lg flex flex-col rounded-lg overflow-hidden">
             <div className="p-6 border-b border-[#DBDBE5]">
-              <h1 className="text-2xl font-semibold text-[#010507] mb-1">DeFi Assistant</h1>
+              <h1 className="text-2xl font-semibold text-[#010507] mb-1">Swap Assistant</h1>
               <p className="text-sm text-[#57575B] leading-relaxed">
-                Multi-Agent A2A Demo: <span className="text-purple-600 font-semibold">Balance</span>{" "}
-                + <span className="text-teal-600 font-semibold">Liquidity</span> +{" "}
-                <span className="text-orange-600 font-semibold">Bridge</span> +{" "}
-                <span className="text-green-600 font-semibold">Swap</span>
+                Multi-Agent A2A Demo: <span className="text-green-600 font-semibold">Swap</span>{" "}
+                Agent for Hedera & Polygon
               </p>
               <p className="text-xs text-[#838389] mt-1">Orchestrator-mediated A2A Protocol</p>
             </div>
             <div className="flex-1 overflow-hidden">
-              <DeFiChat
-                onBalanceUpdate={setBalanceData}
-                onLiquidityUpdate={setLiquidityData}
-                onBridgeUpdate={setBridgeData}
-                onSwapUpdate={setSwapData}
-              />
+              <DeFiChat onSwapUpdate={setSwapData} />
             </div>
           </div>
 
@@ -158,60 +137,24 @@ export default function Home() {
           <div className="flex-1 overflow-y-auto rounded-lg bg-white/30 backdrop-blur-sm">
             <div className="max-w-5xl mx-auto p-8">
               <div className="mb-8">
-                <h2 className="text-3xl font-semibold text-[#010507] mb-2">Your DeFi Data</h2>
+                <h2 className="text-3xl font-semibold text-[#010507] mb-2">Token Swap</h2>
                 <p className="text-[#57575B]">
-                  Multi-agent coordination: Balance, Liquidity, Bridge, and Swap agents with A2A
-                  Protocol
+                  Swap tokens on Hedera and Polygon chains with the best rates from multiple DEXs
                 </p>
               </div>
 
-              {!balanceData && !liquidityData && !bridgeData && !swapData && (
+              {!swapData && (
                 <div className="flex items-center justify-center h-[400px] bg-white/60 backdrop-blur-md rounded-xl border-2 border-dashed border-[#DBDBE5] shadow-elevation-sm">
                   <div className="text-center">
-                    <div className="text-6xl mb-4">💰</div>
+                    <div className="text-6xl mb-4">💱</div>
                     <h3 className="text-xl font-semibold text-[#010507] mb-2">
-                      Start Querying Your DeFi Data
+                      Start Your Token Swap
                     </h3>
                     <p className="text-[#57575B] max-w-md">
-                      Ask the assistant to check your balance, get liquidity information, bridge
-                      tokens, or swap tokens. Watch as specialized agents collaborate through A2A
-                      Protocol to fetch your on-chain data and execute DeFi operations.
+                      Ask the assistant to swap tokens. Watch as specialized agents collaborate
+                      through A2A Protocol to get the best swap rates.
                     </p>
                   </div>
-                </div>
-              )}
-
-              {balanceData && (
-                <div className="mb-4">
-                  <BalanceCard data={balanceData} />
-                </div>
-              )}
-
-              {liquidityData && (
-                <div className="mb-4">
-                  <div className="bg-white/60 backdrop-blur-md rounded-xl p-6 border-2 border-[#DBDBE5] shadow-elevation-md">
-                    <h3 className="text-xl font-semibold text-[#010507] mb-4">Liquidity Data</h3>
-                    <pre className="text-xs bg-gray-50 p-4 rounded overflow-auto">
-                      {JSON.stringify(liquidityData, null, 2)}
-                    </pre>
-                  </div>
-                </div>
-              )}
-
-              {bridgeData && (
-                <div className="mb-4">
-                  <BridgeCard
-                    data={bridgeData}
-                    onBridgeInitiate={(protocol) => {
-                      // When user clicks "Bridge" button, send a message to the chat
-                      // to trigger the orchestrator to initiate the bridge
-                      console.log("Initiating bridge with protocol:", protocol);
-                      // The orchestrator will handle this via chat message
-                      // In a real implementation, you might want to send a message programmatically
-                      // For now, the user can click the button and the UI will show the state
-                      // The actual bridge initiation happens via orchestrator when user says "do with [protocol]"
-                    }}
-                  />
                 </div>
               )}
 
@@ -220,13 +163,7 @@ export default function Home() {
                   <SwapCard
                     data={swapData}
                     onSwapInitiate={(dex) => {
-                      // When user clicks "Swap" button, send a message to the chat
-                      // to trigger the orchestrator to initiate the swap
                       console.log("Initiating swap with DEX:", dex);
-                      // The orchestrator will handle this via chat message
-                      // In a real implementation, you might want to send a message programmatically
-                      // For now, the user can click the button and the UI will show the state
-                      // The actual swap initiation happens via orchestrator when user says "swap with [dex]"
                     }}
                   />
                 </div>

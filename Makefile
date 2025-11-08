@@ -2,7 +2,7 @@
         dev-frontend dev-backend dev build-frontend build-backend test \
         test-liquidity test-liquidity-polygon test-liquidity-hedera \
         test-liquidity-all-chains test-balance test-balance-polygon test-balance-hedera \
-        test-balance-all-chains clean dev-travily dev-liquidity dev-balance \
+        test-balance-all-chains clean dev-travily dev-liquidity dev-balance dev-bridge dev-swap \
         dev-orchestrator dev-all-agents format format-backend format-frontend backend
 
 # Default target
@@ -24,8 +24,9 @@ help:
 	@echo "  make dev-liquidity       - Run Liquidity agent server (port 9998)"
 	@echo "  make dev-balance         - Run Balance agent server (port 9997)"
 	@echo "  make dev-bridge          - Run Bridge agent server (port 9996)"
+	@echo "  make dev-swap            - Run Swap agent server (port 9995)"
 	@echo "  make dev-orchestrator    - Run Orchestrator agent server (port 9000)"
-	@echo "  make dev-all-agents      - Run all agents (orchestrator, balance, liquidity, bridge)"
+	@echo "  make dev-all-agents      - Run all agents (orchestrator, balance, liquidity, bridge, swap)"
 	@echo ""
 	@echo "Build:"
 	@echo "  make build-frontend      - Build frontend for production"
@@ -106,6 +107,11 @@ dev-bridge:
 	@echo "Bridge Agent: http://localhost:9996"
 	cd backend && uv run -m agents.bridge
 
+dev-swap:
+	@echo "Starting Swap agent server..."
+	@echo "Swap Agent: http://localhost:9995"
+	cd backend && uv run -m agents.swap
+
 dev-orchestrator:
 	@echo "Starting Orchestrator agent server..."
 	@echo "Orchestrator Agent: http://localhost:9000"
@@ -118,9 +124,10 @@ dev-all-agents:
 	@echo "Balance Agent: http://localhost:9997"
 	@echo "Liquidity Agent: http://localhost:9998"
 	@echo "Bridge Agent: http://localhost:9996"
+	@echo "Swap Agent: http://localhost:9995"
 	@echo ""
 	@echo "Starting all agents in parallel..."
-	@make -j4 dev-orchestrator dev-balance dev-liquidity dev-bridge
+	@make -j5 dev-orchestrator dev-balance dev-liquidity dev-bridge dev-swap
 
 # Production builds
 build-frontend:
@@ -139,6 +146,7 @@ format:
 
 format-backend:
 	@echo "Formatting backend (ruff check --fix + ruff format)..."
+	cd backend && uv sync --extra dev
 	cd backend && uv run ruff check --fix .
 	cd backend && uv run ruff format .
 

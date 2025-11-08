@@ -2,26 +2,37 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
+import { WagmiProvider } from "wagmi";
+import type { Config as WagmiConfig } from "wagmi";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient());
   const [ready, setReady] = useState(false);
+  const [wagmiConfig, setWagmiConfig] = useState<WagmiConfig | null>(null);
 
   useEffect(() => {
     let mounted = true;
     (async () => {
       const { initAppKit } = await import("@/lib/appkit-config");
-      initAppKit();
-      if (mounted) setReady(true);
+      const adapter = initAppKit();
+      if (mounted) {
+        // adapter is WagmiAdapter; expose wagmiConfig to WagmiProvider
+        setWagmiConfig((adapter as any).wagmiConfig as WagmiConfig);
+        setReady(true);
+      }
     })();
     return () => {
       mounted = false;
     };
   }, []);
 
-  if (!ready) {
+  if (!ready || !wagmiConfig) {
     return null;
   }
 
-  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  return (
+    <WagmiProvider config={wagmiConfig}>
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    </WagmiProvider>
+  );
 }

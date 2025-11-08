@@ -1,6 +1,12 @@
 import os
-from pathlib import Path
+from typing import Optional
+
 from dotenv import load_dotenv
+from web3 import Web3
+
+from .abi.erc20 import ERC20_ABI
+from .constants import POLYGON_TOKENS
+
 """Ensure environment variables are loaded from backend/.env if present."""
 # Load default .env discovery first (current working directory or parents)
 load_dotenv()
@@ -8,10 +14,6 @@ load_dotenv()
 # _backend_env = Path(__file__).resolve().parents[3] / ".env"
 # if _backend_env.exists():
 #     load_dotenv(dotenv_path=_backend_env, override=False)
-from typing import Optional
-from web3 import Web3
-from .constants import POLYGON_TOKENS
-from .abi.erc20 import ERC20_ABI
 
 
 def _get_web3_instance() -> Web3:
