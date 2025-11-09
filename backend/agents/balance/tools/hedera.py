@@ -27,9 +27,7 @@ def _resolve_hedera_account_id(identifier: str, api_base: str) -> str:
             account_id = data.get("account") or data.get("account_id")
             if account_id:
                 return str(account_id)
-        raise ValueError(
-            f"Unable to resolve Hedera account from EVM address: {identifier}"
-        )
+        raise ValueError(f"Unable to resolve Hedera account from EVM address: {identifier}")
 
     # Validate 0.0.x format
     parts = identifier.split(".")
@@ -68,9 +66,7 @@ def _format_hbar_balance(tinybar: int) -> str:
     return str(hbar_balance)
 
 
-def get_balance_hedera(
-    account_address: str, token_address: Optional[str] = None
-) -> dict:
+def get_balance_hedera(account_address: str, token_address: Optional[str] = None) -> dict:
     """Get token balance for an account on Hedera chain.
 
     Args:
@@ -88,8 +84,11 @@ def get_balance_hedera(
         balances = []
 
         # Get native HBAR balance
+        # Mirror Node API accepts both Hedera account ID (0.0.x) and EVM address (0x...)
+        # Use the original account_address if it's an EVM address, otherwise use resolved account_id
         try:
-            account_url = f"{api_base}/api/v1/accounts/{account_id}"
+            account_identifier = account_address if account_address.startswith("0x") else account_id
+            account_url = f"{api_base}/api/v1/accounts/{account_identifier}"
             response = requests.get(account_url, timeout=10)
 
             if response.status_code == 200:
@@ -132,77 +131,133 @@ def get_balance_hedera(
                 }
             )
 
-        # Get token balance (if token_address provided)
-        if token_address:
-            # Look up token address if a symbol is provided
-            if token_address.upper() in HEDERA_TOKENS:
-                token_address = HEDERA_TOKENS[token_address.upper()]
+        # Always fetch all tokens the account holds
+        # Then check against our known token list
+        try:
+            # Get all token balances for the account
+            # Mirror Node API accepts both Hedera account ID (0.0.x) and EVM address (0x...)
+            # Use the original account_address if it's an EVM address, otherwise use resolved account_id
+            token_account_identifier = (
+                account_address if account_address.startswith("0x") else account_id
+            )
+            token_balance_url = f"{api_base}/api/v1/accounts/{token_account_identifier}/tokens"
+            response = requests.get(token_balance_url, timeout=10)
 
-            # Validate token address format
-            try:
-                _resolve_hedera_account_id(token_address, api_base)
-            except ValueError:
-                raise ValueError(f"Invalid Hedera token address: {token_address}")
+            if response.status_code == 200:
+                tokens_data = response.json()
+                account_tokens = tokens_data.get("tokens", [])
 
-            try:
-                # Get token balance for the account
-                token_balance_url = f"{api_base}/api/v1/accounts/{account_id}/tokens"
-                response = requests.get(token_balance_url, timeout=10)
+                # Create a reverse mapping: token_id -> symbol
+                token_id_to_symbol = {}
+                for symbol, token_id in HEDERA_TOKENS.items():
+                    token_id_to_symbol[token_id] = symbol
 
-                if response.status_code == 200:
-                    tokens_data = response.json()
-                    token_balance = None
+                # Check each token the account holds
+                for token in account_tokens:
+                    token_id = token.get("token_id")
+                    balance_raw = int(token.get("balance", 0))
 
-                    # Find the token in the list
-                    for token in tokens_data.get("tokens", []):
-                        if token.get("token_id") == token_address:
-                            balance_raw = int(token.get("balance", 0))
-                            # Hedera tokens typically have 6-8 decimals
-                            decimals = token.get("decimals", 6)
-                            balance = str(balance_raw / (10**decimals))
+                    # Skip zero balances
+                    if balance_raw == 0:
+                        continue
 
-                            token_balance = {
+                    # Check if this token is in our known list
+                    if token_id in token_id_to_symbol:
+                        token_symbol = token_id_to_symbol[token_id]
+                        decimals = token.get("decimals", 6)
+                        balance = str(balance_raw / (10**decimals))
+
+                        balances.append(
+                            {
                                 "token_type": "token",
-                                "token_symbol": token.get("symbol", "UNKNOWN"),
-                                "token_address": token_address,
+                                "token_symbol": token_symbol,
+                                "token_address": token_id,
                                 "balance": balance,
                                 "balance_raw": str(balance_raw),
                                 "decimals": decimals,
                             }
-                            break
-
-                    if token_balance:
-                        balances.append(token_balance)
+                        )
                     else:
+                        # Unknown token, but still include it
+                        balances.append(
+                            {
+                                "token_type": "token",
+                                "token_symbol": token.get("symbol", "UNKNOWN"),
+                                "token_address": token_id,
+                                "balance": str(balance_raw / (10 ** token.get("decimals", 6))),
+                                "balance_raw": str(balance_raw),
+                                "decimals": token.get("decimals", 6),
+                            }
+                        )
+
+                # If a specific token_address was requested, ensure it's in the results
+                if token_address:
+                    # Look up token address if a symbol is provided
+                    requested_token_id = token_address
+                    if token_address.upper() in HEDERA_TOKENS:
+                        requested_token_id = HEDERA_TOKENS[token_address.upper()]
+
+                    # Check if the requested token is already in balances
+                    token_found = any(
+                        b.get("token_address") == requested_token_id
+                        for b in balances
+                        if b.get("token_type") == "token"
+                    )
+
+                    if not token_found:
                         # Token not found in account, return zero balance
                         balances.append(
                             {
                                 "token_type": "token",
-                                "token_symbol": "UNKNOWN",
-                                "token_address": token_address,
+                                "token_symbol": (
+                                    token_address.upper()
+                                    if token_address.upper() in HEDERA_TOKENS
+                                    else "UNKNOWN"
+                                ),
+                                "token_address": requested_token_id,
                                 "balance": "0",
                                 "balance_raw": "0",
                                 "decimals": 6,
                             }
                         )
-                else:
+            else:
+                # If we can't fetch tokens, but a specific token was requested, return zero balance
+                if token_address:
+                    requested_token_id = token_address
+                    if token_address.upper() in HEDERA_TOKENS:
+                        requested_token_id = HEDERA_TOKENS[token_address.upper()]
+
                     balances.append(
                         {
                             "token_type": "token",
-                            "token_symbol": "UNKNOWN",
-                            "token_address": token_address,
+                            "token_symbol": (
+                                token_address.upper()
+                                if token_address.upper() in HEDERA_TOKENS
+                                else "UNKNOWN"
+                            ),
+                            "token_address": requested_token_id,
                             "balance": "0",
                             "balance_raw": "0",
                             "decimals": 6,
                             "error": f"HTTP {response.status_code}: {response.text[:100]}",
                         }
                     )
-            except Exception as e:
+        except Exception as e:
+            # If we can't fetch tokens, but a specific token was requested, return zero balance
+            if token_address:
+                requested_token_id = token_address
+                if token_address.upper() in HEDERA_TOKENS:
+                    requested_token_id = HEDERA_TOKENS[token_address.upper()]
+
                 balances.append(
                     {
                         "token_type": "token",
-                        "token_symbol": "UNKNOWN",
-                        "token_address": token_address,
+                        "token_symbol": (
+                            token_address.upper()
+                            if token_address.upper() in HEDERA_TOKENS
+                            else "UNKNOWN"
+                        ),
+                        "token_address": requested_token_id,
                         "balance": "0",
                         "balance_raw": "0",
                         "decimals": 6,

@@ -34,12 +34,8 @@ class BridgeTransaction(BaseModel):
     token_address: str = Field(description="Token address on source chain")
     amount: str = Field(description="Amount to bridge in human-readable format")
     bridge_fee: str = Field(description="Bridge fee in USD")
-    estimated_time: str = Field(
-        description="Estimated bridge time (e.g., '5-10 minutes')"
-    )
-    bridge_protocol: str = Field(
-        description="Bridge protocol used (e.g., 'LayerZero', 'Wormhole')"
-    )
+    estimated_time: str = Field(description="Estimated bridge time (e.g., '5-10 minutes')")
+    bridge_protocol: str = Field(description="Bridge protocol used (e.g., 'LayerZero', 'Wormhole')")
     transaction_hash: Optional[str] = Field(
         default=None, description="Transaction hash if bridge is initiated"
     )
@@ -186,9 +182,7 @@ Return a structured JSON response with bridge transaction details.
                 break
 
         # Extract amount
-        amount_match = re.search(
-            r"(\d+\.?\d*)\s*(?:USDC|USDT|HBAR|MATIC|ETH|WBTC|DAI)?", query
-        )
+        amount_match = re.search(r"(\d+\.?\d*)\s*(?:USDC|USDT|HBAR|MATIC|ETH|WBTC|DAI)?", query)
         if amount_match:
             amount = amount_match.group(1)
 
@@ -199,11 +193,7 @@ Return a structured JSON response with bridge transaction details.
             elif "polygon" in query_lower:
                 source_chain = "polygon"
 
-        if (
-            "destination:" in query_lower
-            or "dest:" in query_lower
-            or "destination=" in query_lower
-        ):
+        if "destination:" in query_lower or "dest:" in query_lower or "destination=" in query_lower:
             if "hedera" in query_lower:
                 destination_chain = "hedera"
             elif "polygon" in query_lower:
@@ -370,17 +360,11 @@ Return a structured JSON response with bridge transaction details.
         ):
             import random
 
-            tx_hash = (
-                f"0x{''.join([random.choice('0123456789abcdef') for _ in range(64)])}"
-            )
+            tx_hash = f"0x{''.join([random.choice('0123456789abcdef') for _ in range(64)])}"
 
             # Find the selected protocol's fee
             selected_option = next(
-                (
-                    opt
-                    for opt in bridge_options
-                    if opt["bridge_protocol"] == selected_protocol
-                ),
+                (opt for opt in bridge_options if opt["bridge_protocol"] == selected_protocol),
                 bridge_options[0],
             )
 
@@ -428,9 +412,7 @@ Return a structured JSON response with bridge transaction details.
                     "amount": amount,
                     "account_address": account_address,
                     "balance_check": balance_check,
-                    "bridge_options": bridge_options
-                    if "bridge_options" in locals()
-                    else [],
+                    "bridge_options": bridge_options if "bridge_options" in locals() else [],
                     "transaction": None,
                     "error": f"Validation failed: {str(e)}",
                 },

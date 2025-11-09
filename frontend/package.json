@@ -12,7 +12,8 @@
     "swap": "tsx scripts/swapExactETHForTokens.ts",
     "mcp:swap": "tsx scripts/swapHbarToToken.ts",
     "mcp:swap:hardcode": "tsx scripts/swapHbarToTokenhardcode.ts",
-    "mcp:swap:ethers": "tsx scripts/swapHbarToTokenEthers.ts"
+    "mcp:swap:ethers": "tsx scripts/swapHbarToTokenEthers.ts",
+    "swap:usdc-to-hbar": "tsx scripts/swapUsdcToHbar.ts"
   },
   "dependencies": {
     "@ag-ui/a2a-middleware": "0.0.2",

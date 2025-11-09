@@ -20,7 +20,7 @@
 
 import * as dotenv from "dotenv";
 import { ethers } from "ethers";
-import { ROUTER_ABI } from "../lib/contracts/router-abi";
+import { ROUTER_ABI } from "../lib/shared/contracts/router-abi";
 import { Hbar, HbarUnit } from "@hashgraph/sdk";
 
 dotenv.config();

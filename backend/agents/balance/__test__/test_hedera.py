@@ -22,9 +22,10 @@ class TestHederaBalance:
         try:
             # Test basic connectivity
             response = requests.get(f"{api_base}/api/v1/network/stats", timeout=5)
-            assert response.status_code in [200, 404], (
-                f"Unexpected status code: {response.status_code}"
-            )
+            assert response.status_code in [
+                200,
+                404,
+            ], f"Unexpected status code: {response.status_code}"
         except requests.exceptions.RequestException as e:
             pytest.skip(f"Could not connect to Hedera API: {e}")
 
@@ -54,9 +55,7 @@ class TestHederaBalance:
         assert len(result["balances"]) > 0
 
         # Check native balance exists
-        native_balance = next(
-            (b for b in result["balances"] if b["token_type"] == "native"), None
-        )
+        native_balance = next((b for b in result["balances"] if b["token_type"] == "native"), None)
         assert native_balance is not None, "Native HBAR balance should be present"
         assert native_balance["token_symbol"] == "HBAR"
         assert "balance" in native_balance
@@ -74,9 +73,7 @@ class TestHederaBalance:
         assert "balances" in result
 
         # Token balance might be 0 if account doesn't hold the token
-        token_balance = next(
-            (b for b in result["balances"] if b["token_type"] == "token"), None
-        )
+        token_balance = next((b for b in result["balances"] if b["token_type"] == "token"), None)
         if token_balance:
             assert token_balance["token_address"] == HEDERA_TOKENS["USDC"]
             assert "balance" in token_balance
@@ -94,9 +91,7 @@ class TestHederaBalance:
         assert "balances" in result
 
         # Token balance might be 0 if account doesn't hold the token
-        token_balance = next(
-            (b for b in result["balances"] if b["token_type"] == "token"), None
-        )
+        token_balance = next((b for b in result["balances"] if b["token_type"] == "token"), None)
         if token_balance:
             assert token_balance["token_address"] == token_addr
 

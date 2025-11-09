@@ -56,8 +56,10 @@ class TestHederaLiquidity:
             # Test basic connectivity
             response = requests.get(rpc_urls["hedera"], timeout=5)
             # Hedera API might return different status codes
-            assert response.status_code in [200, 404, 405], (
-                f"Unexpected status code: {response.status_code}"
-            )
+            assert response.status_code in [
+                200,
+                404,
+                405,
+            ], f"Unexpected status code: {response.status_code}"
         except requests.exceptions.RequestException as e:
             pytest.skip(f"Could not connect to Hedera API: {e}")

@@ -13,7 +13,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let mounted = true;
     (async () => {
-      const { initAppKit } = await import("@/lib/appkit-config");
+      const { initAppKit } = await import("@/lib/config/appkit-config");
       const adapter = initAppKit();
       if (mounted) {
         // adapter is WagmiAdapter; expose wagmiConfig to WagmiProvider

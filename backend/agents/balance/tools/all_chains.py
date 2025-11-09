@@ -3,9 +3,7 @@ from .polygon import get_balance_polygon
 from .hedera import get_balance_hedera
 
 
-def get_balance_all_chains(
-    account_address: str, token_address: Optional[str] = None
-) -> dict:
+def get_balance_all_chains(account_address: str, token_address: Optional[str] = None) -> dict:
     """Get token balance for an account across all supported chains.
 
     Args:

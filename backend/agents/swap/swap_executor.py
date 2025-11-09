@@ -28,16 +28,24 @@ from google.adk.sessions import InMemorySessionService  # noqa: E402
 from google.adk.memory.in_memory_memory_service import InMemoryMemoryService  # noqa: E402
 from google.adk.artifacts import InMemoryArtifactService  # noqa: E402
 
+# Balance fetching imports
+from ..balance.tools.hedera import get_balance_hedera  # noqa: E402
+from ..balance.tools.polygon import get_balance_polygon  # noqa: E402
+
+# Chain-specific swap imports
+from .tools import (  # noqa: E402
+    get_swap_hedera,
+    get_swap_polygon,
+    get_token_address_for_chain,
+    get_available_tokens_for_chain,
+)
+
 
 class SwapTransaction(BaseModel):
     chain: str = Field(description="Chain (hedera or polygon)")
-    token_in_symbol: str = Field(
-        description="Token symbol to swap from (e.g., HBAR, USDC)"
-    )
+    token_in_symbol: str = Field(description="Token symbol to swap from (e.g., HBAR, USDC)")
     token_in_address: str = Field(description="Token address to swap from")
-    token_out_symbol: str = Field(
-        description="Token symbol to swap to (e.g., USDC, HBAR)"
-    )
+    token_out_symbol: str = Field(description="Token symbol to swap to (e.g., USDC, HBAR)")
     token_out_address: str = Field(description="Token address to swap to")
     amount_in: str = Field(description="Amount to swap in human-readable format")
     amount_out: str = Field(description="Amount out in human-readable format")
@@ -52,9 +60,7 @@ class SwapTransaction(BaseModel):
         default=None, description="Transaction hash if swap is initiated"
     )
     status: str = Field(description="Swap status: pending, completed, failed")
-    price_impact: Optional[str] = Field(
-        default=None, description="Price impact percentage"
-    )
+    price_impact: Optional[str] = Field(default=None, description="Price impact percentage")
 
 
 class SwapOption(BaseModel):
@@ -135,28 +141,149 @@ class SwapAgent:
             instruction="""
 You are a blockchain swap agent. Your role is to help users swap tokens on different blockchain chains.
 
-When you receive a swap request, analyze:
-- The chain (hedera or polygon)
-- The token to swap from (symbol and address)
-- The token to swap to (symbol and address)
-- The amount to swap
-- The slippage tolerance
+When you receive a swap request, you MUST:
+1. Extract the swap parameters from the user's query:
+   - Chain (hedera or polygon)
+   - Token to swap FROM (token_in_symbol) - use get_token_address_for_chain to get its address
+   - Token to swap TO (token_out_symbol) - use get_token_address_for_chain to get its address
+   - Amount to swap (amount_in)
+   - Account address (if provided)
+   - Slippage tolerance (default: 0.5%)
 
-TEMPORARY: Execute swap directly without getting quotes first.
+2. Use the available tools to extract token addresses:
+   - get_token_address_for_chain: Look up token addresses by symbol and chain
+   - get_available_tokens_for_chain: See what tokens are available on a chain
 
-Return a structured JSON response with swap transaction details.
+3. CRITICAL: Understand swap direction from natural language:
+   - "swap 0.2 USDC to HBAR" means: token_in_symbol=USDC, token_out_symbol=HBAR, amount_in=0.2
+   - "swap HBAR for USDC" means: token_in_symbol=HBAR, token_out_symbol=USDC
+   - "I want to exchange USDC for HBAR" means: token_in_symbol=USDC, token_out_symbol=HBAR
+   - "swap 0.2 USDC to HBAR" = token_in_symbol="USDC", token_out_symbol="HBAR"
+   - The token BEFORE "to/for/->" is ALWAYS token_in_symbol, the token AFTER is ALWAYS token_out_symbol
+   - Pay close attention to the order - "USDC to HBAR" means swapping FROM USDC TO HBAR
+
+4. After extracting all parameters, return ONLY a valid JSON object (no markdown, no code blocks, no explanation):
+{
+  "chain": "hedera",
+  "token_in_symbol": "USDC",
+  "token_out_symbol": "HBAR",
+  "amount_in": "0.2",
+  "account_address": "0x...",
+  "slippage_tolerance": 0.5
+}
+
+IMPORTANT: 
+- Always use the tools to get token addresses
+- Return ONLY JSON, no other text
+- Pay attention to swap direction - "X to Y" means token_in=X, token_out=Y
             """,
-            tools=[],
+            tools=[
+                get_token_address_for_chain,
+                get_available_tokens_for_chain,
+            ],
         )
 
     async def invoke(self, query: str, session_id: str) -> str:
-        # TEMPORARY: Direct swap without quotes - executes swap immediately
-        # This method completely bypasses the LLM and returns hardcoded swap transaction
-
+        # Use LLM with tools to extract swap parameters
         print(f"💱 Swap Agent received query: {query}")
-        print("⚠️  Using DIRECT SWAP (no quotes) - LLM is NOT being called")
-        print("🔒 Bypassing LLM completely - returning direct swap transaction")
+        print("🤖 Using LLM with tools to extract swap parameters")
 
+        if not query or not query.strip():
+            query = "Swap 0.01 HBAR to USDC on hedera"
+
+        try:
+            # Call LLM to extract swap parameters using tools
+            result = await self._runner.run_async(
+                user_id=self._user_id,
+                session_id=session_id,
+                message=query,
+            )
+
+            # Parse LLM response to extract swap parameters
+            llm_response = result.text if hasattr(result, "text") else str(result)
+            print(f"📝 LLM Response: {llm_response[:500]}...")  # Log first 500 chars
+
+            # Try to extract JSON from LLM response
+            import json
+
+            try:
+                # Try multiple patterns to find JSON in the response
+                # Pattern 1: Look for complete JSON object with token_in_symbol
+                json_match = re.search(
+                    r'\{[^{}]*(?:"token_in_symbol"|"chain")[^{}]*\}', llm_response, re.DOTALL
+                )
+                if json_match:
+                    try:
+                        extracted_params = json.loads(json_match.group())
+                        print(f"✅ Extracted parameters from LLM (pattern 1): {extracted_params}")
+                    except json.JSONDecodeError:
+                        # Try to find a larger JSON block
+                        json_match2 = re.search(
+                            r'\{.*?"token_in_symbol".*?"token_out_symbol".*?\}',
+                            llm_response,
+                            re.DOTALL,
+                        )
+                        if json_match2:
+                            extracted_params = json.loads(json_match2.group())
+                            print(
+                                f"✅ Extracted parameters from LLM (pattern 2): {extracted_params}"
+                            )
+                        else:
+                            raise ValueError("Could not parse JSON")
+                else:
+                    # Try to find JSON code block
+                    code_block_match = re.search(
+                        r"```(?:json)?\s*(\{.*?\})\s*```", llm_response, re.DOTALL
+                    )
+                    if code_block_match:
+                        extracted_params = json.loads(code_block_match.group(1))
+                        print(f"✅ Extracted parameters from LLM (code block): {extracted_params}")
+                    else:
+                        # If no JSON found, fall back to regex parsing
+                        print("⚠️  No JSON found in LLM response, falling back to regex parsing")
+                        print(f"📝 LLM response preview: {llm_response[:200]}")
+                        return await self._extract_params_with_regex(query)
+            except (json.JSONDecodeError, ValueError) as e:
+                print(
+                    f"⚠️  Failed to parse JSON from LLM response: {e}, falling back to regex parsing"
+                )
+                print(f"📝 LLM response preview: {llm_response[:200]}")
+                return await self._extract_params_with_regex(query)
+
+            # Use extracted parameters from LLM
+            chain = extracted_params.get("chain", "hedera")
+            token_in_symbol = extracted_params.get("token_in_symbol", "HBAR")
+            token_out_symbol = extracted_params.get("token_out_symbol", "USDC")
+            amount_in = extracted_params.get("amount_in", "0.01")
+            account_address = extracted_params.get("account_address")
+            slippage_tolerance = extracted_params.get("slippage_tolerance", 0.5)
+
+            # Log extracted parameters for debugging
+            print("🔍 LLM Extracted Parameters:")
+            print(f"   Chain: {chain}")
+            print(f"   Token In: {token_in_symbol}")
+            print(f"   Token Out: {token_out_symbol}")
+            print(f"   Amount: {amount_in}")
+            print(f"   Account: {account_address}")
+            print(f"   Slippage: {slippage_tolerance}%")
+
+        except Exception as e:
+            print(f"⚠️  Error calling LLM: {e}")
+            print("🔄 Falling back to regex-based parameter extraction")
+            return await self._extract_params_with_regex(query)
+
+        # Continue with swap execution using extracted parameters
+        return await self._execute_swap(
+            chain=chain,
+            token_in_symbol=token_in_symbol,
+            token_out_symbol=token_out_symbol,
+            amount_in=amount_in,
+            account_address=account_address,
+            slippage_tolerance=slippage_tolerance,
+        )
+
+    async def _extract_params_with_regex(self, query: str) -> str:
+        """Fallback method using regex extraction (backward compatibility)."""
         # Parse query to extract swap parameters
         chain = "hedera"  # Default
         token_in_symbol = "HBAR"  # Default
@@ -164,9 +291,6 @@ Return a structured JSON response with swap transaction details.
         amount_in = "0.01"  # Default (small amount for testing)
         account_address = None
         slippage_tolerance = 0.5  # Default 0.5%
-
-        if not query or not query.strip():
-            query = "Swap 0.01 HBAR to USDC on hedera"
 
         query_lower = query.lower()
 
@@ -178,29 +302,145 @@ Return a structured JSON response with swap transaction details.
         elif evm_match:
             account_address = evm_match.group()
 
-        # Extract chain
+        # Extract chain - if not specified, we'll ask user to select
+        chain_specified = False
         if "hedera" in query_lower:
             chain = "hedera"
+            chain_specified = True
         elif "polygon" in query_lower:
             chain = "polygon"
+            chain_specified = True
 
-        # Extract token symbols
-        token_symbols = ["HBAR", "USDC", "USDT", "MATIC", "ETH", "WBTC", "DAI"]
-        found_tokens = []
-        for token in token_symbols:
-            if token.lower() in query_lower:
-                found_tokens.append(token)
+        # Extract token symbols - get all available tokens for the chain
+        from .tools.constants import CHAIN_TOKENS
 
-        if len(found_tokens) >= 2:
-            token_in_symbol = found_tokens[0]
-            token_out_symbol = found_tokens[1]
-        elif len(found_tokens) == 1:
-            token_in_symbol = found_tokens[0]
-            # Default output token
-            if token_in_symbol == "HBAR":
-                token_out_symbol = "USDC"
-            else:
-                token_out_symbol = "HBAR"
+        available_tokens = list(CHAIN_TOKENS.get(chain, {}).keys()) if chain_specified else []
+
+        # Also check common token names
+        all_token_symbols = available_tokens + [
+            "HBAR",
+            "USDC",
+            "USDT",
+            "MATIC",
+            "ETH",
+            "WBTC",
+            "DAI",
+            "WMATIC",
+            "WHBAR",
+            "WETH",
+            "LINK",
+            "AAVE",
+            "UNI",
+            "CRV",
+            "SAUCE",
+            "DOGE",
+            "BTC",
+            "AVAX",
+        ]
+
+        # Try to detect swap direction from patterns like "X to Y", "X for Y", "swap X Y"
+        token_in_symbol = None
+        token_out_symbol = None
+
+        # Pattern 1: "X to Y" or "X for Y" or "X -> Y" or "X => Y"
+        # Look for patterns like "usdc to hbar", "swap 0.2 usdc to hbar", etc.
+        to_patterns = [
+            # Patterns with "swap" keyword (check these first)
+            r"swap\s+(\d+\.?\d*)\s+([A-Za-z]+)\s+to\s+([A-Za-z]+)",  # "swap 0.2 usdc to hbar"
+            r"swap\s+([A-Za-z]+)\s+to\s+([A-Za-z]+)",  # "swap usdc to hbar" or "i want to swap swap usdc to hbar"
+            r"swap\s+([A-Za-z]+)\s+for\s+([A-Za-z]+)",  # "swap usdc for hbar"
+            # Patterns without "swap" keyword
+            r"(\d+\.?\d*)\s+([A-Za-z]+)\s+to\s+([A-Za-z]+)",  # "0.2 usdc to hbar"
+            r"([A-Za-z]+)\s+to\s+([A-Za-z]+)",  # "usdc to hbar"
+            r"([A-Za-z]+)\s+for\s+([A-Za-z]+)",  # "usdc for hbar"
+            r"([A-Za-z]+)\s*->\s*([A-Za-z]+)",  # "usdc -> hbar"
+            r"([A-Za-z]+)\s*=>\s*([A-Za-z]+)",  # "usdc => hbar"
+        ]
+
+        for pattern in to_patterns:
+            match = re.search(pattern, query_lower)
+            if match:
+                # Handle patterns with amount (3 groups) or without (2 groups)
+                if len(match.groups()) == 3:
+                    # Pattern has amount: group 2 is token_in, group 3 is token_out
+                    token1 = match.group(2).upper()
+                    token2 = match.group(3).upper()
+                else:
+                    # Pattern without amount: group 1 is token_in, group 2 is token_out
+                    token1 = match.group(1).upper()
+                    token2 = match.group(2).upper()
+
+                # Check if both tokens are in our known list
+                if token1 in all_token_symbols and token2 in all_token_symbols:
+                    # If chain is specified, verify tokens are available on that chain
+                    if chain_specified:
+                        if token1 in CHAIN_TOKENS.get(chain, {}) and token2 in CHAIN_TOKENS.get(
+                            chain, {}
+                        ):
+                            token_in_symbol = token1
+                            token_out_symbol = token2
+                            print(f"✅ Found tokens on {chain}: {token1} -> {token2}")
+                            break
+                    else:
+                        # No chain specified yet - accept tokens and we'll ask for chain later
+                        token_in_symbol = token1
+                        token_out_symbol = token2
+                        print(f"✅ Found tokens (no chain specified yet): {token1} -> {token2}")
+                        break
+
+        # Pattern 2: If no direction found, find all tokens and use order in query
+        if not token_in_symbol or not token_out_symbol:
+            found_tokens = []
+            token_positions = {}  # Track position of each token in query
+
+            for token in all_token_symbols:
+                token_lower = token.lower()
+                if token_lower in query_lower:
+                    # Only add if token is available on the selected chain
+                    if chain_specified:
+                        if token in CHAIN_TOKENS.get(chain, {}):
+                            found_tokens.append(token)
+                            # Find position of token in query
+                            pos = query_lower.find(token_lower)
+                            if pos != -1:
+                                token_positions[token] = pos
+                    else:
+                        found_tokens.append(token)
+                        pos = query_lower.find(token_lower)
+                        if pos != -1:
+                            token_positions[token] = pos
+
+            # Sort tokens by their position in the query
+            if token_positions:
+                found_tokens = sorted(found_tokens, key=lambda t: token_positions.get(t, 999999))
+
+            if len(found_tokens) >= 2:
+                token_in_symbol = found_tokens[0]
+                token_out_symbol = found_tokens[1]
+            elif len(found_tokens) == 1:
+                token_in_symbol = found_tokens[0]
+                # Default output token based on chain - prefer stablecoins
+                if chain == "hedera":
+                    if token_in_symbol == "HBAR":
+                        token_out_symbol = "USDC"  # Default to USDC for HBAR
+                    elif token_in_symbol == "USDC":
+                        token_out_symbol = "HBAR"  # USDC -> HBAR (common swap)
+                    elif token_in_symbol == "USDT":
+                        token_out_symbol = "USDC"  # USDT -> USDC
+                    else:
+                        token_out_symbol = "USDC"  # Any other token -> USDC
+                elif chain == "polygon":
+                    if token_in_symbol == "MATIC":
+                        token_out_symbol = "USDC"  # Default to USDC for MATIC
+                    elif token_in_symbol == "USDC":
+                        token_out_symbol = "USDT"  # USDC -> USDT
+                    elif token_in_symbol == "USDT":
+                        token_out_symbol = "USDC"  # USDT -> USDC
+                    else:
+                        token_out_symbol = "USDC"  # Any other token -> USDC
+                else:
+                    # Fallback
+                    token_out_symbol = "USDC"
 
         # Extract amount
         amount_match = re.search(r"(\d+\.?\d*)", query)
@@ -216,8 +456,10 @@ Return a structured JSON response with swap transaction details.
         if "chain:" in query_lower or "chain=" in query_lower:
             if "hedera" in query_lower:
                 chain = "hedera"
+                chain_specified = True
             elif "polygon" in query_lower:
                 chain = "polygon"
+                chain_specified = True
 
         if "account:" in query_lower or "address:" in query_lower:
             account_match = re.search(
@@ -226,101 +468,231 @@ Return a structured JSON response with swap transaction details.
             if account_match:
                 account_address = account_match.group(1)
 
+        # If chain is not specified, return early asking user to select chain
+        if not chain_specified:
+            print("⚠️ Chain not specified in query - asking user to select chain")
+            response_message = (
+                "To proceed with the swap, please specify which blockchain you'd like to swap on:\n\n"
+                "• **Hedera** - For swapping HBAR, USDC, USDT, and other Hedera tokens\n"
+                "• **Polygon** - For swapping MATIC, USDC, USDT, and other Polygon tokens\n\n"
+                "Please select a chain and provide your swap details."
+            )
+            return json.dumps(
+                {
+                    "type": "swap",
+                    "requires_chain_selection": True,
+                    "message": response_message,
+                    "supported_chains": ["hedera", "polygon"],
+                },
+                indent=2,
+            )
+
         print(
-            f"📊 Parsed: chain={chain}, tokenIn={token_in_symbol}, tokenOut={token_out_symbol}, amount={amount_in}, account={account_address}, slippage={slippage_tolerance}%"
+            f"📊 Parsed (regex): chain={chain}, tokenIn={token_in_symbol}, tokenOut={token_out_symbol}, amount={amount_in}, account={account_address}, slippage={slippage_tolerance}%"
         )
 
-        # Determine token addresses based on chain
-        token_addresses = {
-            "hedera": {
-                "HBAR": "0.0.0",
-                "USDC": "0.0.456858",
-                "USDT": "0.0.1055472",
-            },
-            "polygon": {
-                "MATIC": "0x0000000000000000000000000000000000000000",
-                "USDC": "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
-                "USDT": "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
-            },
-        }
+        # Validate extracted parameters before executing swap
+        if not token_in_symbol:
+            return json.dumps(
+                {
+                    "type": "swap",
+                    "error": "Could not determine which token to swap from. Please specify clearly, e.g., 'swap USDC to HBAR' or 'swap 0.2 USDC to HBAR'",
+                },
+                indent=2,
+            )
 
-        token_in_address = token_addresses.get(chain, {}).get(
-            token_in_symbol, "0x0000000000000000000000000000000000000000"
-        )
-        token_out_address = token_addresses.get(chain, {}).get(
-            token_out_symbol, "0x0000000000000000000000000000000000000000"
+        if not token_out_symbol:
+            return json.dumps(
+                {
+                    "type": "swap",
+                    "error": "Could not determine which token to swap to. Please specify clearly, e.g., 'swap USDC to HBAR' or 'swap 0.2 USDC to HBAR'",
+                },
+                indent=2,
+            )
+
+        # Continue with swap execution
+        return await self._execute_swap(
+            chain=chain,
+            token_in_symbol=token_in_symbol,
+            token_out_symbol=token_out_symbol,
+            amount_in=amount_in,
+            account_address=account_address,
+            slippage_tolerance=slippage_tolerance,
         )
 
-        # Mock balance check
+    async def _execute_swap(
+        self,
+        chain: str,
+        token_in_symbol: str,
+        token_out_symbol: str,
+        amount_in: str,
+        account_address: Optional[str],
+        slippage_tolerance: float,
+    ) -> str:
+        """Execute swap with extracted parameters."""
+        print(
+            f"📊 Executing swap: chain={chain}, tokenIn={token_in_symbol}, tokenOut={token_out_symbol}, amount={amount_in}, account={account_address}, slippage={slippage_tolerance}%"
+        )
+
+        # Get chain-specific swap configuration
+        swap_config = None
+        if chain == "hedera":
+            swap_config = get_swap_hedera(
+                token_in_symbol=token_in_symbol,
+                token_out_symbol=token_out_symbol,
+                amount_in=amount_in,
+                account_address=account_address or "",
+                slippage_tolerance=slippage_tolerance,
+            )
+        elif chain == "polygon":
+            swap_config = get_swap_polygon(
+                token_in_symbol=token_in_symbol,
+                token_out_symbol=token_out_symbol,
+                amount_in=amount_in,
+                account_address=account_address or "",
+                slippage_tolerance=slippage_tolerance,
+            )
+        else:
+            raise ValueError(f"Unsupported chain: {chain}. Supported chains: hedera, polygon")
+
+        # Extract addresses from swap config
+        # For Hedera: use Hedera format for balance checking, EVM format for contract calls
+        # For Polygon/EVM: use EVM format for both
+        if chain == "hedera":
+            token_in_address = swap_config.get("token_in_address", "")  # Hedera format for balance
+            token_out_address = swap_config.get(
+                "token_out_address", ""
+            )  # Hedera format for balance
+            token_in_address_evm = swap_config.get(
+                "token_in_address_evm", ""
+            )  # EVM format for contracts
+            token_out_address_evm = swap_config.get(
+                "token_out_address_evm", ""
+            )  # EVM format for contracts
+        else:
+            token_in_address = swap_config.get("token_in_address", "")  # EVM format
+            token_out_address = swap_config.get("token_out_address", "")  # EVM format
+            token_in_address_evm = token_in_address  # Same for EVM chains
+            token_out_address_evm = token_out_address  # Same for EVM chains
+
+        dex_name = swap_config.get("dex_name", "Unknown")
+        pool_address = swap_config.get("router_address", "")
+
+        # Fetch actual balance from blockchain
         try:
             amount_float = float(amount_in)
         except Exception:
             amount_float = 0.01
 
-        # Hardcoded balance (in production, fetch from Balance Agent)
-        mock_balance = 1000.0  # Assume user has 1000 tokens
-        balance_sufficient = mock_balance >= amount_float
+        # Fetch actual balance from blockchain
+        # IMPORTANT: Use Hedera format addresses for balance checking
+        actual_balance = 0.0
+        balance_sufficient = False
+
+        if account_address:
+            try:
+                # Fetch balance based on chain
+                if chain == "hedera":
+                    # Use Hedera format address for balance checking
+                    balance_result = get_balance_hedera(
+                        account_address, token_address=token_in_address
+                    )
+                    # Find the matching token balance
+                    if balance_result.get("balances"):
+                        for balance_item in balance_result["balances"]:
+                            if balance_item.get("token_address") == token_in_address:
+                                actual_balance = float(balance_item.get("balance", "0"))
+                                break
+                            # For HBAR, check native token
+                            if (
+                                token_in_symbol == "HBAR"
+                                and balance_item.get("token_type") == "native"
+                            ):
+                                actual_balance = float(balance_item.get("balance", "0"))
+                                break
+                elif chain == "polygon":
+                    # Use EVM format address for balance checking (Polygon is EVM)
+                    balance_result = get_balance_polygon(
+                        account_address, token_address=token_in_address
+                    )
+                    # Find the matching token balance
+                    if balance_result.get("balances"):
+                        for balance_item in balance_result["balances"]:
+                            if balance_item.get("token_address") == token_in_address:
+                                actual_balance = float(balance_item.get("balance", "0"))
+                                break
+                            # For MATIC, check native token
+                            if (
+                                token_in_symbol == "MATIC"
+                                and balance_item.get("token_type") == "native"
+                            ):
+                                actual_balance = float(balance_item.get("balance", "0"))
+                                break
+
+                balance_sufficient = actual_balance >= amount_float
+                print(
+                    f"💰 Balance check: {actual_balance} {token_in_symbol} >= {amount_float} {token_in_symbol} = {balance_sufficient}"
+                )
+            except Exception as e:
+                print(f"⚠️ Error fetching balance: {e}")
+                # If balance fetch fails, assume insufficient to be safe
+                actual_balance = 0.0
+                balance_sufficient = False
 
         balance_check = None
         if account_address:
             balance_check = {
                 "account_address": account_address,
                 "token_symbol": token_in_symbol,
-                "balance": f"{mock_balance:.2f}",
+                "balance": f"{actual_balance:.2f}",
                 "balance_sufficient": balance_sufficient,
                 "required_amount": f"{amount_float:.2f}",
             }
 
-        # TEMPORARY: Direct swap - calculate estimated output (simple 1:1 for now)
-        # In production, this would query DEX pools for actual rates
-        amount_out_float = amount_float * 0.995  # Assume 0.5% fee
-        amount_out = f"{amount_out_float:.6f}"
-        amount_out_min_float = amount_out_float * (1 - slippage_tolerance / 100)
-        amount_out_min = f"{amount_out_min_float:.6f}"
-
-        # Default DEX based on chain
-        if chain == "hedera":
-            dex_name = "SaucerSwap"
-            pool_address = (
-                "0x0000000000000000000000000000000000163B5a"  # WHBAR/USDC pool
-            )
-        else:
-            dex_name = "QuickSwap"
-            pool_address = "0x1234567890ABCDEF1234567890ABCDEF12345678"
+        # Extract swap amounts from swap config
+        amount_out = swap_config.get("amount_out", "0")
+        amount_out_min = swap_config.get("amount_out_min", "0")
+        swap_fee_percent = swap_config.get("swap_fee_percent", 0.3)
 
         # Generate transaction hash
         tx_hash = f"0x{''.join([random.choice('0123456789abcdef') for _ in range(64)])}"
 
         # TEMPORARY: Direct swap - create transaction immediately (no quotes)
         # Check if this is an initiation request
-        confirmation_phrases = [
-            "okay swap",
-            "ok swap",
-            "confirm swap",
-            "swap now",
-            "proceed",
-            "yes swap",
-            "go ahead",
-            "execute swap",
-            "initiate swap",
-        ]
-        has_confirmation = any(phrase in query_lower for phrase in confirmation_phrases)
+        # Note: For now, we always proceed with swap (no confirmation needed)
+        has_confirmation = True
+
+        # Calculate swap fee
+        swap_fee_amount = amount_float * (swap_fee_percent / 100)
 
         # If query contains "initiate" or confirmation phrases, proceed with swap
-        if (
-            "initiate" in query_lower or has_confirmation or True
-        ):  # Always true for direct swap
+        if has_confirmation:  # Always true for direct swap
+            # For Hedera: use EVM addresses in transaction for contract calls
+            # For Polygon/EVM: addresses are already in EVM format
+            transaction_token_in_address = (
+                token_in_address_evm if chain == "hedera" else token_in_address
+            )
+            transaction_token_out_address = (
+                token_out_address_evm if chain == "hedera" else token_out_address
+            )
+
             transaction = {
                 "chain": chain,
                 "token_in_symbol": token_in_symbol,
-                "token_in_address": token_in_address,
+                "token_in_address": transaction_token_in_address,  # EVM format for contract calls
+                "token_in_address_hedera": (
+                    token_in_address if chain == "hedera" else None
+                ),  # Hedera format for balance
                 "token_out_symbol": token_out_symbol,
-                "token_out_address": token_out_address,
+                "token_out_address": transaction_token_out_address,  # EVM format for contract calls
+                "token_out_address_hedera": (
+                    token_out_address if chain == "hedera" else None
+                ),  # Hedera format for balance
                 "amount_in": amount_in,
                 "amount_out": amount_out,
                 "amount_out_min": amount_out_min,
-                "swap_fee": f"${amount_float * 0.003:.2f}",  # 0.3% fee
-                "swap_fee_percent": 0.3,
+                "swap_fee": f"${swap_fee_amount:.2f}",
+                "swap_fee_percent": swap_fee_percent,
                 "estimated_time": "~30 seconds",
                 "dex_name": dex_name,
                 "pool_address": pool_address,
@@ -328,19 +700,22 @@ Return a structured JSON response with swap transaction details.
                 "transaction_hash": tx_hash,
                 "status": "pending",
                 "price_impact": "0.1%",
+                "swap_path": swap_config.get("swap_path", []),  # EVM addresses for contract calls
+                "rpc_url": swap_config.get("rpc_url", ""),
             }
             print(
-                f"💱 Direct swap transaction created: {amount_in} {token_in_symbol} -> {amount_out} {token_out_symbol}"
+                f"💱 Direct swap transaction created on {chain}: {amount_in} {token_in_symbol} -> {amount_out} {token_out_symbol} via {dex_name}"
             )
         else:
             transaction = None
 
         # Build response - TEMPORARY: Direct swap, no options
+        # IMPORTANT: Use the extracted parameters directly - no hardcoding
         hardcoded_swap = {
             "type": "swap",
             "chain": chain,
-            "token_in_symbol": token_in_symbol,
-            "token_out_symbol": token_out_symbol,
+            "token_in_symbol": token_in_symbol,  # Use extracted token_in_symbol
+            "token_out_symbol": token_out_symbol,  # Use extracted token_out_symbol
             "amount_in": amount_in,
             "account_address": account_address,
             "balance_check": balance_check,
@@ -350,6 +725,12 @@ Return a structured JSON response with swap transaction details.
             "confirmation_threshold": 100.0,
             "amount_exceeds_threshold": False,
         }
+
+        # Log final response for debugging
+        print("🔍 Final Response JSON:")
+        print(f"   token_in_symbol: {hardcoded_swap['token_in_symbol']}")
+        print(f"   token_out_symbol: {hardcoded_swap['token_out_symbol']}")
+        print(f"   amount_in: {hardcoded_swap['amount_in']}")
 
         # Always return valid JSON - never call LLM
         try:

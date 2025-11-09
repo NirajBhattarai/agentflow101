@@ -12,10 +12,18 @@ POLYGON_TOKENS = {
 }
 
 # Hedera
+# Use Hedera format addresses (0.0.123456) for balance checking via Mirror Node API
 HEDERA_TOKENS = {
-    "USDC": "0.0.456858",
     "HBAR": "0.0.0",  # Native token
+    "USDC": "0.0.456858",
+    "USDT": "0.0.1055472",
     "WHBAR": "0.0.1456986",  # Wrapped HBAR token
+    "ETH": "0.0.541564",  # Wrapped Ethereum
+    "WETH": "0.0.541564",  # Wrapped Ethereum (same as ETH)
+    "BTC": "0.0.1055483",  # Wrapped Bitcoin
+    "SAUCE": "0.0.731861",  # SaucerSwap Token
+    "LINK": "0.0.1055495",  # Chainlink
+    "AVAX": "0.0.1157020",  # Avalanche
 }
 
 # Chain-specific mappings for easy lookup

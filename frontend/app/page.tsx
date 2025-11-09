@@ -1,9 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { WalletConnect } from "@/components/WalletConnect";
+import { WalletConnect, Logo } from "@/components/shared";
 import { useAppKitAccount } from "@reown/appkit/react";
-import { Logo } from "@/components/Logo";
 
 export default function LandingPage() {
   const { address } = useAppKitAccount?.() || ({} as any);
@@ -66,8 +65,8 @@ export default function LandingPage() {
               </span>
             </h1>
             <p className="text-xl sm:text-2xl text-[#57575B] max-w-3xl mx-auto leading-relaxed mb-10">
-              Experience the future of DeFi with autonomous AI agents that coordinate across
-              chains to optimize your trading, bridging, and yield strategies.
+              Experience the future of DeFi with autonomous AI agents that coordinate across chains
+              to optimize your trading, bridging, and yield strategies.
             </p>
           </div>
 
@@ -180,21 +179,16 @@ export default function LandingPage() {
             Built With Cutting-Edge Technology
           </h2>
           <div className="flex flex-wrap items-center justify-center gap-4">
-            {[
-              "A2A Protocol",
-              "Google ADK",
-              "Hedera SDK",
-              "CopilotKit",
-              "Next.js",
-              "FastAPI",
-            ].map((tech) => (
-              <div
-                key={tech}
-                className="px-6 py-3 bg-white/60 backdrop-blur-sm border border-[#DBDBE5] rounded-xl text-[#010507] font-medium hover:bg-white/80 transition-all duration-300"
-              >
-                {tech}
-              </div>
-            ))}
+            {["A2A Protocol", "Google ADK", "Hedera SDK", "CopilotKit", "Next.js", "FastAPI"].map(
+              (tech) => (
+                <div
+                  key={tech}
+                  className="px-6 py-3 bg-white/60 backdrop-blur-sm border border-[#DBDBE5] rounded-xl text-[#010507] font-medium hover:bg-white/80 transition-all duration-300"
+                >
+                  {tech}
+                </div>
+              ),
+            )}
           </div>
         </div>
 
@@ -205,8 +199,7 @@ export default function LandingPage() {
               Ready to Experience the Future?
             </h2>
             <p className="text-lg text-[#57575B] mb-8 max-w-2xl mx-auto">
-              Join the revolution of AI-powered DeFi. Start chatting with your DeFi assistant
-              now.
+              Join the revolution of AI-powered DeFi. Start chatting with your DeFi assistant now.
             </p>
             <Link
               href="/chat"

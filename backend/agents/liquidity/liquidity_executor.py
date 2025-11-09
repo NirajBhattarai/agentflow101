@@ -143,11 +143,7 @@ Always use the tools to fetch real data. Return ONLY valid JSON, no markdown cod
         query_upper = query.upper()
 
         # Check for explicit chain mentions first
-        if (
-            "chain:" in query_lower
-            or "chain =" in query_lower
-            or "chain=" in query_lower
-        ):
+        if "chain:" in query_lower or "chain =" in query_lower or "chain=" in query_lower:
             if "polygon" in query_lower:
                 chain = "polygon"
             elif "hedera" in query_lower:

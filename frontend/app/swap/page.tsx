@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useAppKitAccount } from "@reown/appkit/react";
-import DeFiChat from "@/components/defi-chat";
-import { SwapCard } from "@/components/SwapCard";
-import { WalletConnect } from "@/components/WalletConnect";
-import type { SwapData } from "@/components/types";
+import { DeFiChat } from "@/components/chat";
+import { SwapCard } from "@/components/features/swap";
+import { WalletConnect } from "@/components/shared";
+import type { SwapData } from "@/types";
 import "../copilot.css";
 
 export default function SwapPage() {

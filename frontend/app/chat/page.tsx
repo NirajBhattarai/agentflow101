@@ -2,15 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useAppKitAccount } from "@reown/appkit/react";
-import DeFiChat from "@/components/defi-chat";
-import { BalanceCard } from "@/components/BalanceCard";
-import { BridgeCard } from "@/components/BridgeCard";
-import { SwapCard } from "@/components/SwapCard";
-import { WalletConnect } from "@/components/WalletConnect";
-import type { BalanceData, LiquidityData, BridgeData, SwapData } from "@/components/types";
+import { DeFiChat } from "@/components/chat";
+import { BalanceCard } from "@/components/features/balance";
+import { BridgeCard } from "@/components/features/bridge";
+import { SwapCard } from "@/components/features/swap";
+import { WalletConnect, Logo } from "@/components/shared";
+import type { BalanceData, LiquidityData, BridgeData, SwapData } from "@/types";
 import "../copilot.css";
 import Link from "next/link";
-import { Logo } from "@/components/Logo";
 
 export default function ChatPage() {
   const [balanceData, setBalanceData] = useState<BalanceData | null>(null);
@@ -247,4 +246,3 @@ export default function ChatPage() {
     </div>
   );
 }
-

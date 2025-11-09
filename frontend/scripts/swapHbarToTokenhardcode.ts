@@ -33,7 +33,7 @@ import {
   TransactionRecord,
   Long,
 } from "@hashgraph/sdk";
-import { ROUTER_ABI } from "../lib/contracts/router-abi";
+import { ROUTER_ABI } from "../lib/shared/contracts/router-abi";
 
 dotenv.config();
 
