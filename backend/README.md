@@ -69,6 +69,9 @@ uv run -m agents.bridge
 
 # Swap Agent
 uv run -m agents.swap
+
+# Parallel Liquidity Agent
+uv run -m agents.parallel_liquidity
 ```
 
 ### API Documentation
@@ -91,6 +94,7 @@ BALANCE_PORT=9997
 LIQUIDITY_PORT=9998
 BRIDGE_PORT=9996
 SWAP_PORT=9995
+PARALLEL_LIQUIDITY_PORT=9994
 FRONTEND_URL=http://localhost:3000
 ```
 

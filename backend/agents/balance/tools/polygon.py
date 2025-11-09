@@ -29,7 +29,9 @@ def _format_balance(balance_wei: int, decimals: int) -> str:
     return str(balance_float)
 
 
-def get_balance_polygon(account_address: str, token_address: Optional[str] = None) -> dict:
+def get_balance_polygon(
+    account_address: str, token_address: Optional[str] = None
+) -> dict:
     """Get token balance for an account on Polygon chain.
 
     Args:

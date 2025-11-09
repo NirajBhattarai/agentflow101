@@ -23,7 +23,9 @@ from a2a.utils import new_agent_text_message  # noqa: E402
 from google.adk.agents.llm_agent import LlmAgent  # noqa: E402
 from google.adk.runners import Runner  # noqa: E402
 from google.adk.sessions import InMemorySessionService  # noqa: E402
-from google.adk.memory.in_memory_memory_service import InMemoryMemoryService  # noqa: E402
+from google.adk.memory.in_memory_memory_service import (
+    InMemoryMemoryService,
+)  # noqa: E402
 from google.adk.artifacts import InMemoryArtifactService  # noqa: E402
 
 from .tools import (  # noqa: E402
@@ -160,7 +162,9 @@ Always use the tools to fetch real data. Return ONLY valid JSON, no markdown cod
             hardcoded_balance = {
                 "type": "balance",
                 "chain": "polygon",
-                "account_address": polygon_result.get("account_address", account_address),
+                "account_address": polygon_result.get(
+                    "account_address", account_address
+                ),
                 "balances": polygon_result.get("balances", []),
                 "total_usd_value": polygon_result.get("total_usd_value", "$0.00"),
             }
@@ -170,7 +174,9 @@ Always use the tools to fetch real data. Return ONLY valid JSON, no markdown cod
             hardcoded_balance = {
                 "type": "balance",
                 "chain": "hedera",
-                "account_address": hedera_result.get("account_address", account_address),
+                "account_address": hedera_result.get(
+                    "account_address", account_address
+                ),
                 "balances": hedera_result.get("balances", []),
                 "total_usd_value": hedera_result.get("total_usd_value", "$0.00"),
             }
@@ -181,7 +187,9 @@ Always use the tools to fetch real data. Return ONLY valid JSON, no markdown cod
             polygon_balances = [
                 {**b, "chain": "polygon"} for b in polygon_result.get("balances", [])
             ]
-            hedera_balances = [{**b, "chain": "hedera"} for b in hedera_result.get("balances", [])]
+            hedera_balances = [
+                {**b, "chain": "hedera"} for b in hedera_result.get("balances", [])
+            ]
 
             hardcoded_balance = {
                 "type": "balance",
@@ -207,7 +215,9 @@ Always use the tools to fetch real data. Return ONLY valid JSON, no markdown cod
             validated_balance = StructuredBalance(**hardcoded_balance)
             final_response = json.dumps(validated_balance.model_dump(), indent=2)
 
-            print(f"✅ Returning hardcoded balance response for {account_address} on {chain}")
+            print(
+                f"✅ Returning hardcoded balance response for {account_address} on {chain}"
+            )
             print(f"📦 Response length: {len(final_response)} chars")
             print(f"📄 Response preview: {final_response[:200]}...")
 

@@ -59,7 +59,9 @@ class TestAllChainsBalance:
         # Totals should be strings
         assert isinstance(result["total_usd_value"], str)
 
-    def test_all_chains_with_token_address(self, test_account_addresses, test_token_addresses):
+    def test_all_chains_with_token_address(
+        self, test_account_addresses, test_token_addresses
+    ):
         """Test that token address is passed to chain tools."""
         account = test_account_addresses["polygon"]
         token_addr = test_token_addresses["polygon"]["USDC"]

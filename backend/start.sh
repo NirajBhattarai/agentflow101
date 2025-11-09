@@ -42,6 +42,11 @@ echo "💱 Starting Swap Agent on port 9995..."
 uv run -m agents.swap &
 SWAP_PID=$!
 
+# Start Parallel Liquidity Agent (port 9994)
+echo "💧🚀 Starting Parallel Liquidity Agent on port 9994..."
+uv run -m agents.parallel_liquidity &
+PARALLEL_LIQUIDITY_PID=$!
+
 # Wait for all processes
 echo "✅ All services started!"
 echo "   Main Backend: http://0.0.0.0:8000"
@@ -50,6 +55,7 @@ echo "   Balance Agent: http://0.0.0.0:9997"
 echo "   Liquidity Agent: http://0.0.0.0:9998"
 echo "   Bridge Agent: http://0.0.0.0:9996"
 echo "   Swap Agent: http://0.0.0.0:9995"
+echo "   Parallel Liquidity Agent: http://0.0.0.0:9994"
 echo ""
 echo "Press Ctrl+C to stop all services"
 
@@ -57,7 +63,7 @@ echo "Press Ctrl+C to stop all services"
 cleanup() {
     echo ""
     echo "🛑 Stopping all services..."
-    kill $BACKEND_PID $ORCHESTRATOR_PID $BALANCE_PID $LIQUIDITY_PID $BRIDGE_PID $SWAP_PID 2>/dev/null || true
+    kill $BACKEND_PID $ORCHESTRATOR_PID $BALANCE_PID $LIQUIDITY_PID $BRIDGE_PID $SWAP_PID $PARALLEL_LIQUIDITY_PID 2>/dev/null || true
     exit 0
 }
 

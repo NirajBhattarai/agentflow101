@@ -2,7 +2,9 @@ from typing import Optional
 from .constants import HEDERA_TOKENS, HEDERA_POOLS
 
 
-def get_liquidity_hedera(token_address: str, pool_address: Optional[str] = None) -> dict:
+def get_liquidity_hedera(
+    token_address: str, pool_address: Optional[str] = None
+) -> dict:
     """Get liquidity information from Hedera chain."""
     # Look up token address if a symbol is provided
     if token_address.upper() in HEDERA_TOKENS:

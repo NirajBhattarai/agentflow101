@@ -32,7 +32,9 @@ class TestPolygonBalance:
         assert len(result["balances"]) > 0
 
         # Check native balance exists
-        native_balance = next((b for b in result["balances"] if b["token_type"] == "native"), None)
+        native_balance = next(
+            (b for b in result["balances"] if b["token_type"] == "native"), None
+        )
         assert native_balance is not None, "Native MATIC balance should be present"
         assert native_balance["token_symbol"] == "MATIC"
         assert "balance" in native_balance
@@ -50,9 +52,13 @@ class TestPolygonBalance:
         assert "balances" in result
 
         # Check token balance exists
-        token_balance = next((b for b in result["balances"] if b["token_type"] == "token"), None)
+        token_balance = next(
+            (b for b in result["balances"] if b["token_type"] == "token"), None
+        )
         assert token_balance is not None, "Token balance should be present"
-        assert token_balance["token_address"] == Web3.to_checksum_address(POLYGON_TOKENS["USDC"])
+        assert token_balance["token_address"] == Web3.to_checksum_address(
+            POLYGON_TOKENS["USDC"]
+        )
         assert "balance" in token_balance
         assert "balance_raw" in token_balance
 
@@ -68,7 +74,9 @@ class TestPolygonBalance:
         assert "balances" in result
 
         # Check token balance exists
-        token_balance = next((b for b in result["balances"] if b["token_type"] == "token"), None)
+        token_balance = next(
+            (b for b in result["balances"] if b["token_type"] == "token"), None
+        )
         assert token_balance is not None, "Token balance should be present"
         assert token_balance["token_address"] == Web3.to_checksum_address(token_addr)
 

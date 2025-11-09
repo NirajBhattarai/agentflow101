@@ -25,7 +25,9 @@ from a2a.utils import new_agent_text_message  # noqa: E402
 from google.adk.agents.llm_agent import LlmAgent  # noqa: E402
 from google.adk.runners import Runner  # noqa: E402
 from google.adk.sessions import InMemorySessionService  # noqa: E402
-from google.adk.memory.in_memory_memory_service import InMemoryMemoryService  # noqa: E402
+from google.adk.memory.in_memory_memory_service import (
+    InMemoryMemoryService,
+)  # noqa: E402
 from google.adk.artifacts import InMemoryArtifactService  # noqa: E402
 
 # Balance fetching imports
@@ -43,9 +45,13 @@ from .tools import (  # noqa: E402
 
 class SwapTransaction(BaseModel):
     chain: str = Field(description="Chain (hedera or polygon)")
-    token_in_symbol: str = Field(description="Token symbol to swap from (e.g., HBAR, USDC)")
+    token_in_symbol: str = Field(
+        description="Token symbol to swap from (e.g., HBAR, USDC)"
+    )
     token_in_address: str = Field(description="Token address to swap from")
-    token_out_symbol: str = Field(description="Token symbol to swap to (e.g., USDC, HBAR)")
+    token_out_symbol: str = Field(
+        description="Token symbol to swap to (e.g., USDC, HBAR)"
+    )
     token_out_address: str = Field(description="Token address to swap to")
     amount_in: str = Field(description="Amount to swap in human-readable format")
     amount_out: str = Field(description="Amount out in human-readable format")
@@ -60,7 +66,9 @@ class SwapTransaction(BaseModel):
         default=None, description="Transaction hash if swap is initiated"
     )
     status: str = Field(description="Swap status: pending, completed, failed")
-    price_impact: Optional[str] = Field(default=None, description="Price impact percentage")
+    price_impact: Optional[str] = Field(
+        default=None, description="Price impact percentage"
+    )
 
 
 class SwapOption(BaseModel):
@@ -210,12 +218,16 @@ IMPORTANT:
                 # Try multiple patterns to find JSON in the response
                 # Pattern 1: Look for complete JSON object with token_in_symbol
                 json_match = re.search(
-                    r'\{[^{}]*(?:"token_in_symbol"|"chain")[^{}]*\}', llm_response, re.DOTALL
+                    r'\{[^{}]*(?:"token_in_symbol"|"chain")[^{}]*\}',
+                    llm_response,
+                    re.DOTALL,
                 )
                 if json_match:
                     try:
                         extracted_params = json.loads(json_match.group())
-                        print(f"✅ Extracted parameters from LLM (pattern 1): {extracted_params}")
+                        print(
+                            f"✅ Extracted parameters from LLM (pattern 1): {extracted_params}"
+                        )
                     except json.JSONDecodeError:
                         # Try to find a larger JSON block
                         json_match2 = re.search(
@@ -237,10 +249,14 @@ IMPORTANT:
                     )
                     if code_block_match:
                         extracted_params = json.loads(code_block_match.group(1))
-                        print(f"✅ Extracted parameters from LLM (code block): {extracted_params}")
+                        print(
+                            f"✅ Extracted parameters from LLM (code block): {extracted_params}"
+                        )
                     else:
                         # If no JSON found, fall back to regex parsing
-                        print("⚠️  No JSON found in LLM response, falling back to regex parsing")
+                        print(
+                            "⚠️  No JSON found in LLM response, falling back to regex parsing"
+                        )
                         print(f"📝 LLM response preview: {llm_response[:200]}")
                         return await self._extract_params_with_regex(query)
             except (json.JSONDecodeError, ValueError) as e:
@@ -314,7 +330,9 @@ IMPORTANT:
         # Extract token symbols - get all available tokens for the chain
         from .tools.constants import CHAIN_TOKENS
 
-        available_tokens = list(CHAIN_TOKENS.get(chain, {}).keys()) if chain_specified else []
+        available_tokens = (
+            list(CHAIN_TOKENS.get(chain, {}).keys()) if chain_specified else []
+        )
 
         # Also check common token names
         all_token_symbols = available_tokens + [
@@ -374,9 +392,9 @@ IMPORTANT:
                 if token1 in all_token_symbols and token2 in all_token_symbols:
                     # If chain is specified, verify tokens are available on that chain
                     if chain_specified:
-                        if token1 in CHAIN_TOKENS.get(chain, {}) and token2 in CHAIN_TOKENS.get(
+                        if token1 in CHAIN_TOKENS.get(
                             chain, {}
-                        ):
+                        ) and token2 in CHAIN_TOKENS.get(chain, {}):
                             token_in_symbol = token1
                             token_out_symbol = token2
                             print(f"✅ Found tokens on {chain}: {token1} -> {token2}")
@@ -385,7 +403,9 @@ IMPORTANT:
                         # No chain specified yet - accept tokens and we'll ask for chain later
                         token_in_symbol = token1
                         token_out_symbol = token2
-                        print(f"✅ Found tokens (no chain specified yet): {token1} -> {token2}")
+                        print(
+                            f"✅ Found tokens (no chain specified yet): {token1} -> {token2}"
+                        )
                         break
 
         # Pattern 2: If no direction found, find all tokens and use order in query
@@ -412,7 +432,9 @@ IMPORTANT:
 
             # Sort tokens by their position in the query
             if token_positions:
-                found_tokens = sorted(found_tokens, key=lambda t: token_positions.get(t, 999999))
+                found_tokens = sorted(
+                    found_tokens, key=lambda t: token_positions.get(t, 999999)
+                )
 
             if len(found_tokens) >= 2:
                 token_in_symbol = found_tokens[0]
@@ -553,13 +575,17 @@ IMPORTANT:
                 slippage_tolerance=slippage_tolerance,
             )
         else:
-            raise ValueError(f"Unsupported chain: {chain}. Supported chains: hedera, polygon")
+            raise ValueError(
+                f"Unsupported chain: {chain}. Supported chains: hedera, polygon"
+            )
 
         # Extract addresses from swap config
         # For Hedera: use Hedera format for balance checking, EVM format for contract calls
         # For Polygon/EVM: use EVM format for both
         if chain == "hedera":
-            token_in_address = swap_config.get("token_in_address", "")  # Hedera format for balance
+            token_in_address = swap_config.get(
+                "token_in_address", ""
+            )  # Hedera format for balance
             token_out_address = swap_config.get(
                 "token_out_address", ""
             )  # Hedera format for balance
@@ -700,7 +726,9 @@ IMPORTANT:
                 "transaction_hash": tx_hash,
                 "status": "pending",
                 "price_impact": "0.1%",
-                "swap_path": swap_config.get("swap_path", []),  # EVM addresses for contract calls
+                "swap_path": swap_config.get(
+                    "swap_path", []
+                ),  # EVM addresses for contract calls
                 "rpc_url": swap_config.get("rpc_url", ""),
             }
             print(

@@ -6,6 +6,7 @@ import { DeFiChat } from "@/components/chat";
 import { BalanceCard } from "@/components/features/balance";
 import { BridgeCard } from "@/components/features/bridge";
 import { SwapCard } from "@/components/features/swap";
+import { LiquidityCard } from "@/components/features/liquidity";
 import { WalletConnect, Logo } from "@/components/shared";
 import type { BalanceData, LiquidityData, BridgeData, SwapData } from "@/types";
 import "../copilot.css";
@@ -168,8 +169,8 @@ export default function ChatPage() {
               <div className="mb-8">
                 <h2 className="text-3xl font-semibold text-[#010507] mb-2">Your DeFi Data</h2>
                 <p className="text-[#57575B]">
-                  Multi-agent coordination: Balance, Liquidity, Bridge, and Swap agents with A2A
-                  Protocol
+                  Multi-agent coordination: Balance, Liquidity, Parallel Liquidity, Bridge, and Swap
+                  agents with A2A Protocol
                 </p>
               </div>
 
@@ -197,12 +198,7 @@ export default function ChatPage() {
 
               {liquidityData && (
                 <div className="mb-4">
-                  <div className="bg-white/60 backdrop-blur-md rounded-xl p-6 border-2 border-[#DBDBE5] shadow-elevation-md">
-                    <h3 className="text-xl font-semibold text-[#010507] mb-4">Liquidity Data</h3>
-                    <pre className="text-xs bg-gray-50 p-4 rounded overflow-auto">
-                      {JSON.stringify(liquidityData, null, 2)}
-                    </pre>
-                  </div>
+                  <LiquidityCard data={liquidityData} />
                 </div>
               )}
 

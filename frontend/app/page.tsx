@@ -91,7 +91,7 @@ export default function LandingPage() {
         </div>
 
         {/* Features Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-16">
           {/* Balance Agent */}
           <div className="group relative p-6 bg-white/60 backdrop-blur-md rounded-2xl border-2 border-white/80 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center mb-4 shadow-lg shadow-purple-500/30">
@@ -133,6 +133,18 @@ export default function LandingPage() {
             <h3 className="text-xl font-semibold text-[#010507] mb-2">Swap Agent</h3>
             <p className="text-sm text-[#57575B] leading-relaxed">
               Execute token swaps with best rates aggregated from multiple DEXes.
+            </p>
+          </div>
+
+          {/* Parallel Liquidity Agent */}
+          <div className="group relative p-6 bg-white/60 backdrop-blur-md rounded-2xl border-2 border-white/80 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center mb-4 shadow-lg shadow-blue-500/30">
+              <span className="text-2xl">💧🚀</span>
+            </div>
+            <h3 className="text-xl font-semibold text-[#010507] mb-2">Parallel Liquidity Agent</h3>
+            <p className="text-sm text-[#57575B] leading-relaxed">
+              Fetch liquidity from multiple chains simultaneously for faster cross-chain
+              comparisons.
             </p>
           </div>
         </div>

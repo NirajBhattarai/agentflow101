@@ -2,7 +2,7 @@
         dev-frontend dev-backend dev build-frontend build-backend test \
         test-liquidity test-liquidity-polygon test-liquidity-hedera \
         test-liquidity-all-chains test-balance test-balance-polygon test-balance-hedera \
-        test-balance-all-chains clean dev-travily dev-liquidity dev-balance dev-bridge dev-swap \
+        test-balance-all-chains clean dev-travily dev-liquidity dev-parallel-liquidity dev-balance dev-bridge dev-swap \
         dev-orchestrator dev-all-agents format format-backend format-frontend backend
 
 # Default target
@@ -22,11 +22,12 @@ help:
 	@echo "Agents:"
 	@echo "  make dev-travily         - Run Travily agent server (port 9999)"
 	@echo "  make dev-liquidity       - Run Liquidity agent server (port 9998)"
+	@echo "  make dev-parallel-liquidity - Run Parallel Liquidity agent server (port 9994)"
 	@echo "  make dev-balance         - Run Balance agent server (port 9997)"
 	@echo "  make dev-bridge          - Run Bridge agent server (port 9996)"
 	@echo "  make dev-swap            - Run Swap agent server (port 9995)"
 	@echo "  make dev-orchestrator    - Run Orchestrator agent server (port 9000)"
-	@echo "  make dev-all-agents      - Run all agents (orchestrator, balance, liquidity, bridge, swap)"
+	@echo "  make dev-all-agents      - Run all agents (orchestrator, balance, liquidity, parallel-liquidity, bridge, swap)"
 	@echo ""
 	@echo "Build:"
 	@echo "  make build-frontend      - Build frontend for production"
@@ -112,6 +113,11 @@ dev-swap:
 	@echo "Swap Agent: http://localhost:9995"
 	cd backend && uv run -m agents.swap
 
+dev-parallel-liquidity:
+	@echo "Starting Parallel Liquidity agent server..."
+	@echo "Parallel Liquidity Agent: http://localhost:9994"
+	cd backend && uv run -m agents.parallel_liquidity
+
 dev-orchestrator:
 	@echo "Starting Orchestrator agent server..."
 	@echo "Orchestrator Agent: http://localhost:9000"
@@ -123,11 +129,12 @@ dev-all-agents:
 	@echo "Orchestrator: http://localhost:9000"
 	@echo "Balance Agent: http://localhost:9997"
 	@echo "Liquidity Agent: http://localhost:9998"
+	@echo "Parallel Liquidity Agent: http://localhost:9994"
 	@echo "Bridge Agent: http://localhost:9996"
 	@echo "Swap Agent: http://localhost:9995"
 	@echo ""
 	@echo "Starting all agents in parallel..."
-	@make -j5 dev-orchestrator dev-balance dev-liquidity dev-bridge dev-swap
+	@make -j6 dev-orchestrator dev-balance dev-liquidity dev-parallel-liquidity dev-bridge dev-swap
 
 # Production builds
 build-frontend:

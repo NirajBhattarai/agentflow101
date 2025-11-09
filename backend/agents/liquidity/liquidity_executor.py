@@ -23,7 +23,9 @@ from a2a.utils import new_agent_text_message  # noqa: E402
 from google.adk.agents.llm_agent import LlmAgent  # noqa: E402
 from google.adk.runners import Runner  # noqa: E402
 from google.adk.sessions import InMemorySessionService  # noqa: E402
-from google.adk.memory.in_memory_memory_service import InMemoryMemoryService  # noqa: E402
+from google.adk.memory.in_memory_memory_service import (
+    InMemoryMemoryService,
+)  # noqa: E402
 from google.adk.artifacts import InMemoryArtifactService  # noqa: E402
 
 from .tools import (  # noqa: E402
@@ -143,7 +145,11 @@ Always use the tools to fetch real data. Return ONLY valid JSON, no markdown cod
         query_upper = query.upper()
 
         # Check for explicit chain mentions first
-        if "chain:" in query_lower or "chain =" in query_lower or "chain=" in query_lower:
+        if (
+            "chain:" in query_lower
+            or "chain =" in query_lower
+            or "chain=" in query_lower
+        ):
             if "polygon" in query_lower:
                 chain = "polygon"
             elif "hedera" in query_lower:

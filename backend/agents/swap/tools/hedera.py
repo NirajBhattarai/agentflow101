@@ -33,8 +33,12 @@ def get_swap_hedera(
         Dictionary with swap configuration including addresses, paths, etc.
     """
     # Get token addresses (Hedera format for balance checking)
-    token_in_address_hedera = get_token_address("hedera", token_in_symbol, use_evm=False)
-    token_out_address_hedera = get_token_address("hedera", token_out_symbol, use_evm=False)
+    token_in_address_hedera = get_token_address(
+        "hedera", token_in_symbol, use_evm=False
+    )
+    token_out_address_hedera = get_token_address(
+        "hedera", token_out_symbol, use_evm=False
+    )
 
     # Get EVM addresses (for contract calls)
     token_in_address_evm = get_token_address("hedera", token_in_symbol, use_evm=True)
@@ -43,7 +47,9 @@ def get_swap_hedera(
     # Get DEX configuration
     dex_config = get_dex_config("hedera", dex_name)
     dex_name_actual = dex_config.get("name", "SaucerSwap")
-    router_address = dex_config.get("router_address", "0x00000000000000000000000000000000006715e6")
+    router_address = dex_config.get(
+        "router_address", "0x00000000000000000000000000000000006715e6"
+    )
 
     # Calculate swap path (use EVM addresses for contract calls)
     # For Hedera, common path is WHBAR -> Token (for native HBAR swaps)

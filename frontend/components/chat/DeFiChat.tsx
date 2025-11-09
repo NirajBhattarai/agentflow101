@@ -63,8 +63,11 @@ const ChatInner = ({
               if (parsed.type === "balance" && parsed.balances && Array.isArray(parsed.balances)) {
                 onBalanceUpdate?.(parsed as BalanceData);
               }
-              // Check if it's liquidity data
-              else if (parsed.type === "liquidity" && parsed.pairs && Array.isArray(parsed.pairs)) {
+              // Check if it's liquidity data (regular or parallel)
+              else if (
+                (parsed.type === "liquidity" && parsed.pairs && Array.isArray(parsed.pairs)) ||
+                (parsed.type === "parallel_liquidity" && parsed.token_pair)
+              ) {
                 onLiquidityUpdate?.(parsed as LiquidityData);
               }
               // Check if it's bridge data

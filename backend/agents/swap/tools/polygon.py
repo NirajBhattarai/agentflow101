@@ -35,7 +35,9 @@ def get_swap_polygon(
     # Get DEX configuration
     dex_config = get_dex_config("polygon", dex_name)
     dex_name_actual = dex_config.get("name", "QuickSwap")
-    router_address = dex_config.get("router_address", "0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff")
+    router_address = dex_config.get(
+        "router_address", "0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff"
+    )
 
     # Calculate swap path
     # For Polygon, direct path for most swaps

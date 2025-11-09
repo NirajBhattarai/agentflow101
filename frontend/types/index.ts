@@ -146,6 +146,43 @@ export interface LiquidityData {
 }
 
 /**
+ * Parallel Liquidity Pair (from Parallel Liquidity Agent)
+ */
+export interface ParallelLiquidityPair {
+  base: string;
+  quote: string;
+  pool_address: string;
+  dex: string;
+  tvl_usd: number;
+  reserve_base: number;
+  reserve_quote: number;
+  fee_bps: number;
+  chain: string;
+}
+
+/**
+ * Complete parallel liquidity data from Parallel Liquidity Agent
+ */
+export interface ParallelLiquidityData {
+  type: "parallel_liquidity";
+  token_pair: string;
+  chains: {
+    hedera?: {
+      pairs: ParallelLiquidityPair[];
+      total_pools: number;
+    };
+    polygon?: {
+      pairs: ParallelLiquidityPair[];
+      total_pools: number;
+    };
+  };
+  hedera_pairs: ParallelLiquidityPair[];
+  polygon_pairs: ParallelLiquidityPair[];
+  all_pairs: ParallelLiquidityPair[];
+  error?: string;
+}
+
+/**
  * Bridge transaction details
  */
 export interface BridgeTransaction {

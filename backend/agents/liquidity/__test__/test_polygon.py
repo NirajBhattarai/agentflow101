@@ -52,7 +52,9 @@ class TestPolygonLiquidity:
 
         # Check if contract exists (has code)
         code = w3.eth.get_code(usdc_address)
-        assert len(code) > 0, f"Contract at {usdc_address} does not exist or has no code"
+        assert (
+            len(code) > 0
+        ), f"Contract at {usdc_address} does not exist or has no code"
 
     def test_polygon_pool_contract_exists(self, rpc_urls, test_pool_addresses):
         """Test that pool contract exists on Polygon chain."""
@@ -74,4 +76,6 @@ class TestPolygonLiquidity:
         """Test that Polygon chain ID is correct (137 for mainnet)."""
         w3 = Web3(Web3.HTTPProvider(rpc_urls["polygon"]))
         chain_id = w3.eth.chain_id
-        assert chain_id == 137, f"Expected chain ID 137 for Polygon mainnet, got {chain_id}"
+        assert (
+            chain_id == 137
+        ), f"Expected chain ID 137 for Polygon mainnet, got {chain_id}"

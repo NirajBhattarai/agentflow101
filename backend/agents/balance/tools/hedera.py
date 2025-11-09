@@ -27,7 +27,9 @@ def _resolve_hedera_account_id(identifier: str, api_base: str) -> str:
             account_id = data.get("account") or data.get("account_id")
             if account_id:
                 return str(account_id)
-        raise ValueError(f"Unable to resolve Hedera account from EVM address: {identifier}")
+        raise ValueError(
+            f"Unable to resolve Hedera account from EVM address: {identifier}"
+        )
 
     # Validate 0.0.x format
     parts = identifier.split(".")
@@ -66,7 +68,9 @@ def _format_hbar_balance(tinybar: int) -> str:
     return str(hbar_balance)
 
 
-def get_balance_hedera(account_address: str, token_address: Optional[str] = None) -> dict:
+def get_balance_hedera(
+    account_address: str, token_address: Optional[str] = None
+) -> dict:
     """Get token balance for an account on Hedera chain.
 
     Args:
@@ -87,7 +91,9 @@ def get_balance_hedera(account_address: str, token_address: Optional[str] = None
         # Mirror Node API accepts both Hedera account ID (0.0.x) and EVM address (0x...)
         # Use the original account_address if it's an EVM address, otherwise use resolved account_id
         try:
-            account_identifier = account_address if account_address.startswith("0x") else account_id
+            account_identifier = (
+                account_address if account_address.startswith("0x") else account_id
+            )
             account_url = f"{api_base}/api/v1/accounts/{account_identifier}"
             response = requests.get(account_url, timeout=10)
 
@@ -140,7 +146,9 @@ def get_balance_hedera(account_address: str, token_address: Optional[str] = None
             token_account_identifier = (
                 account_address if account_address.startswith("0x") else account_id
             )
-            token_balance_url = f"{api_base}/api/v1/accounts/{token_account_identifier}/tokens"
+            token_balance_url = (
+                f"{api_base}/api/v1/accounts/{token_account_identifier}/tokens"
+            )
             response = requests.get(token_balance_url, timeout=10)
 
             if response.status_code == 200:
@@ -184,7 +192,9 @@ def get_balance_hedera(account_address: str, token_address: Optional[str] = None
                                 "token_type": "token",
                                 "token_symbol": token.get("symbol", "UNKNOWN"),
                                 "token_address": token_id,
-                                "balance": str(balance_raw / (10 ** token.get("decimals", 6))),
+                                "balance": str(
+                                    balance_raw / (10 ** token.get("decimals", 6))
+                                ),
                                 "balance_raw": str(balance_raw),
                                 "decimals": token.get("decimals", 6),
                             }

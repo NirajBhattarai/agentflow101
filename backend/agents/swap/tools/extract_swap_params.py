@@ -5,7 +5,9 @@ Tools for extracting swap parameters using LLM with structured data.
 from .constants import get_token_address, CHAIN_TOKENS
 
 
-def get_token_address_for_chain(chain: str, token_symbol: str, use_evm: bool = False) -> dict:
+def get_token_address_for_chain(
+    chain: str, token_symbol: str, use_evm: bool = False
+) -> dict:
     """Get token address for a given chain and token symbol.
 
     This tool helps extract token addresses from token symbols.
@@ -84,7 +86,11 @@ def get_available_tokens_for_chain(chain: str) -> dict:
     chain_lower = chain.lower()
 
     if chain_lower not in CHAIN_TOKENS:
-        return {"chain": chain_lower, "tokens": [], "error": f"Chain {chain_lower} not supported"}
+        return {
+            "chain": chain_lower,
+            "tokens": [],
+            "error": f"Chain {chain_lower} not supported",
+        }
 
     tokens = list(CHAIN_TOKENS[chain_lower].keys())
 

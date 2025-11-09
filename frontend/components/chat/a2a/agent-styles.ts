@@ -74,6 +74,17 @@ export function getAgentStyle(agentName: string): AgentStyle {
     };
   }
 
+  // Parallel Liquidity Agent - Blue/Purple branding (parallel execution)
+  if (nameLower.includes("parallel") && nameLower.includes("liquidity")) {
+    return {
+      bgColor: "bg-gradient-to-r from-blue-100 to-purple-100",
+      textColor: "text-blue-800",
+      borderColor: "border-blue-400",
+      icon: "💧🚀",
+      framework: "ADK (Parallel)",
+    };
+  }
+
   // Default/Unknown agent
   return {
     bgColor: "bg-gray-100",

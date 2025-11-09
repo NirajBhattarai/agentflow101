@@ -2,7 +2,9 @@ from typing import Optional
 from .constants import POLYGON_TOKENS, POLYGON_POOLS
 
 
-def get_liquidity_polygon(token_address: str, pool_address: Optional[str] = None) -> dict:
+def get_liquidity_polygon(
+    token_address: str, pool_address: Optional[str] = None
+) -> dict:
     """Get liquidity information from Polygon chain."""
     # Look up token address if a symbol is provided
     if token_address.upper() in POLYGON_TOKENS:

@@ -76,7 +76,11 @@ async def test_all_combines_polygon_and_hedera_remote(rpc_urls, test_account_add
 
     # Polygon remote presence (native MATIC expected)
     matic = next(
-        (b for b in balances if b["token_type"] == "native" and b["token_symbol"] == "MATIC"),
+        (
+            b
+            for b in balances
+            if b["token_type"] == "native" and b["token_symbol"] == "MATIC"
+        ),
         None,
     )
     assert matic is not None
