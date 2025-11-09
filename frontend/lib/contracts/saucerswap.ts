@@ -4,9 +4,6 @@
  * SaucerSwap is a Uniswap V2 fork on Hedera, so we can use standard Uniswap V2 Router ABI
  */
 
-import { ethers, Contract, ContractTransaction } from "ethers";
-import type { providers, Signer } from "ethers";
-import { EntityIdHelper } from "@hashgraph/sdk";
 import { ROUTER_ABI } from "./router-abi";
 
 // SaucerSwap Router Contract Address on Hedera Mainnet
