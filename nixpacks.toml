@@ -1,0 +1,8 @@
+# Disable Railpack auto-detection, use Dockerfile instead
+[phases.setup]
+nixPkgs = []
+
+[build]
+builder = "dockerfile"
+dockerfilePath = "backend/Dockerfile"
+
