@@ -1,240 +1,262 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useAppKitAccount } from "@reown/appkit/react";
-import DeFiChat from "@/components/defi-chat";
-import { BalanceCard } from "@/components/BalanceCard";
-import { BridgeCard } from "@/components/BridgeCard";
-import { SwapCard } from "@/components/SwapCard";
+import Link from "next/link";
 import { WalletConnect } from "@/components/WalletConnect";
-import type { BalanceData, LiquidityData, BridgeData, SwapData } from "@/components/types";
-import "./copilot.css";
+import { useAppKitAccount } from "@reown/appkit/react";
+import { Logo } from "@/components/Logo";
 
-export default function Home() {
-  const [balanceData, setBalanceData] = useState<BalanceData | null>(null);
-  const [liquidityData, setLiquidityData] = useState<LiquidityData | null>(null);
-  const [bridgeData, setBridgeData] = useState<BridgeData | null>(null);
-  const [swapData, setSwapData] = useState<SwapData | null>(null);
+export default function LandingPage() {
   const { address } = useAppKitAccount?.() || ({} as any);
   const isConnected = Boolean(address);
 
   return (
-    <div className="relative flex flex-col h-screen overflow-hidden bg-[#DEDEE9]">
-      {/* Wallet Connection Header */}
-      <div className="flex justify-end items-center p-4 z-20 bg-white/30 backdrop-blur-sm border-b border-[#DBDBE5]">
-        <WalletConnect />
+    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-[#DEDEE9] via-[#E8E8F0] to-[#F3F3FC]">
+      {/* Animated background blobs */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div
+          className="absolute w-[600px] h-[600px] -top-40 -right-40 rounded-full opacity-30"
+          style={{
+            background: "linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(236, 72, 153, 0.2))",
+            filter: "blur(120px)",
+            animation: "float 20s ease-in-out infinite",
+          }}
+        />
+        <div
+          className="absolute w-[500px] h-[500px] top-1/2 -left-32 rounded-full opacity-25"
+          style={{
+            background: "linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(147, 51, 234, 0.2))",
+            filter: "blur(100px)",
+            animation: "float 15s ease-in-out infinite reverse",
+          }}
+        />
+        <div
+          className="absolute w-[550px] h-[550px] bottom-0 right-1/4 rounded-full opacity-20"
+          style={{
+            background: "linear-gradient(135deg, rgba(251, 191, 36, 0.3), rgba(249, 115, 22, 0.2))",
+            filter: "blur(110px)",
+            animation: "float 25s ease-in-out infinite",
+          }}
+        />
       </div>
 
-      {/* Blocker modal when wallet is not connected */}
-      {!isConnected && (
-        <div className="fixed inset-0 z-30 flex items-center justify-center bg-gradient-to-b from-black/50 to-black/40 backdrop-blur-md">
-          {/* Glow background accents */}
-          <div className="absolute -z-0 w-[580px] h-[580px] rounded-full bg-gradient-to-tr from-purple-400/30 via-fuchsia-300/20 to-amber-300/20 blur-3xl" />
-          <div className="absolute -z-0 w-[380px] h-[380px] translate-x-40 -translate-y-40 rounded-full bg-gradient-to-br from-sky-300/30 to-violet-300/20 blur-3xl" />
+      {/* Navigation */}
+      <nav className="relative z-10 flex items-center justify-between px-6 py-4 sm:px-8 sm:py-6">
+        <Link href="/" className="hover:opacity-80 transition-opacity">
+          <Logo size={50} variant="full" />
+        </Link>
+        <div className="flex items-center gap-4">
+          <WalletConnect />
+        </div>
+      </nav>
 
-          {/* Modal card */}
-          <div className="relative z-10 w-full max-w-lg mx-4">
-            <div className="relative rounded-2xl border border-white/40 bg-white/80 backdrop-blur-xl shadow-[0_20px_80px_-20px_rgba(0,0,0,0.45)]">
-              {/* Animated gradient ring */}
-              <div className="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-black/5 [mask-image:radial-gradient(80%_80%_at_50%_0%,black,transparent)]" />
-
-              <div className="p-6 sm:p-8">
-                {/* Icon */}
-                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-fuchsia-600 text-white shadow-lg shadow-fuchsia-500/25">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-6 w-6"
-                  >
-                    <path
-                      d="M4 12c0-4.418 3.582-8 8-8a8 8 0 1 1-7.071 11.314"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                    />
-                    <path
-                      d="M8.5 12A3.5 3.5 0 1 0 12 8.5V7m0 10v-3"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                </div>
-
-                <div className="text-center text-[11px] font-semibold tracking-wider text-[#6B6B75] uppercase">
-                  Multi‑chain DeFi assistant
-                </div>
-                <h2 className="mt-1 text-center text-2xl font-semibold tracking-tight text-[#010507]">
-                  Connect your wallet
-                </h2>
-                <p className="mt-2 text-center text-sm leading-relaxed text-[#57575B]">
-                  View balances, scan liquidity, bridge tokens, and swap tokens for your address.
-                </p>
-
-                {/* Benefits / bullets */}
-                <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-[#57575B]">
-                  <div className="flex items-center gap-2 rounded-lg border border-[#E7E7F2] bg-white/70 px-2.5 py-2">
-                    <span className="text-[13px]">💰</span>
-                    <span className="font-medium">Balance insights</span>
-                  </div>
-                  <div className="flex items-center gap-2 rounded-lg border border-[#E7E7F2] bg-white/70 px-2.5 py-2">
-                    <span className="text-[13px]">📊</span>
-                    <span className="font-medium">Liquidity scan</span>
-                  </div>
-                  <div className="flex items-center gap-2 rounded-lg border border-[#E7E7F2] bg-white/70 px-2.5 py-2">
-                    <span className="text-[13px]">🌉</span>
-                    <span className="font-medium">Bridge simulation</span>
-                  </div>
-                  <div className="flex items-center gap-2 rounded-lg border border-[#E7E7F2] bg-white/70 px-2.5 py-2">
-                    <span className="text-[13px]">💱</span>
-                    <span className="font-medium">Token swaps</span>
-                  </div>
-                </div>
-
-                {/* CTA */}
-                <div className="mt-6 flex justify-center">
-                  <div className="[&>appkit-button]:!px-5 [&>appkit-button]:!py-2.5 [&>appkit-button]:!rounded-xl [&>appkit-button]:!text-sm [&>appkit-button]:!bg-gradient-to-r [&>appkit-button]:from-purple-600 [&>appkit-button]:to-fuchsia-600 [&>appkit-button]:hover:from-purple-500 [&>appkit-button]:hover:to-fuchsia-500 [&>appkit-button]:!text-white">
-                    <WalletConnect />
-                  </div>
-                </div>
-              </div>
+      {/* Main Content */}
+      <main className="relative z-10 max-w-7xl mx-auto px-6 sm:px-8 py-12 sm:py-20">
+        <div className="text-center mb-16">
+          {/* Hero Section */}
+          <div className="mb-8">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/60 backdrop-blur-sm border border-[#DBDBE5] text-sm text-[#57575B] mb-6">
+              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+              <span>Multi-Agent DeFi Platform</span>
             </div>
+            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-[#010507] mb-6 leading-tight">
+              Cross-Chain DeFi
+              <br />
+              <span className="bg-gradient-to-r from-purple-600 to-fuchsia-600 bg-clip-text text-transparent">
+                Powered by AI Agents
+              </span>
+            </h1>
+            <p className="text-xl sm:text-2xl text-[#57575B] max-w-3xl mx-auto leading-relaxed mb-10">
+              Experience the future of DeFi with autonomous AI agents that coordinate across
+              chains to optimize your trading, bridging, and yield strategies.
+            </p>
+          </div>
+
+          {/* CTA Buttons */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
+            <Link
+              href="/chat"
+              className="group relative px-8 py-4 bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white font-semibold rounded-xl shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40 transition-all duration-300 hover:scale-105"
+            >
+              <span className="relative z-10">Launch DeFi Assistant</span>
+              <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-500 to-fuchsia-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            </Link>
+            <a
+              href="https://github.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-8 py-4 bg-white/60 backdrop-blur-sm border-2 border-[#DBDBE5] text-[#010507] font-semibold rounded-xl hover:bg-white/80 transition-all duration-300"
+            >
+              View on GitHub
+            </a>
           </div>
         </div>
-      )}
 
-      <div className="relative flex flex-1 overflow-hidden p-2">
-        {/* Background blobs (match ui) */}
-        <div
-          className="absolute w-[445.84px] h-[445.84px] left-[1040px] top-[11px] rounded-full z-0"
-          style={{ background: "rgba(255, 172, 77, 0.2)", filter: "blur(103.196px)" }}
-        />
-        <div
-          className="absolute w-[609.35px] h-[609.35px] left-[1338.97px] top-[624.5px] rounded-full z-0"
-          style={{ background: "#C9C9DA", filter: "blur(103.196px)" }}
-        />
-        <div
-          className="absolute w-[609.35px] h-[609.35px] left-[670px] top-[-365px] rounded-full z-0"
-          style={{ background: "#C9C9DA", filter: "blur(103.196px)" }}
-        />
-        <div
-          className="absolute w-[609.35px] h-[609.35px] left-[507.87px] top-[702.14px] rounded-full z-0"
-          style={{ background: "#F3F3FC", filter: "blur(103.196px)" }}
-        />
-        <div
-          className="absolute w-[445.84px] h-[445.84px] left-[127.91px] top-[331px] rounded-full z-0"
-          style={{ background: "rgba(255, 243, 136, 0.3)", filter: "blur(103.196px)" }}
-        />
-        <div
-          className="absolute w-[445.84px] h-[445.84px] left-[-205px] top-[802.72px] rounded-full z-0"
-          style={{ background: "rgba(255, 172, 77, 0.2)", filter: "blur(103.196px)" }}
-        />
+        {/* Features Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+          {/* Balance Agent */}
+          <div className="group relative p-6 bg-white/60 backdrop-blur-md rounded-2xl border-2 border-white/80 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center mb-4 shadow-lg shadow-purple-500/30">
+              <span className="text-2xl">💰</span>
+            </div>
+            <h3 className="text-xl font-semibold text-[#010507] mb-2">Balance Agent</h3>
+            <p className="text-sm text-[#57575B] leading-relaxed">
+              Query account balances across Hedera and Polygon chains with real-time USD valuations.
+            </p>
+          </div>
 
-        <div className="flex flex-1 overflow-hidden z-10 gap-2">
-          {/* Left fixed chat card (450px) */}
-          <div className="w-[450px] flex-shrink-0 border-2 border-white bg-white/50 backdrop-blur-md shadow-elevation-lg flex flex-col rounded-lg overflow-hidden">
-            <div className="p-6 border-b border-[#DBDBE5]">
-              <h1 className="text-2xl font-semibold text-[#010507] mb-1">DeFi Assistant</h1>
-              <p className="text-sm text-[#57575B] leading-relaxed">
-                Multi-Agent A2A Demo: <span className="text-purple-600 font-semibold">Balance</span>{" "}
-                + <span className="text-teal-600 font-semibold">Liquidity</span> +{" "}
-                <span className="text-orange-600 font-semibold">Bridge</span> +{" "}
-                <span className="text-green-600 font-semibold">Swap</span>
+          {/* Liquidity Agent */}
+          <div className="group relative p-6 bg-white/60 backdrop-blur-md rounded-2xl border-2 border-white/80 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center mb-4 shadow-lg shadow-teal-500/30">
+              <span className="text-2xl">📊</span>
+            </div>
+            <h3 className="text-xl font-semibold text-[#010507] mb-2">Liquidity Agent</h3>
+            <p className="text-sm text-[#57575B] leading-relaxed">
+              Scan DEX liquidity pools, compare TVL, and find the best trading opportunities.
+            </p>
+          </div>
+
+          {/* Bridge Agent */}
+          <div className="group relative p-6 bg-white/60 backdrop-blur-md rounded-2xl border-2 border-white/80 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center mb-4 shadow-lg shadow-orange-500/30">
+              <span className="text-2xl">🌉</span>
+            </div>
+            <h3 className="text-xl font-semibold text-[#010507] mb-2">Bridge Agent</h3>
+            <p className="text-sm text-[#57575B] leading-relaxed">
+              Bridge tokens seamlessly between Hedera and Polygon with optimized routing.
+            </p>
+          </div>
+
+          {/* Swap Agent */}
+          <div className="group relative p-6 bg-white/60 backdrop-blur-md rounded-2xl border-2 border-white/80 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center mb-4 shadow-lg shadow-green-500/30">
+              <span className="text-2xl">💱</span>
+            </div>
+            <h3 className="text-xl font-semibold text-[#010507] mb-2">Swap Agent</h3>
+            <p className="text-sm text-[#57575B] leading-relaxed">
+              Execute token swaps with best rates aggregated from multiple DEXes.
+            </p>
+          </div>
+        </div>
+
+        {/* How It Works */}
+        <div className="bg-white/60 backdrop-blur-md rounded-2xl border-2 border-white/80 p-8 sm:p-12 shadow-xl mb-16">
+          <h2 className="text-3xl sm:text-4xl font-bold text-[#010507] mb-8 text-center">
+            How It Works
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="text-center">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-fuchsia-600 flex items-center justify-center mx-auto mb-4 text-white text-2xl font-bold shadow-lg">
+                1
+              </div>
+              <h3 className="text-xl font-semibold text-[#010507] mb-2">Connect Wallet</h3>
+              <p className="text-[#57575B]">
+                Connect your Hedera or EVM-compatible wallet to get started.
               </p>
-              <p className="text-xs text-[#838389] mt-1">Orchestrator-mediated A2A Protocol</p>
             </div>
-            <div className="flex-1 overflow-hidden">
-              <DeFiChat
-                onBalanceUpdate={setBalanceData}
-                onLiquidityUpdate={setLiquidityData}
-                onBridgeUpdate={setBridgeData}
-                onSwapUpdate={setSwapData}
-              />
-            </div>
-          </div>
-
-          {/* Right content area */}
-          <div className="flex-1 overflow-y-auto rounded-lg bg-white/30 backdrop-blur-sm">
-            <div className="max-w-5xl mx-auto p-8">
-              <div className="mb-8">
-                <h2 className="text-3xl font-semibold text-[#010507] mb-2">Your DeFi Data</h2>
-                <p className="text-[#57575B]">
-                  Multi-agent coordination: Balance, Liquidity, Bridge, and Swap agents with A2A
-                  Protocol
-                </p>
+            <div className="text-center">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-fuchsia-600 flex items-center justify-center mx-auto mb-4 text-white text-2xl font-bold shadow-lg">
+                2
               </div>
-
-              {!balanceData && !liquidityData && !bridgeData && !swapData && (
-                <div className="flex items-center justify-center h-[400px] bg-white/60 backdrop-blur-md rounded-xl border-2 border-dashed border-[#DBDBE5] shadow-elevation-sm">
-                  <div className="text-center">
-                    <div className="text-6xl mb-4">💰</div>
-                    <h3 className="text-xl font-semibold text-[#010507] mb-2">
-                      Start Querying Your DeFi Data
-                    </h3>
-                    <p className="text-[#57575B] max-w-md">
-                      Ask the assistant to check your balance, get liquidity information, bridge
-                      tokens, or swap tokens. Watch as specialized agents collaborate through A2A
-                      Protocol to fetch your on-chain data and execute DeFi operations.
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {balanceData && (
-                <div className="mb-4">
-                  <BalanceCard data={balanceData} />
-                </div>
-              )}
-
-              {liquidityData && (
-                <div className="mb-4">
-                  <div className="bg-white/60 backdrop-blur-md rounded-xl p-6 border-2 border-[#DBDBE5] shadow-elevation-md">
-                    <h3 className="text-xl font-semibold text-[#010507] mb-4">Liquidity Data</h3>
-                    <pre className="text-xs bg-gray-50 p-4 rounded overflow-auto">
-                      {JSON.stringify(liquidityData, null, 2)}
-                    </pre>
-                  </div>
-                </div>
-              )}
-
-              {bridgeData && (
-                <div className="mb-4">
-                  <BridgeCard
-                    data={bridgeData}
-                    onBridgeInitiate={(protocol) => {
-                      // When user clicks "Bridge" button, send a message to the chat
-                      // to trigger the orchestrator to initiate the bridge
-                      console.log("Initiating bridge with protocol:", protocol);
-                      // The orchestrator will handle this via chat message
-                      // In a real implementation, you might want to send a message programmatically
-                      // For now, the user can click the button and the UI will show the state
-                      // The actual bridge initiation happens via orchestrator when user says "do with [protocol]"
-                    }}
-                  />
-                </div>
-              )}
-
-              {swapData && (
-                <div className="mb-4">
-                  <SwapCard
-                    data={swapData}
-                    onSwapInitiate={(dex) => {
-                      // When user clicks "Swap" button, send a message to the chat
-                      // to trigger the orchestrator to initiate the swap
-                      console.log("Initiating swap with DEX:", dex);
-                      // The orchestrator will handle this via chat message
-                      // In a real implementation, you might want to send a message programmatically
-                      // For now, the user can click the button and the UI will show the state
-                      // The actual swap initiation happens via orchestrator when user says "swap with [dex]"
-                    }}
-                  />
-                </div>
-              )}
+              <h3 className="text-xl font-semibold text-[#010507] mb-2">Chat with AI</h3>
+              <p className="text-[#57575B]">
+                Ask questions in natural language. Our orchestrator coordinates specialized agents.
+              </p>
+            </div>
+            <div className="text-center">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-fuchsia-600 flex items-center justify-center mx-auto mb-4 text-white text-2xl font-bold shadow-lg">
+                3
+              </div>
+              <h3 className="text-xl font-semibold text-[#010507] mb-2">Execute DeFi</h3>
+              <p className="text-[#57575B]">
+                Agents collaborate via A2A Protocol to execute your DeFi operations.
+              </p>
             </div>
           </div>
         </div>
-      </div>
+
+        {/* Technology Stack */}
+        <div className="mb-16">
+          <h2 className="text-3xl sm:text-4xl font-bold text-[#010507] mb-8 text-center">
+            Built With Cutting-Edge Technology
+          </h2>
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            {[
+              "A2A Protocol",
+              "Google ADK",
+              "Hedera SDK",
+              "CopilotKit",
+              "Next.js",
+              "FastAPI",
+            ].map((tech) => (
+              <div
+                key={tech}
+                className="px-6 py-3 bg-white/60 backdrop-blur-sm border border-[#DBDBE5] rounded-xl text-[#010507] font-medium hover:bg-white/80 transition-all duration-300"
+              >
+                {tech}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Final CTA */}
+        <div className="text-center">
+          <div className="inline-block p-8 sm:p-12 bg-gradient-to-br from-purple-600/10 to-fuchsia-600/10 backdrop-blur-md rounded-2xl border-2 border-purple-500/20">
+            <h2 className="text-3xl sm:text-4xl font-bold text-[#010507] mb-4">
+              Ready to Experience the Future?
+            </h2>
+            <p className="text-lg text-[#57575B] mb-8 max-w-2xl mx-auto">
+              Join the revolution of AI-powered DeFi. Start chatting with your DeFi assistant
+              now.
+            </p>
+            <Link
+              href="/chat"
+              className="inline-block px-8 py-4 bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white font-semibold rounded-xl shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40 transition-all duration-300 hover:scale-105"
+            >
+              Get Started →
+            </Link>
+          </div>
+        </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="relative z-10 border-t border-[#DBDBE5] bg-white/30 backdrop-blur-sm mt-20">
+        <div className="max-w-7xl mx-auto px-6 sm:px-8 py-8">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <Logo size={36} variant="icon" />
+              <span className="text-sm text-[#57575B]">
+                AgentFlow101 © 2025 - Hedera Hello Future Hackathon
+              </span>
+            </div>
+            <div className="flex items-center gap-6 text-sm text-[#57575B]">
+              <a href="#" className="hover:text-[#010507] transition-colors">
+                Documentation
+              </a>
+              <a href="#" className="hover:text-[#010507] transition-colors">
+                GitHub
+              </a>
+              <a href="#" className="hover:text-[#010507] transition-colors">
+                Support
+              </a>
+            </div>
+          </div>
+        </div>
+      </footer>
+
+      <style jsx>{`
+        @keyframes float {
+          0%,
+          100% {
+            transform: translate(0, 0) rotate(0deg);
+          }
+          33% {
+            transform: translate(30px, -30px) rotate(120deg);
+          }
+          66% {
+            transform: translate(-20px, 20px) rotate(240deg);
+          }
+        }
+      `}</style>
     </div>
   );
 }
