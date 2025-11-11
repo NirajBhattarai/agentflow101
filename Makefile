@@ -44,6 +44,12 @@ help:
 	@echo "  make test-balance-hedera - Run Hedera balance tests"
 	@echo "  make test-balance-all-chains - Run all chains balance aggregation tests"
 	@echo "  make test-balance-integration - Run balance agent integration tests"
+	@echo "  make test-swap - Run all swap agent tests"
+	@echo "  make test-swap-unit - Run swap agent unit tests"
+	@echo "  make test-swap-integration - Run swap agent integration tests"
+	@echo "  make test-orchestrator - Run all orchestrator agent tests"
+	@echo "  make test-orchestrator-unit - Run orchestrator agent unit tests"
+	@echo "  make test-orchestrator-integration - Run orchestrator agent integration tests"
 	@echo ""
 	@echo "Utilities:"
 	@echo "  make clean               - Clean build artifacts and dependencies"
@@ -203,6 +209,30 @@ test-balance-all-chains:
 test-balance-integration:
 	@echo "Running balance agent integration tests..."
 	cd backend && uv sync --extra test && PYTHONPATH=. uv run pytest agents/balance/__test__/test_integration.py -v
+
+test-swap:
+	@echo "Running all swap agent tests..."
+	cd backend && uv sync --extra test && PYTHONPATH=. uv run pytest agents/swap/__test__/ -v
+
+test-swap-unit:
+	@echo "Running swap agent unit tests..."
+	cd backend && uv sync --extra test && PYTHONPATH=. uv run pytest agents/swap/__test__/test_query_parser.py agents/swap/__test__/test_response_builder.py agents/swap/__test__/test_swap_executor_service.py -v
+
+test-swap-integration:
+	@echo "Running swap agent integration tests..."
+	cd backend && uv sync --extra test && PYTHONPATH=. uv run pytest agents/swap/__test__/test_integration.py -v
+
+test-orchestrator:
+	@echo "Running all orchestrator agent tests..."
+	cd backend && uv sync --extra test && PYTHONPATH=. uv run pytest agents/orchestrator/__test__/ -v
+
+test-orchestrator-unit:
+	@echo "Running orchestrator agent unit tests..."
+	cd backend && uv sync --extra test && PYTHONPATH=. uv run pytest agents/orchestrator/__test__/test_agent.py -v
+
+test-orchestrator-integration:
+	@echo "Running orchestrator agent integration tests..."
+	cd backend && uv sync --extra test && PYTHONPATH=. uv run pytest agents/orchestrator/__test__/test_integration.py -v
 
 # Cleanup
 clean:
