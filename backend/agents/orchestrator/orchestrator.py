@@ -1,45 +1,41 @@
 """
-@orchestrator.py
+Orchestrator Agent Server (ADK + AG-UI Protocol)
 
-Orchestrator Agent (ADK + AG-UI Protocol)
-
-This agent receives user requests via AG-UI Protocol and delegates tasks
-The A2A middleware in the frontend will wrap this agent and give it the
-send_message_to_a2a_agent tool to communicate with other agents.
+Starts the Orchestrator Agent as an AG-UI Protocol server.
 """
 
 import os
 import uvicorn
 from fastapi import FastAPI
-from ag_ui_adk import ADKAgent, add_adk_fastapi_endpoint
-from google.adk.agents import LlmAgent
-from agents.orchestrator.instruction import ORCHESTRATOR_INSTRUCTION
+from ag_ui_adk import add_adk_fastapi_endpoint
 
-orchestrator_agent = LlmAgent(
-    name="OrchestratorAgent",
-    model="gemini-2.5-pro",
-    instruction=ORCHESTRATOR_INSTRUCTION,
-)
+from .agent import build_adk_orchestrator_agent  # noqa: E402
+from .core.constants import DEFAULT_PORT  # noqa: E402
 
-# Expose the agent via AG-UI Protocol
-adk_orchestrator_agent = ADKAgent(
-    adk_agent=orchestrator_agent,
-    app_name="agents",  # Changed to match the expected app name
-    user_id="demo_user",
-    session_timeout_seconds=3600,
-    use_in_memory_services=True,
-)
 
-app = FastAPI(title="Travel Planning Orchestrator (ADK)")
-add_adk_fastapi_endpoint(app, adk_orchestrator_agent, path="/")
+def create_app() -> FastAPI:
+    """Create FastAPI application with orchestrator agent."""
+    app = FastAPI(title="DeFi Orchestrator (ADK)")
+    adk_orchestrator_agent = build_adk_orchestrator_agent()
+    add_adk_fastapi_endpoint(app, adk_orchestrator_agent, path="/")
+    return app
 
-if __name__ == "__main__":
-    if not os.getenv("GOOGLE_API_KEY"):
+
+app = create_app()
+
+
+def main():
+    """Main entry point for orchestrator server."""
+    if not os.getenv("GOOGLE_API_KEY") and not os.getenv("GEMINI_API_KEY"):
         print("⚠️  Warning: GOOGLE_API_KEY environment variable not set!")
         print("   Set it with: export GOOGLE_API_KEY='your-key-here'")
         print("   Get a key from: https://aistudio.google.com/app/apikey")
         print()
 
-    port = int(os.getenv("ORCHESTRATOR_PORT", 9000))
+    port = int(os.getenv("ORCHESTRATOR_PORT", DEFAULT_PORT))
     print(f"🚀 Starting Orchestrator Agent (ADK + AG-UI) on http://0.0.0.0:{port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
+
+
+if __name__ == "__main__":
+    main()
