@@ -7,6 +7,7 @@ import { BalanceCard } from "@/components/features/balance";
 import { SwapCard } from "@/components/features/swap";
 import { LiquidityCard } from "@/components/features/liquidity";
 import { SwapRouterCard } from "@/components/features/swap_router";
+import { PoolCalculatorCard } from "@/components/features/pool_calculator";
 import { WalletConnect, Logo } from "@/components/shared";
 import type {
   BalanceData,
@@ -14,6 +15,7 @@ import type {
   MultiChainLiquidityData,
   SwapData,
   SwapRouterData,
+  PoolCalculatorData,
 } from "@/types";
 import "../copilot.css";
 import Link from "next/link";
@@ -25,6 +27,7 @@ export default function ChatPage() {
   >(null);
   const [swapData, setSwapData] = useState<SwapData | null>(null);
   const [swapRouterData, setSwapRouterData] = useState<SwapRouterData | null>(null);
+  const [poolCalculatorData, setPoolCalculatorData] = useState<PoolCalculatorData | null>(null);
   const { address } = useAppKitAccount?.() || ({} as any);
   const isConnected = Boolean(address);
 
@@ -162,6 +165,7 @@ export default function ChatPage() {
                 onLiquidityUpdate={setLiquidityData}
                 onSwapUpdate={setSwapData}
                 onSwapRouterUpdate={setSwapRouterData}
+                onPoolCalculatorUpdate={setPoolCalculatorData}
               />
             </div>
           </div>
@@ -177,7 +181,11 @@ export default function ChatPage() {
                 </p>
               </div>
 
-              {!balanceData && !liquidityData && !swapData && !swapRouterData && (
+              {!balanceData &&
+                !liquidityData &&
+                !swapData &&
+                !swapRouterData &&
+                !poolCalculatorData && (
                 <div className="flex items-center justify-center h-[400px] bg-white/60 backdrop-blur-md rounded-xl border-2 border-dashed border-[#DBDBE5] shadow-elevation-sm">
                   <div className="text-center">
                     <div className="text-6xl mb-4">💰</div>
@@ -202,6 +210,12 @@ export default function ChatPage() {
               {liquidityData && (
                 <div className="mb-4">
                   <LiquidityCard data={liquidityData} />
+                </div>
+              )}
+
+              {poolCalculatorData && (
+                <div className="mb-4">
+                  <PoolCalculatorCard data={poolCalculatorData} />
                 </div>
               )}
 

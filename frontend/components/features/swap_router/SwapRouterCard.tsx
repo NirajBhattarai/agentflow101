@@ -83,12 +83,22 @@ export function SwapRouterCard({ data }: SwapRouterCardProps) {
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <span className="font-semibold capitalize">{route.chain}</span>
-                <span className="text-xs opacity-75">
-                  ({((route.amount_in / data.total_input) * 100).toFixed(0)}%)
+                <span className="text-xs font-bold bg-white/60 px-2 py-1 rounded">
+                  {((route.amount_in / data.total_input) * 100).toFixed(1)}%
                 </span>
               </div>
               <div className="text-xs opacity-75">
                 Confidence: {(route.confidence * 100).toFixed(0)}%
+              </div>
+            </div>
+            
+            {/* Percentage Bar */}
+            <div className="mb-3">
+              <div className="w-full bg-white/60 rounded-full h-2.5 overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-500"
+                  style={{ width: `${(route.amount_in / data.total_input) * 100}%` }}
+                />
               </div>
             </div>
 

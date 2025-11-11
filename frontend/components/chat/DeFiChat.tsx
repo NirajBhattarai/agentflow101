@@ -26,6 +26,7 @@ import type {
   MultiChainLiquidityData,
   SwapData,
   SwapRouterData,
+  PoolCalculatorData,
   MessageActionRenderProps,
 } from "@/types";
 
@@ -34,6 +35,7 @@ const ChatInner = ({
   onLiquidityUpdate,
   onSwapUpdate,
   onSwapRouterUpdate,
+  onPoolCalculatorUpdate,
 }: DeFiChatProps) => {
   const { visibleMessages } = useCopilotChat();
 
@@ -82,6 +84,18 @@ const ChatInner = ({
               ) {
                 onLiquidityUpdate?.(parsed as LiquidityData);
               }
+              // Check if it's pool calculator data
+              else if (
+                parsed.recommended_allocations &&
+                typeof parsed.recommended_allocations === "object"
+              ) {
+                console.log("🧮 Pool Calculator Data Received:", {
+                  chains: Object.keys(parsed.recommended_allocations),
+                  total_output: parsed.total_output,
+                  average_price_impact: parsed.average_price_impact,
+                });
+                onPoolCalculatorUpdate?.(parsed as PoolCalculatorData);
+              }
               // Check if it's swap router data
               else if (parsed.type === "swap_router") {
                 console.log("🔄 Swap Router Data Received:", {
@@ -113,7 +127,14 @@ const ChatInner = ({
     };
 
     extractDataFromMessages();
-  }, [visibleMessages, onBalanceUpdate, onLiquidityUpdate, onSwapUpdate, onSwapRouterUpdate]);
+  }, [
+    visibleMessages,
+    onBalanceUpdate,
+    onLiquidityUpdate,
+    onSwapUpdate,
+    onSwapRouterUpdate,
+    onPoolCalculatorUpdate,
+  ]);
 
   // Register HITL balance requirements form (collects account info at start)
   useCopilotAction({
@@ -269,6 +290,7 @@ export default function DeFiChat({
   onLiquidityUpdate,
   onSwapUpdate,
   onSwapRouterUpdate,
+  onPoolCalculatorUpdate,
 }: DeFiChatProps) {
   return (
     <CopilotKit runtimeUrl="/api/copilotkit" showDevConsole={false} agent="a2a_chat">
@@ -277,6 +299,7 @@ export default function DeFiChat({
         onLiquidityUpdate={onLiquidityUpdate}
         onSwapUpdate={onSwapUpdate}
         onSwapRouterUpdate={onSwapRouterUpdate}
+        onPoolCalculatorUpdate={onPoolCalculatorUpdate}
       />
     </CopilotKit>
   );

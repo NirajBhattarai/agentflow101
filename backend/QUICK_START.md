@@ -76,13 +76,4 @@ Once started, check:
 - Bridge Agent: http://localhost:9996
 - Swap Agent: http://localhost:9995
 
-## Railway Deployment
-
-See [RAILWAY_DEPLOYMENT.md](./RAILWAY_DEPLOYMENT.md) for detailed Railway setup instructions.
-
-Quick Railway steps:
-1. Push code to GitHub
-2. Connect Railway to your repo
-3. Set environment variables in Railway dashboard
-4. Deploy!
 

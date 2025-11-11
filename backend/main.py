@@ -5,11 +5,10 @@ from fastapi.middleware.cors import CORSMiddleware
 app = FastAPI(title="AgentFlow Backend", version="0.1.0")
 
 # Configure CORS
-# Allow localhost for development and Railway domains for production
+# Allow localhost for development and Vercel domains for production
 allowed_origins = [
     "http://localhost:3000",
     "http://localhost:3001",
-    "https://*.railway.app",
     "https://*.vercel.app",
 ]
 

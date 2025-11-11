@@ -44,7 +44,7 @@ make dev
 cd backend
 ./start.sh
 ```
-Starts all services in background (for Railway/production).
+Starts all services in background (for production).
 
 ### Running Individual Services
 
@@ -108,17 +108,7 @@ Get your Google API key from: https://aistudio.google.com/app/apikey
 
 ## Deployment
 
-### Railway Deployment
-
-See [RAILWAY_DEPLOYMENT.md](./RAILWAY_DEPLOYMENT.md) for complete Railway setup guide.
-
-Quick steps:
-1. Push code to GitHub
-2. Connect Railway to your repo
-3. Set `GOOGLE_API_KEY` and other env vars in Railway dashboard
-4. Deploy!
-
-The `Dockerfile` and `start.sh` are configured for Railway deployment.
+The `Dockerfile` and `start.sh` are configured for production deployment.
 
 ### Service Ports
 
@@ -136,12 +126,9 @@ backend/
 ├── main.py              # FastAPI application entry point
 ├── pyproject.toml       # Project dependencies and metadata
 ├── uv.lock             # Locked dependencies
-├── Dockerfile          # Docker configuration for Railway
+├── Dockerfile          # Docker configuration
 ├── start.sh            # Production start script (all agents)
 ├── dev-start.sh        # Development start script (all agents)
-├── railway.json        # Railway configuration
-├── railway.toml        # Railway configuration (alternative)
-├── RAILWAY_DEPLOYMENT.md  # Railway deployment guide
 ├── QUICK_START.md      # Quick start guide
 ├── agents/             # Agent modules
 │   ├── orchestrator/   # Orchestrator agent

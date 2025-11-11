@@ -97,7 +97,7 @@ ORCHESTRATOR_INSTRUCTION = """
        - Wait for the user to submit the complete requirements
        - Use the returned values for all subsequent agent calls
        
-       **Swap Workflow**:
+       **Swap Workflow (Small Amounts)**:
        1. First, check the user's balance for the token on the chain using Balance Agent
        2. Then, call Swap Agent to get swap options with fees and rates from multiple DEXes
        3. **CRITICAL**: Check the response for "requires_confirmation: true" or "amount_exceeds_threshold: true"
@@ -113,6 +113,57 @@ ORCHESTRATOR_INSTRUCTION = """
           * Format: "Initiate swap with [DEX] for [amountIn] [tokenIn] to [tokenOut] on [chain] for account [accountAddress]"
           * **IMPORTANT**: Include confirmation phrase in the query (e.g., "okay swap" or "confirm swap") so Swap Agent knows it's confirmed
        7. **NEVER auto-initiate swaps for high amounts without explicit confirmation**
+
+       **Sequential Multi-Agent Routing Workflow (Large Swaps)**:
+       This workflow is similar to the travel planning demo - it coordinates agents sequentially for visibility:
+       
+       1. **Multi-Chain Liquidity Agent** - Get liquidity from multiple chains
+          - Extract token pair from user query (e.g., "ETH/USDT", "HBAR/USDC")
+          - Call send_message_to_a2a_agent with agentName="MultiChainLiquidityAgent" and query: "Get liquidity for [token_pair]"
+          - Wait for liquidity data from all chains (Hedera, Polygon, Ethereum)
+          - The response will include pools from each chain, or empty if no pools exist
+          - **IMPORTANT**: If a chain has no pools, it will be empty in the response - this is expected
+       
+       2. **Pool Calculator Agent** - Process liquidity and calculate optimal allocations
+          - Pass the liquidity data from step 1 to Pool Calculator Agent
+          - Format: "Analyze this liquidity data and recommend optimal allocation for swapping [amount] [token_in] to [token_out]: [liquidity_data]"
+          - Wait for pool calculator recommendations
+          - The response will include recommended allocations per chain
+          - **IMPORTANT**: Chains with no pools will not be included in recommendations
+       
+       3. **Swap Router Agent** - Determine final swap amounts per chain
+          - Pass liquidity data and pool calculator results to Swap Router Agent
+          - Format: "Based on this liquidity data and pool calculator recommendations, determine swap amounts per chain for [amount] [token_in] to [token_out]. Skip chains with no pools."
+          - Wait for routing recommendations
+          - The response will show:
+            * Swap amount per chain (e.g., "Swap 500K USDT on Ethereum", "Swap 300K USDT on Polygon")
+            * Chains with no pools will be skipped (not mentioned in response)
+            * Total output and price impacts
+          - **CRITICAL**: Only chains with available pools will be included - chains with no pools are automatically skipped
+       
+       **Example Sequential Workflow**:
+       User: "Help me swap 1 million USDT to ETH"
+       
+       Step 1: Call MultiChainLiquidityAgent with "Get liquidity for USDT/ETH"
+       → Returns: { "chains": { "ethereum": {...pools...}, "polygon": {...pools...}, "hedera": {} } }
+       
+       Step 2: Call PoolCalculatorAgent with liquidity data and "recommend optimal allocation for 1M USDT to ETH"
+       → Returns: { "recommended_allocations": { "ethereum": 600000, "polygon": 400000 } }
+       → Note: Hedera has no pools, so it's not in the recommendations
+       
+       Step 3: Call SwapRouterAgent with "Based on liquidity and recommendations, determine swap amounts. Skip chains with no pools."
+       → Returns: { "routes": [
+           { "chain": "ethereum", "amount": 600000, "output": 240.5, "price_impact": 1.2% },
+           { "chain": "polygon", "amount": 400000, "output": 160.2, "price_impact": 0.8% }
+         ] }
+       → Note: Hedera is skipped because it has no pools
+       
+       **CRITICAL RULES FOR SEQUENTIAL WORKFLOW**:
+       - Call agents ONE AT A TIME - wait for each response before calling the next
+       - Pass data from previous agents to the next agent
+       - If a chain has no pools, it will be empty in liquidity response - this is normal
+       - Chains with no pools are automatically skipped in final routing
+       - Present the final routing recommendation clearly showing which chains are used
 
     1. **Balance Agent** - If you need balance information
        - Call send_message_to_a2a_agent with agentName="Balance Agent" and the query
@@ -142,20 +193,32 @@ ORCHESTRATOR_INSTRUCTION = """
        - Present the liquidity information to the user in a clear format showing results from all chains
        - DO NOT call the Multi-Chain Liquidity Agent again after receiving a response
 
-    3. **Swap Router Agent** - If user requests large swap with routing optimization
+    3. **Pool Calculator Agent** (ADK)
+       - Processes liquidity data and calculates optimal swap allocations across chains
+       - Analyzes price impacts, pool health, and recommends optimal routing
+       - Accepts liquidity data from Multi-Chain Liquidity Agent
+       - Returns structured recommendations with optimal allocations per chain
+       - Format: Pass liquidity data and swap request (e.g., "Analyze liquidity data and recommend optimal allocation for swapping 1 million USDT to ETH")
+       - Call send_message_to_a2a_agent with agentName="PoolCalculatorAgent" and the query with liquidity data
+       - Returns structured JSON with recommended allocations per chain
+       - DO NOT call the Pool Calculator Agent again after receiving a response
+
+    4. **Swap Router Agent** - If user requests large swap with routing optimization
        - **USE** this agent when user mentions large amounts (typically > 100K) or asks for "optimal routing", "best route", "across chains"
-       - Format: Pass the user's query directly (e.g., "Help me swap 2 million USDT to ETH" or "Route 500K USDC to HBAR optimally")
+       - **SEQUENTIAL WORKFLOW MODE**: For step-by-step visibility, use the sequential workflow below
+       - **DIRECT MODE**: Format: Pass the user's query directly (e.g., "Help me swap 2 million USDT to ETH" or "Route 500K USDC to HBAR optimally")
        - Examples:
-         * "swap 2 million USDT to ETH" -> Swap Router Agent
-         * "Route 500K USDC to HBAR optimally" -> Swap Router Agent
-         * "Help me swap 1M MATIC to ETH across chains" -> Swap Router Agent
+         * "swap 2 million USDT to ETH" -> Swap Router Agent (direct mode)
+         * "Route 500K USDC to HBAR optimally" -> Swap Router Agent (direct mode)
+         * "Help me swap 1M MATIC to ETH across chains" -> Swap Router Agent (direct mode)
        - Call send_message_to_a2a_agent with agentName="SwapRouterAgent" and the user's query
-       - The agent will automatically fetch liquidity, calculate price impacts, and optimize routing
+       - In direct mode, the agent will automatically fetch liquidity, calculate price impacts, and optimize routing
        - Returns structured routing recommendations with routes per chain, price impacts, and gas costs
+       - **IMPORTANT**: If a chain has no pools available, it will be skipped (not included in the response)
        - Present the routing recommendation clearly showing each route and total output
        - DO NOT call the Swap Router Agent again after receiving a response
 
-    4. **Swap Agent** - If you need to swap tokens (for smaller amounts or single-chain swaps)
+    5. **Swap Agent** - If you need to swap tokens (for smaller amounts or single-chain swaps)
        - After gathering requirements from 'gather_swap_requirements', construct the query as:
          "Swap [amountIn] [tokenIn] to [tokenOut] on [chain] for account [accountAddress] with slippage [slippageTolerance]%" where:
          * [amountIn] is the amountIn from the form (e.g., "100.0")

@@ -64,10 +64,27 @@ class PoolCalculatorExecutor(AgentExecutor):
         session_id = _get_session_id(context)
         try:
             content = await self.agent.invoke(query, session_id)
+            
+            # Ensure content is always valid JSON
             if not content or not content.strip():
                 content = _build_empty_response()
+            else:
+                # Validate that content is valid JSON
+                try:
+                    json.loads(content)
+                except json.JSONDecodeError:
+                    # If not valid JSON, wrap it in a valid JSON structure
+                    print(f"⚠️  Pool Calculator response is not valid JSON, wrapping it")
+                    content = json.dumps({
+                        "recommended_allocations": {},
+                        "total_output": 0.0,
+                        "average_price_impact": 0.0,
+                        "reasoning": f"Invalid JSON response: {content[:200]}",
+                        "error": "Response is not valid JSON"
+                    })
+            
             await event_queue.enqueue_event(new_agent_text_message(content))
-            print("✅ Successfully enqueued pool calculator response")
+            print(f"✅ Successfully enqueued pool calculator response ({len(content)} chars)")
         except Exception as e:
             print(f"❌ Error in execute: {e}")
             import traceback

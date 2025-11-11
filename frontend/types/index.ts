@@ -389,6 +389,20 @@ export interface SwapRouterData {
 }
 
 /**
+ * Pool Calculator recommended allocations
+ */
+export interface PoolCalculatorData {
+  type?: string;
+  recommended_allocations: {
+    [chain: string]: number;
+  };
+  total_output?: number;
+  average_price_impact?: number;
+  reasoning?: string;
+  error?: string;
+}
+
+/**
  * Type for swap requirements action parameters
  */
 export type SwapRequirementsActionRenderProps = ActionRenderProps<
@@ -439,6 +453,7 @@ export interface DeFiChatProps {
   onLiquidityUpdate?: (data: LiquidityData | MultiChainLiquidityData | null) => void;
   onSwapUpdate?: (data: SwapData | null) => void;
   onSwapRouterUpdate?: (data: SwapRouterData | null) => void;
+  onPoolCalculatorUpdate?: (data: PoolCalculatorData | null) => void;
 }
 
 /**

@@ -6,7 +6,7 @@ if [ -f .env ]; then
     export $(cat .env | grep -v '^#' | xargs)
 fi
 
-# Use Railway's PORT if set, otherwise default to 8000
+# Use PORT environment variable if set, otherwise default to 8000
 MAIN_PORT=${PORT:-8000}
 
 # Start all services in background

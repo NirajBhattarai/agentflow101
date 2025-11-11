@@ -13,6 +13,8 @@ export async function POST(request: NextRequest) {
   const swapAgentUrl = process.env.SWAP_AGENT_URL || "http://localhost:9995";
   const multichainLiquidityAgentUrl =
     process.env.MULTICHAIN_LIQUIDITY_AGENT_URL || "http://localhost:9994";
+  const poolCalculatorAgentUrl =
+    process.env.POOL_CALCULATOR_AGENT_URL || "http://localhost:9996";
   const swapRouterAgentUrl = process.env.SWAP_ROUTER_AGENT_URL || "http://localhost:9993";
 
   // STEP 2: Define orchestrator URL (speaks AG-UI Protocol)
@@ -29,10 +31,11 @@ export async function POST(request: NextRequest) {
   // 4. Routing messages between orchestrator and A2A agents
   const a2aMiddlewareAgent = new A2AMiddlewareAgent({
     description:
-      "DeFi orchestrator with balance, multi-chain liquidity, swap, and swap router agents (Hedera, Polygon, Ethereum)",
+      "DeFi orchestrator with balance, multi-chain liquidity, pool calculator, swap, and swap router agents (Hedera, Polygon, Ethereum)",
     agentUrls: [
       balanceAgentUrl, // Balance Agent (ADK) - Port 9997
       multichainLiquidityAgentUrl, // Multi-Chain Liquidity Agent (ADK) - Port 9994
+      poolCalculatorAgentUrl, // Pool Calculator Agent (ADK) - Port 9996
       swapAgentUrl, // Swap Agent (ADK) - Port 9995
       swapRouterAgentUrl, // Swap Router Agent (ADK) - Port 9993
     ],
