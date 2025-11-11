@@ -68,10 +68,25 @@ def convert_liquidity_to_pool_data(
             # Determine which token is which
             base = pair.get("base", "").upper()
             quote = pair.get("quote", "").upper()
+            
+            # Normalize token symbols for matching (ETH -> WETH for EVM chains)
+            token_in_upper = token_in.upper()
+            token_out_upper = token_out.upper()
+            
+            # Map ETH to WETH for EVM chains
+            if chain_name in ["ethereum", "polygon"]:
+                if token_in_upper == "ETH":
+                    token_in_upper = "WETH"
+                if token_out_upper == "ETH":
+                    token_out_upper = "WETH"
+                if base == "ETH":
+                    base = "WETH"
+                if quote == "ETH":
+                    quote = "WETH"
 
             # Check if this pair matches our swap direction
-            if (base == token_in.upper() and quote == token_out.upper()) or (
-                base == token_out.upper() and quote == token_in.upper()
+            if (base == token_in_upper and quote == token_out_upper) or (
+                base == token_out_upper and quote == token_in_upper
             ):
                 pool_data = PoolData(
                     chain=chain_name,

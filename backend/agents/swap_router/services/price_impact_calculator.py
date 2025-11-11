@@ -30,15 +30,32 @@ def calculate_price_impact_simple(
     Returns:
         PriceImpactData with calculated impact
     """
+    # Normalize token symbols for matching
+    token_in_norm = token_in.upper()
+    token_out_norm = token_out.upper()
+    token0_norm = pool_data.token0.upper()
+    token1_norm = pool_data.token1.upper()
+    
+    # Map ETH to WETH for matching
+    if token_in_norm == "ETH":
+        token_in_norm = "WETH"
+    if token_out_norm == "ETH":
+        token_out_norm = "WETH"
+    if token0_norm == "ETH":
+        token0_norm = "WETH"
+    if token1_norm == "ETH":
+        token1_norm = "WETH"
+    
     # Determine which reserve is which
-    if pool_data.token0.lower() == token_in.lower():
+    if token0_norm == token_in_norm:
         reserve_in = pool_data.reserve_base
         reserve_out = pool_data.reserve_quote
-    elif pool_data.token1.lower() == token_in.lower():
+    elif token1_norm == token_in_norm:
         reserve_in = pool_data.reserve_quote
         reserve_out = pool_data.reserve_base
     else:
-        # Fallback: use reserves as-is
+        # Fallback: use reserves as-is (assume token0 is input)
+        print(f"⚠️  Token mismatch: pool has {pool_data.token0}/{pool_data.token1}, swap is {token_in}/{token_out}")
         reserve_in = pool_data.reserve_base
         reserve_out = pool_data.reserve_quote
 

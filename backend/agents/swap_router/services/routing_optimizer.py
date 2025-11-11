@@ -194,7 +194,15 @@ def optimize_routing(
 
         # Calculate output and impact
         try:
+            print(f"  Calculating route for {chain}: {amount:,.0f} {token_in} → {token_out}")
+            print(f"    Pool: {pool.pool_address[:20]}...")
+            print(f"    Pool tokens: {pool.token0}/{pool.token1}")
+            print(f"    Reserves: base={pool.reserve_base}, quote={pool.reserve_quote}")
+            
             impact = calculate_price_impact_simple(amount, pool, token_in, token_out)
+            
+            print(f"    Price impact: {impact.price_impact_percent:.2f}%")
+            print(f"    Output: {impact.amount_out:.4f} {token_out}")
 
             route = RouteRecommendation(
                 chain=chain,
@@ -216,7 +224,9 @@ def optimize_routing(
             total_price_impact_weighted += impact.price_impact_percent * amount
             total_gas_cost += gas_cost
         except Exception as e:
-            print(f"Error calculating route for {chain}: {e}")
+            print(f"❌ Error calculating route for {chain}: {e}")
+            import traceback
+            traceback.print_exc()
             continue
 
     if not routes:
