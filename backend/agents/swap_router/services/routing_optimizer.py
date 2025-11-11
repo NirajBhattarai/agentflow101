@@ -109,12 +109,19 @@ def optimize_routing(
     if not best_pools:
         raise ValueError("No pools available for routing")
 
+    print(f"🎯 Starting routing optimization:")
+    print(f"  Total amount: {total_amount:,.0f} {token_in}")
+    print(f"  Best pools: {list(best_pools.keys())}")
+    for chain, pool in best_pools.items():
+        print(f"    {chain}: {pool.pool_address[:20]}... ({pool.token0}/{pool.token1})")
+
     # Initialize allocation
     allocations = {chain: 0.0 for chain in best_pools.keys()}
     remaining = total_amount
 
     # Iterative allocation
     iterations = 0
+    print(f"  Starting iterative allocation (step={DEFAULT_ALLOCATION_STEP}, max_iterations={DEFAULT_MAX_ITERATIONS})")
     while remaining > DEFAULT_ALLOCATION_STEP and iterations < DEFAULT_MAX_ITERATIONS:
         # Calculate marginal cost for each chain
         marginal_costs = {}
@@ -144,13 +151,17 @@ def optimize_routing(
             )
             if impact.price_impact_percent > max_slippage_percent:
                 # This chain is too expensive, remove it
+                print(f"  ⚠️  Removing {best_chain}: price impact {impact.price_impact_percent:.2f}% > max {max_slippage_percent}%")
                 del best_pools[best_chain]
                 if best_chain in allocations:
                     remaining += allocations[best_chain]
                     allocations[best_chain] = 0
                 continue
-        except Exception:
+        except Exception as e:
             # Pool can't handle this amount, remove it
+            print(f"  ⚠️  Removing {best_chain}: exception during price impact calculation: {e}")
+            import traceback
+            traceback.print_exc()
             del best_pools[best_chain]
             if best_chain in allocations:
                 remaining += allocations[best_chain]
@@ -161,9 +172,11 @@ def optimize_routing(
         allocations[best_chain] += allocation_step
         remaining -= allocation_step
         iterations += 1
+        print(f"  Iteration {iterations}: Allocated {allocation_step:,.0f} to {best_chain}, remaining: {remaining:,.0f}")
 
     # If there's remaining amount, distribute proportionally
     if remaining > 0 and best_pools:
+        print(f"  Distributing remaining {remaining:,.0f} across {len(best_pools)} chains")
         # Distribute remaining based on current allocations
         total_allocated = sum(allocations.values())
         if total_allocated > 0:
@@ -171,12 +184,16 @@ def optimize_routing(
                 if chain in best_pools:
                     proportion = allocations[chain] / total_allocated
                     allocations[chain] += remaining * proportion
+                    print(f"    {chain}: +{remaining * proportion:,.0f} (proportion: {proportion:.2%})")
         else:
             # Equal distribution
             per_chain = remaining / len(best_pools)
             for chain in best_pools:
                 allocations[chain] += per_chain
+                print(f"    {chain}: +{per_chain:,.0f} (equal split)")
         remaining = 0
+    elif remaining > 0:
+        print(f"  ⚠️  Warning: {remaining:,.0f} remaining but no pools available")
 
     # Build route recommendations
     routes = []
@@ -184,8 +201,18 @@ def optimize_routing(
     total_price_impact_weighted = 0.0
     total_gas_cost = 0.0
 
+    print(f"📋 Building routes from allocations:")
+    print(f"  Allocations: {allocations}")
+    print(f"  Best pools: {list(best_pools.keys())}")
+    print(f"  Remaining: {remaining}")
+
     for chain, amount in allocations.items():
-        if amount <= 0 or chain not in best_pools:
+        print(f"  Processing {chain}: amount={amount}, in best_pools={chain in best_pools}")
+        if amount <= 0:
+            print(f"    ⏭️  Skipping {chain}: amount <= 0")
+            continue
+        if chain not in best_pools:
+            print(f"    ⏭️  Skipping {chain}: not in best_pools")
             continue
 
         pool = best_pools[chain]
