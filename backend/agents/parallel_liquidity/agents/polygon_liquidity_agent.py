@@ -6,7 +6,7 @@ Independent sub-agent for fetching liquidity from Polygon chain.
 
 import os
 from google.adk.agents.llm_agent import LlmAgent  # noqa: E402
-from ...liquidity.tools import get_liquidity_polygon  # noqa: E402
+from lib.shared.blockchain.liquidity import get_liquidity_polygon  # noqa: E402
 
 
 def build_polygon_liquidity_agent() -> LlmAgent:

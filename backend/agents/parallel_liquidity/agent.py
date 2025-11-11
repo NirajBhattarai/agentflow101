@@ -37,8 +37,8 @@ except ImportError:
             print("⚠️  Warning: ParallelAgent not found. Using sequential fallback.")
             ParallelAgent = None
 
-# Import liquidity tools from liquidity agent
-from ..liquidity.tools import (  # noqa: E402
+# Import liquidity tools from shared blockchain module
+from lib.shared.blockchain.liquidity import (  # noqa: E402
     get_liquidity_polygon,
     get_liquidity_hedera,
 )

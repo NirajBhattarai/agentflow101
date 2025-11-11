@@ -168,7 +168,7 @@ The agent exposes an A2A Protocol endpoint that can be called by:
 
 ## Dependencies
 
-- Uses liquidity tools from `agents.liquidity.tools`
+- Uses liquidity functions from `lib.shared.blockchain.liquidity` (shared module)
 - Requires Google ADK with ParallelAgent support (v0.1.0+)
 - Falls back to sequential execution if ParallelAgent unavailable
 

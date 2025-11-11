@@ -4,8 +4,8 @@ Tests fetch actual data from Polygon chain using RPC.
 """
 
 from web3 import Web3
-from agents.liquidity.tools.polygon import get_liquidity_polygon
-from agents.liquidity.tools.constants import POLYGON_TOKENS, POLYGON_POOLS
+from lib.shared.blockchain.liquidity.polygon import get_liquidity_polygon
+from lib.shared.blockchain.liquidity.constants import POLYGON_TOKENS, POLYGON_POOLS
 
 
 class TestPolygonLiquidity:

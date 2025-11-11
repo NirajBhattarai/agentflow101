@@ -4,7 +4,7 @@ Tests the aggregation of liquidity across all chains.
 """
 
 from agents.liquidity.tools.all_chains import get_liquidity_all_chains
-from agents.liquidity.tools.constants import (
+from lib.shared.blockchain.liquidity.constants import (
     POLYGON_TOKENS,
     HEDERA_TOKENS,
 )

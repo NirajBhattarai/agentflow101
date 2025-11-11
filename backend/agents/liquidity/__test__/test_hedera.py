@@ -5,8 +5,8 @@ Tests fetch actual data from Hedera chain using RPC.
 
 import pytest
 import requests
-from agents.liquidity.tools.hedera import get_liquidity_hedera
-from agents.liquidity.tools.constants import HEDERA_TOKENS, HEDERA_POOLS
+from lib.shared.blockchain.liquidity.hedera import get_liquidity_hedera
+from lib.shared.blockchain.liquidity.constants import HEDERA_TOKENS, HEDERA_POOLS
 
 
 class TestHederaLiquidity:

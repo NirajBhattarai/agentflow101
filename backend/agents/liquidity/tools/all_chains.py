@@ -1,5 +1,7 @@
-from .polygon import get_liquidity_polygon
-from .hedera import get_liquidity_hedera
+from lib.shared.blockchain.liquidity import (  # noqa: E402
+    get_liquidity_polygon,
+    get_liquidity_hedera,
+)
 
 
 def get_liquidity_all_chains(token_address: str) -> dict:
