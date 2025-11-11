@@ -15,6 +15,8 @@ export async function POST(request: NextRequest) {
     process.env.MULTICHAIN_LIQUIDITY_AGENT_URL || "http://localhost:9994";
   const poolCalculatorAgentUrl =
     process.env.POOL_CALCULATOR_AGENT_URL || "http://localhost:9996";
+  const marketInsightsAgentUrl =
+    process.env.MARKET_INSIGHTS_AGENT_URL || "http://localhost:9992";
   const swapRouterAgentUrl = process.env.SWAP_ROUTER_AGENT_URL || "http://localhost:9993";
 
   // STEP 2: Define orchestrator URL (speaks AG-UI Protocol)
@@ -36,6 +38,7 @@ export async function POST(request: NextRequest) {
       balanceAgentUrl, // Balance Agent (ADK) - Port 9997
       multichainLiquidityAgentUrl, // Multi-Chain Liquidity Agent (ADK) - Port 9994
       poolCalculatorAgentUrl, // Pool Calculator Agent (ADK) - Port 9996
+      marketInsightsAgentUrl, // Market Insights Agent (ADK) - Port 9992
       swapAgentUrl, // Swap Agent (ADK) - Port 9995
       swapRouterAgentUrl, // Swap Router Agent (ADK) - Port 9993
     ],
@@ -58,6 +61,14 @@ export async function POST(request: NextRequest) {
          - Format: "Get liquidity for [token_pair]" or "Get liquidity on [chain]"
          - Example queries: "Get liquidity for ETH/USDT", "Find liquidity pools for HBAR/USDC", "Get liquidity on Polygon"
          - Returns combined results from all queried chains in a single response
+
+      3. **Market Insights Agent** (ADK)
+         - Fetches comprehensive market data using CoinGecko API
+         - Provides liquidity across pools, volume, trending token addresses, and real-time prices
+         - Supports multiple networks: Ethereum (eth), Polygon (polygon), Hedera (hedera)
+         - Format: "Get liquidity for [token_address] on [network]" or "Show trending tokens on [network]" or "Get price and volume for [token_address]"
+         - Examples: "Get liquidity for WETH on Ethereum", "Show trending tokens on Polygon", "Get price and volume for USDT on Hedera", "Find trending pools across all networks"
+         - Returns structured JSON with liquidity, volume, price, and trending data
 
       4. **Swap Router Agent** (ADK)
          - Intelligent multi-chain swap routing optimizer for large swaps

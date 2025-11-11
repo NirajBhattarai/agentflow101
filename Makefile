@@ -7,7 +7,7 @@
         test-pools test-liquidity-blockchain test-tokens test-tokens-constants test-tokens-address \
         test-balance-shared \
         clean dev-travily dev-liquidity dev-parallel-liquidity dev-balance dev-swap dev-swap-router \
-        dev-orchestrator dev-all-agents format format-backend format-frontend backend
+        dev-market-insights dev-pool-calculator dev-orchestrator dev-all-agents format format-backend format-frontend backend
 
 # Default target
 help:
@@ -30,8 +30,9 @@ help:
 	@echo "  make dev-swap            - Run Swap agent server (port 9995)"
 	@echo "  make dev-swap-router     - Run Swap Router agent server (port 9993)"
 	@echo "  make dev-pool-calculator - Run Pool Calculator agent server (port 9996)"
+	@echo "  make dev-market-insights - Run Market Insights agent server (port 9992)"
 	@echo "  make dev-orchestrator    - Run Orchestrator agent server (port 9000)"
-	@echo "  make dev-all-agents      - Run all agents (orchestrator, balance, multichain-liquidity, swap, swap-router, pool-calculator)"
+	@echo "  make dev-all-agents      - Run all agents (orchestrator, balance, multichain-liquidity, swap, swap-router, pool-calculator, market-insights)"
 	@echo ""
 	@echo "Build:"
 	@echo "  make build-frontend      - Build frontend for production"
@@ -138,6 +139,11 @@ dev-pool-calculator:
 	@echo "Pool Calculator Agent: http://localhost:9996"
 	cd backend && uv run -m agents.pool_calculator
 
+dev-market-insights:
+	@echo "Starting Market Insights agent server..."
+	@echo "Market Insights Agent: http://localhost:9992"
+	cd backend && uv run -m agents.market_insights
+
 dev-orchestrator:
 	@echo "Starting Orchestrator agent server..."
 	@echo "Orchestrator Agent: http://localhost:9000"
@@ -152,9 +158,10 @@ dev-all-agents:
 	@echo "Swap Agent: http://localhost:9995"
 	@echo "Swap Router Agent: http://localhost:9993"
 	@echo "Pool Calculator Agent: http://localhost:9996"
+	@echo "Market Insights Agent: http://localhost:9992"
 	@echo ""
 	@echo "Starting all agents in parallel..."
-	@make -j6 dev-orchestrator dev-balance dev-multichain-liquidity dev-swap dev-swap-router dev-pool-calculator
+	@make -j7 dev-orchestrator dev-balance dev-multichain-liquidity dev-swap dev-swap-router dev-pool-calculator dev-market-insights
 
 # Production builds
 build-frontend:

@@ -27,6 +27,7 @@ import type {
   SwapData,
   SwapRouterData,
   PoolCalculatorData,
+  MarketInsightsData,
   MessageActionRenderProps,
 } from "@/types";
 
@@ -36,6 +37,7 @@ const ChatInner = ({
   onSwapUpdate,
   onSwapRouterUpdate,
   onPoolCalculatorUpdate,
+  onMarketInsightsUpdate,
 }: DeFiChatProps) => {
   const { visibleMessages } = useCopilotChat();
 
@@ -118,6 +120,18 @@ const ChatInner = ({
                 });
                 onSwapUpdate?.(parsed as SwapData);
               }
+              // Check if it's market insights data
+              else if (parsed.type === "market_insights") {
+                console.log("📊 Market Insights Data Received:", {
+                  network: parsed.network,
+                  token_address: parsed.token_address,
+                  pool_address: parsed.pool_address,
+                  has_pool_liquidity: !!parsed.pool_liquidity,
+                  has_token_liquidity: !!parsed.token_liquidity,
+                  trending_tokens_count: parsed.trending_tokens?.length || 0,
+                });
+                onMarketInsightsUpdate?.(parsed as MarketInsightsData);
+              }
             }
           } catch (e) {
             // Silently ignore parsing errors
@@ -134,6 +148,7 @@ const ChatInner = ({
     onSwapUpdate,
     onSwapRouterUpdate,
     onPoolCalculatorUpdate,
+    onMarketInsightsUpdate,
   ]);
 
   // Register HITL balance requirements form (collects account info at start)

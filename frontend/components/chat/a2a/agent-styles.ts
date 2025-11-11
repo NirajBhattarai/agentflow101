@@ -85,6 +85,17 @@ export function getAgentStyle(agentName: string): AgentStyle {
     };
   }
 
+  // Market Insights Agent - Orange/Yellow branding
+  if (nameLower.includes("market") || nameLower.includes("insights")) {
+    return {
+      bgColor: "bg-gradient-to-r from-orange-100 to-yellow-100",
+      textColor: "text-orange-800",
+      borderColor: "border-orange-400",
+      icon: "📊",
+      framework: "ADK",
+    };
+  }
+
   // Default/Unknown agent
   return {
     bgColor: "bg-gray-100",

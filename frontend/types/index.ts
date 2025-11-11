@@ -403,6 +403,62 @@ export interface PoolCalculatorData {
 }
 
 /**
+ * Market Insights Pool Liquidity Data
+ */
+export interface MarketInsightsPoolLiquidity {
+  pool_address: string;
+  base_token_address?: string;
+  quote_token_address?: string;
+  reserve_in_usd?: number;
+  base_token_liquidity_usd?: number;
+  quote_token_liquidity_usd?: number;
+  volume_24h_usd?: number;
+  price_usd?: number;
+  price_change_24h?: number;
+}
+
+/**
+ * Market Insights Token Liquidity Data
+ */
+export interface MarketInsightsTokenLiquidity {
+  token_address: string;
+  total_reserve_in_usd?: number;
+  price_usd?: number;
+  volume_24h_usd?: number;
+  price_change_24h?: number;
+  top_pools?: MarketInsightsPoolLiquidity[];
+}
+
+/**
+ * Market Insights Trending Token Data
+ */
+export interface MarketInsightsTrendingToken {
+  token_address: string;
+  pool_address?: string;
+  network?: string;
+  price_usd?: number;
+  volume_24h_usd?: number;
+  reserve_in_usd?: number;
+  price_change_24h?: number;
+}
+
+/**
+ * Complete market insights data from Market Insights Agent
+ */
+export interface MarketInsightsData {
+  type: "market_insights";
+  network?: string;
+  token_address?: string;
+  pool_address?: string;
+  pool_liquidity?: MarketInsightsPoolLiquidity;
+  token_liquidity?: MarketInsightsTokenLiquidity;
+  trending_tokens?: MarketInsightsTrendingToken[];
+  price_usd?: number;
+  volume_24h_usd?: number;
+  error?: string;
+}
+
+/**
  * Type for swap requirements action parameters
  */
 export type SwapRequirementsActionRenderProps = ActionRenderProps<
@@ -454,6 +510,7 @@ export interface DeFiChatProps {
   onSwapUpdate?: (data: SwapData | null) => void;
   onSwapRouterUpdate?: (data: SwapRouterData | null) => void;
   onPoolCalculatorUpdate?: (data: PoolCalculatorData | null) => void;
+  onMarketInsightsUpdate?: (data: MarketInsightsData | null) => void;
 }
 
 /**

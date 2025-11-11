@@ -203,7 +203,16 @@ ORCHESTRATOR_INSTRUCTION = """
        - Returns structured JSON with recommended allocations per chain
        - DO NOT call the Pool Calculator Agent again after receiving a response
 
-    4. **Swap Router Agent** - If user requests large swap with routing optimization
+    4. **Market Insights Agent** (ADK)
+       - Fetches trending tokens across multiple networks
+       - Only provides trending tokens data (no pools, no individual token queries)
+       - Supports multiple networks: Ethereum (eth), Polygon (polygon), Hedera (hedera)
+       - Format: "Show trending tokens" or "Show trending tokens on [network]" or "Find trending tokens"
+       - Examples: "Show trending tokens", "Show trending tokens on Polygon", "Find trending tokens across all networks", "What are the trending tokens on Hedera"
+       - Call send_message_to_a2a_agent with agentName="MarketInsightsAgent" and the query
+       - Returns structured JSON with trending tokens data including token addresses, symbols, prices, volume, liquidity, and price changes
+
+    5. **Swap Router Agent** - If user requests large swap with routing optimization
        - **USE** this agent when user mentions large amounts (typically > 100K) or asks for "optimal routing", "best route", "across chains"
        - **SEQUENTIAL WORKFLOW MODE**: For step-by-step visibility, use the sequential workflow below
        - **DIRECT MODE**: Format: Pass the user's query directly (e.g., "Help me swap 2 million USDT to ETH" or "Route 500K USDC to HBAR optimally")
