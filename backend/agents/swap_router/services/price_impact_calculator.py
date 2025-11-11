@@ -359,15 +359,18 @@ def _calculate_with_constant_product(
         reserve_in + amount_in_after_fee
     )
 
-    # Calculate effective price
-    effective_price = amount_in / amount_out if amount_out > 0 else 0
+    # Calculate effective price (output per input)
+    effective_price = amount_out / amount_in if amount_in > 0 else 0
 
-    # Calculate spot price (before swap)
-    spot_price = reserve_in / reserve_out if reserve_out > 0 else 0
+    # Calculate spot price (before swap) - output tokens per input token
+    # spot_price = reserve_out / reserve_in (how many output tokens per input token)
+    spot_price = reserve_out / reserve_in if reserve_in > 0 else 0
 
     # Calculate price impact
+    # Price impact = (spot_price - effective_price) / spot_price
+    # This measures how much worse the effective price is compared to spot
     if spot_price > 0:
-        price_impact_percent = abs((effective_price - spot_price) / spot_price) * 100
+        price_impact_percent = abs((spot_price - effective_price) / spot_price) * 100
     else:
         price_impact_percent = 0
 

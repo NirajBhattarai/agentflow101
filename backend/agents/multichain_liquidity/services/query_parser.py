@@ -56,7 +56,8 @@ def extract_chain(query: str) -> Optional[str]:
         return "hedera"
     if "polygon" in query_lower:
         return "polygon"
-    if "ethereum" in query_lower or "eth" in query_lower:
+    # Only match full 'ethereum' mention; avoid matching token 'ETH' in pairs
+    if "ethereum" in query_lower:
         return "ethereum"
     if "all" in query_lower or "every" in query_lower:
         return "all"

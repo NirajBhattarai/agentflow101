@@ -78,10 +78,11 @@ class PoolCalculatorAgent:
 
         try:
             # Run the agent with the query
+            # Note: run_async expects query as positional or keyword 'query', not 'message'
             response = await self._runner.run_async(
                 user_id=self._user_id,
                 session_id=session_id,
-                message=query,
+                query=query,
             )
 
             # Extract text response
