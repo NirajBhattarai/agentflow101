@@ -2,7 +2,7 @@ import json
 import os
 import pytest
 
-from agents.balance.balance_executor import BalanceAgent
+from agents.balance.agent import BalanceAgent
 
 
 @pytest.mark.asyncio

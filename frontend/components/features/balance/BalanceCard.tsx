@@ -229,11 +229,18 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({ data }) => {
                       className={`${chainStyle.light} rounded-lg p-2 mb-2 border ${chainStyle.border}`}
                     >
                       <div className="text-[10px] text-[#57575B] mb-0.5">Balance</div>
-                      <div className="text-xl font-bold text-[#010507] mb-0.5 truncate" title={balance.balance}>
+                      <div
+                        className="text-xl font-bold text-[#010507] mb-0.5 truncate"
+                        title={balance.balance}
+                      >
                         {balance.balance}
                       </div>
-                      <div className="text-[9px] text-[#838389] font-mono truncate" title={balance.balance_raw}>
-                        Raw: {balance.balance_raw.length > 15
+                      <div
+                        className="text-[9px] text-[#838389] font-mono truncate"
+                        title={balance.balance_raw}
+                      >
+                        Raw:{" "}
+                        {balance.balance_raw.length > 15
                           ? `${balance.balance_raw.slice(0, 10)}...`
                           : balance.balance_raw}
                       </div>

@@ -43,6 +43,7 @@ help:
 	@echo "  make test-balance-polygon - Run Polygon balance tests"
 	@echo "  make test-balance-hedera - Run Hedera balance tests"
 	@echo "  make test-balance-all-chains - Run all chains balance aggregation tests"
+	@echo "  make test-balance-integration - Run balance agent integration tests"
 	@echo ""
 	@echo "Utilities:"
 	@echo "  make clean               - Clean build artifacts and dependencies"
@@ -198,6 +199,10 @@ test-balance-hedera:
 test-balance-all-chains:
 	@echo "Running all chains balance tests..."
 	cd backend && uv sync --extra test && PYTHONPATH=. uv run pytest agents/balance/__test__/test_all_chains.py -v
+
+test-balance-integration:
+	@echo "Running balance agent integration tests..."
+	cd backend && uv sync --extra test && PYTHONPATH=. uv run pytest agents/balance/__test__/test_integration.py -v
 
 # Cleanup
 clean:

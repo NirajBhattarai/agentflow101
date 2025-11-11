@@ -1,104 +1,155 @@
-## Balance Agent (A2A JSON-RPC)
+# Balance Agent
 
-### Description
+A blockchain balance query agent that retrieves account balance information from multiple blockchain chains (Polygon and Hedera) using Google ADK and A2A Protocol.
 
-The Balance Agent retrieves account balance information from multiple blockchain chains including:
-- **Polygon** (QuickSwap)
-- **Hedera** (SaucerSwap, HeliSwap, Silk Suite)
+## Overview
 
-### Run the agent server
+The Balance Agent provides comprehensive balance information including:
+- **Native token balances** (MATIC for Polygon, HBAR for Hedera)
+- **Token balances** for all supported tokens on each chain
+- **Multi-chain support** - Query single chain or aggregate across all chains
+- **Comprehensive token coverage** - 11 tokens on Polygon, 16 tokens on Hedera
 
-```bash
-cd backend/agents/balance
-uv run .
+## Architecture
+
+The Balance Agent follows a clean, modular architecture with clear separation of concerns:
+
+```
+balance/
+├── __init__.py              # Package initialization
+├── __main__.py              # Server entry point
+├── agent.py                 # Agent definition (BalanceAgent class)
+├── executor.py              # A2A Protocol executor (thin adapter layer)
+├── README.md                # This file
+├── IMPROVEMENTS.md          # Architecture improvement proposals
+│
+├── core/                    # Core domain logic
+│   ├── __init__.py
+│   ├── constants.py        # Configuration constants and defaults
+│   ├── exceptions.py        # Custom domain exceptions
+│   ├── response_validator.py # Response validation utilities
+│   └── models/              # Domain models (Pydantic)
+│       ├── __init__.py
+│       └── balance.py       # TokenBalance, StructuredBalance models
+│
+├── services/                # Application services
+│   ├── __init__.py
+│   ├── query_parser.py     # Query parsing and chain detection
+│   ├── response_builder.py # Response construction for different chains
+│   └── response_validator.py # Response validation and error handling
+│
+├── tools/                   # Blockchain interaction adapters
+│   ├── __init__.py
+│   ├── constants.py        # Token addresses and chain configurations
+│   ├── polygon.py          # Polygon chain balance fetching
+│   ├── hedera.py           # Hedera chain balance fetching
+│   ├── all_chains.py       # Multi-chain aggregation
+│   ├── log_message.py      # Logging utility
+│   └── abi/
+│       └── erc20.py        # ERC-20 ABI definitions
+│
+└── __test__/               # Test suite
+    ├── conftest.py         # Test fixtures
+    ├── test_polygon.py     # Polygon-specific tests
+    ├── test_hedera.py      # Hedera-specific tests
+    ├── test_all_chains.py  # Multi-chain tests
+    └── test_balance_executor.py # Executor tests
 ```
 
-Or use the Makefile:
+## Architecture Layers
+
+### 1. **Core Layer** (`core/`)
+Contains fundamental building blocks:
+- **`constants.py`**: All configuration values, defaults, error messages, and agent instructions
+- **`exceptions.py`**: Custom domain exceptions (`BalanceAgentError`, `InvalidAddressError`, `ChainNotSupportedError`, etc.)
+- **`models/balance.py`**: Pydantic domain models (`TokenBalance`, `StructuredBalance`)
+- **`response_validator.py`**: Response validation and serialization utilities
+
+### 2. **Services Layer** (`services/`)
+Contains application service utilities:
+- **`query_parser.py`**: Extracts account addresses and detects chains from user queries
+- **`response_builder.py`**: Constructs balance responses for different chains
+- **`response_validator.py`**: Validates response content, handles errors, and logs responses
+
+### 3. **Agent Layer** (`agent.py`)
+Defines the main agent:
+- **`BalanceAgent`**: Google ADK agent that handles balance queries
+  - Builds and configures the LLM agent
+  - Processes queries and invokes appropriate tools
+  - Returns structured JSON responses
+
+### 4. **Executor Layer** (`executor.py`)
+Thin adapter layer for A2A Protocol:
+- **`BalanceExecutor`**: Implements `AgentExecutor` interface
+  - Receives requests from orchestrator
+  - Delegates to agent and services
+  - Handles A2A Protocol-specific concerns only
+  - Minimal business logic (thin layer pattern)
+
+### 5. **Tools Layer** (`tools/`)
+Blockchain interaction layer:
+- **`polygon.py`**: Fetches balances from Polygon chain (Web3)
+- **`hedera.py`**: Fetches balances from Hedera chain (Mirror Node API)
+- **`all_chains.py`**: Aggregates balances across chains
+- **`constants.py`**: Token addresses and chain-specific configurations
+
+## Design Principles
+
+### Clean Code Architecture
+- **Separation of Concerns**: Each module has a single, well-defined responsibility
+- **Small Methods**: All methods are ≤ 8 lines for maintainability
+- **Dependency Injection**: Services are imported and used, not tightly coupled
+- **Constants Extraction**: All magic strings and configuration moved to constants
+
+### Module Responsibilities
+
+| Module | Responsibility | Dependencies |
+|--------|---------------|--------------|
+| `core/constants.py` | Configuration values | None |
+| `core/response_validator.py` | Data models & validation | `core/constants.py` |
+| `services/query_parser.py` | Query parsing | `core/constants.py` |
+| `services/response_builder.py` | Response building | `tools/`, `core/constants.py` |
+| `agent.py` | Agent definition | `core/`, `services/`, `tools/` |
+| `executor.py` | A2A Protocol execution | `agent.py`, `core/` |
+| `tools/*.py` | Blockchain interactions | `core/constants.py` |
+
+## Supported Tokens
+
+### Polygon (11 tokens)
+- MATIC (native), WMATIC, POL, USDC, WETH, DAI, AAVE, LINK, QUICK, SAND, USDT
+
+### Hedera (16 tokens)
+- HBAR (native), SAUCE, USDC, JAM, DOV, HBARX, SHIBR, SKUX, TNG, HTC, USDT, WHBAR, ETH, WETH, BTC, LINK, AVAX
+
+## Usage
+
+### Running the Agent Server
 
 ```bash
+# From backend directory
+cd backend/agents/balance
+uv run .
+
+# Or use Makefile
 make dev-balance
 ```
 
-Server starts at `http://0.0.0.0:9997/`.
-
-### Send a non-streaming request (message/send)
-
-```bash
-curl --location 'http://0.0.0.0:9997/' \
-  --header 'Content-Type: application/json' \
-  --data '{
-    "jsonrpc": "2.0",
-    "id": 1,
-    "method": "message/send",
-    "params": {
-      "message": {
-        "kind": "message",
-        "message_id": "00000000-0000-0000-0000-000000000001",
-        "role": "user",
-        "parts": [
-          { "kind": "text", "text": "Get HBAR balance for account 0.0.123456 on Hedera" }
-        ]
-      }
-    }
-  }'
-```
-
-### Send a streaming request (message/stream)
-
-```bash
-curl --location 'http://0.0.0.0:9997/' \
-  --header 'Content-Type: application/json' \
-  --header 'Accept: text/event-stream' \
-  --no-buffer \
-  --data '{
-    "jsonrpc": "2.0",
-    "id": 1,
-    "method": "message/stream",
-    "params": {
-      "message": {
-        "kind": "message",
-        "message_id": "00000000-0000-0000-0000-000000000002",
-        "role": "user",
-        "parts": [
-          { "kind": "text", "text": "Get all token balances for account 0x1234... on Polygon" }
-        ]
-      }
-    }
-  }'
-```
+Server starts at `http://0.0.0.0:9997/`
 
 ### Example Queries
 
 - "Get HBAR balance for account 0.0.123456 on Hedera"
 - "Check USDC balance for address 0x1234... on Polygon"
-- "Get all token balances for an account across all chains"
-- "Check balance for address 0xabcd... on Polygon"
-
-### Agent Tools
-
-The agent has access to the following tools:
-
-1. **get_balance_polygon** - Get account balance from Polygon chain
-2. **get_balance_hedera** - Get account balance from Hedera chain
-3. **get_balance_all_chains** - Get account balance from all supported chains
-
-Each tool returns information about:
-- Native token balance (MATIC for Polygon, HBAR for Hedera)
-- Token balances (if token address/symbol provided)
-- Balance in human-readable format
-- Raw balance values
-- Token decimals
-- USD value estimates
+- "Get all token balances for account 0xabcd... on all chains"
+- "Check balance for address 0x1234... on Polygon"
 
 ### Response Format
-
-#### Single Chain Response
 
 ```json
 {
   "type": "balance",
-  "chain": "polygon",
-  "account_address": "0x1234...",
+  "chain": "polygon | hedera | all",
+  "account_address": "0x... or 0.0.123456",
   "balances": [
     {
       "token_type": "native",
@@ -121,31 +172,7 @@ Each tool returns information about:
 }
 ```
 
-#### All Chains Response
-
-```json
-{
-  "type": "balance_summary",
-  "account_address": "0x1234...",
-  "token_address": "USDC",
-  "chains": {
-    "polygon": { ... },
-    "hedera": { ... }
-  },
-  "total_usd_value": "$2,251.00"
-}
-```
-
-### Implementation Notes
-
-The current implementation uses mock data. To integrate with real blockchain RPC calls, replace the mock implementations in the tool files with actual API calls to:
-
-- **Polygon**: Web3.py or ethers.js for EVM-compatible chains
-- **Hedera**: Hedera SDK for Hedera-specific accounts
-
-### Testing
-
-Run tests using:
+## Testing
 
 ```bash
 # All balance tests
@@ -159,3 +186,65 @@ make test-balance-hedera
 make test-balance-all-chains
 ```
 
+## Configuration
+
+Set environment variables:
+
+```bash
+# API Keys
+GOOGLE_API_KEY=your_key_here
+# OR
+GEMINI_API_KEY=your_key_here
+
+# Model Configuration
+GEMINI_MODEL=gemini-2.5-flash  # Default
+
+# Network Configuration
+POLYGON_RPC_URL=https://polygon-rpc.com  # Default
+HEDERA_NETWORK=mainnet  # Default (or testnet)
+
+# Server Configuration
+BALANCE_PORT=9997  # Default
+```
+
+## Code Quality
+
+- ✅ All methods ≤ 8 lines
+- ✅ Clean separation of concerns
+- ✅ Comprehensive test coverage
+- ✅ Type hints throughout
+- ✅ Error handling at all layers
+- ✅ Constants extracted to dedicated files
+
+## Development
+
+### Adding a New Token
+
+1. Add token to `tools/constants.py`:
+   ```python
+   POLYGON_TOKENS = {
+       ...
+       "NEW_TOKEN": "0x...",
+   }
+   ```
+
+2. Token will automatically be included in balance queries
+
+### Adding a New Chain
+
+1. Create new tool file in `tools/` (e.g., `ethereum.py`)
+2. Add chain constants to `tools/constants.py`
+3. Update `services/response_builder.py` to handle new chain
+4. Update `services/query_parser.py` for chain detection
+5. Add tests in `__test__/`
+
+## Integration
+
+The Balance Agent integrates with:
+- **Orchestrator Agent**: Called via A2A Protocol for balance queries
+- **Frontend**: Displays balance information via `BalanceCard` component
+- **Other Agents**: Can be called by Bridge/Swap agents for balance checks
+
+## License
+
+Part of AgentFlow 101 - Hedera Hello Future: Ascension Hackathon 2025
