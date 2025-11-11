@@ -14,7 +14,7 @@ DEFAULT_APP_NAME = "agents"
 
 # Agent configuration
 AGENT_NAME = "ParallelLiquidityAgent"
-AGENT_DESCRIPTION = "Fetches liquidity from Hedera and Polygon chains in parallel"
+AGENT_DESCRIPTION = "Fetches liquidity from Hedera, Polygon, and Ethereum chains in parallel"
 
 # Response type
 RESPONSE_TYPE = "parallel_liquidity"
@@ -22,10 +22,12 @@ RESPONSE_TYPE = "parallel_liquidity"
 # Chain names
 CHAIN_HEDERA = "hedera"
 CHAIN_POLYGON = "polygon"
+CHAIN_ETHEREUM = "ethereum"
 
 # Default fees (basis points)
 DEFAULT_HEDERA_FEE_BPS = 30
 DEFAULT_POLYGON_FEE_BPS = 25
+DEFAULT_ETHEREUM_FEE_BPS = 30
 
 # Error messages
 ERROR_TOKEN_PAIR_NOT_FOUND = (
@@ -42,14 +44,15 @@ ERROR_RESULT_COMBINATION_FAILED = "Failed to combine results from chains"
 # Sequential fallback instruction
 SEQUENTIAL_FALLBACK_INSTRUCTION = """
 You are a liquidity query agent. When given a token pair like "ETH/USDT",
-fetch liquidity from both Hedera and Polygon chains.
-Use get_liquidity_hedera for Hedera and get_liquidity_polygon for Polygon.
+fetch liquidity from Hedera, Polygon, and Ethereum chains.
+Use get_liquidity_hedera for Hedera, get_liquidity_polygon for Polygon, and get_liquidity_ethereum for Ethereum.
 Return combined results in JSON format.
 """
 
 # Output keys for sub-agents
 OUTPUT_KEY_HEDERA = "hedera_liquidity"
 OUTPUT_KEY_POLYGON = "polygon_liquidity"
+OUTPUT_KEY_ETHEREUM = "ethereum_liquidity"
 
 
 def get_model_name() -> str:

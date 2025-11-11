@@ -19,6 +19,8 @@ class LiquidityPair(BaseModel):
     reserve_quote: float = Field(description="Quote token reserve")
     fee_bps: int = Field(description="Fee in basis points")
     chain: str = Field(description="Chain name: polygon or hedera")
+    liquidity: Optional[str] = Field(default=None, description="Pool liquidity value")
+    slot0: Optional[dict] = Field(default=None, description="Uniswap V3 slot0 data (sqrtPriceX96, tick, etc.)")
 
 
 class StructuredParallelLiquidity(BaseModel):

@@ -19,12 +19,12 @@ def build_polygon_liquidity_agent() -> LlmAgent:
         instruction="""You are a Polygon liquidity query agent specializing in Polygon chain.
 
 When given a token pair query like "Get liquidity for ETH/USDT" or "HBAR/USDC":
-1. Extract the base token from the pair (the token before the "/" - e.g., "ETH" from "ETH/USDT", "HBAR" from "HBAR/USDC")
-2. Call get_liquidity_polygon tool with the base token symbol (e.g., "ETH", "HBAR", "USDC")
-3. The tool will return liquidity data with pools information
+1. Extract the full token pair from the query (e.g., "ETH/USDT" from "Get liquidity for ETH/USDT")
+2. Call get_liquidity_polygon tool with the full token pair (e.g., "ETH/USDT", "HBAR/USDC")
+3. The tool will find the pool using WETH and USDT addresses, get liquidity and slot0 data
 4. Return the tool's result as-is (it's already JSON format)
 
-Example: For query "Get liquidity for ETH/USDT", extract "ETH" and call get_liquidity_polygon("ETH")
+Example: For query "Get liquidity for ETH/USDT", extract "ETH/USDT" and call get_liquidity_polygon("ETH/USDT")
 
 Output *only* the JSON result from the tool. Store your result with output_key="polygon_liquidity".
         """,

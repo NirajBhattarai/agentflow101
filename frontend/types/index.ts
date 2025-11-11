@@ -158,6 +158,16 @@ export interface ParallelLiquidityPair {
   reserve_quote: number;
   fee_bps: number;
   chain: string;
+  liquidity?: string;
+  slot0?: {
+    sqrtPriceX96: string;
+    tick: number;
+    observationIndex?: number;
+    observationCardinality?: number;
+    observationCardinalityNext?: number;
+    feeProtocol?: number;
+    unlocked?: boolean;
+  };
 }
 
 /**
@@ -172,6 +182,10 @@ export interface ParallelLiquidityData {
       total_pools: number;
     };
     polygon?: {
+      pairs: ParallelLiquidityPair[];
+      total_pools: number;
+    };
+    ethereum?: {
       pairs: ParallelLiquidityPair[];
       total_pools: number;
     };
@@ -356,7 +370,7 @@ export type SwapRequirementsActionRenderProps = ActionRenderProps<
  */
 export interface DeFiChatProps {
   onBalanceUpdate?: (data: BalanceData | null) => void;
-  onLiquidityUpdate?: (data: LiquidityData | null) => void;
+  onLiquidityUpdate?: (data: LiquidityData | ParallelLiquidityData | null) => void;
   onBridgeUpdate?: (data: BridgeData | null) => void;
   onSwapUpdate?: (data: SwapData | null) => void;
 }

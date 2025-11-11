@@ -8,13 +8,13 @@ import { BridgeCard } from "@/components/features/bridge";
 import { SwapCard } from "@/components/features/swap";
 import { LiquidityCard } from "@/components/features/liquidity";
 import { WalletConnect, Logo } from "@/components/shared";
-import type { BalanceData, LiquidityData, BridgeData, SwapData } from "@/types";
+import type { BalanceData, LiquidityData, ParallelLiquidityData, BridgeData, SwapData } from "@/types";
 import "../copilot.css";
 import Link from "next/link";
 
 export default function ChatPage() {
   const [balanceData, setBalanceData] = useState<BalanceData | null>(null);
-  const [liquidityData, setLiquidityData] = useState<LiquidityData | null>(null);
+  const [liquidityData, setLiquidityData] = useState<LiquidityData | ParallelLiquidityData | null>(null);
   const [bridgeData, setBridgeData] = useState<BridgeData | null>(null);
   const [swapData, setSwapData] = useState<SwapData | null>(null);
   const { address } = useAppKitAccount?.() || ({} as any);

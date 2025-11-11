@@ -35,6 +35,15 @@ const getChainColor = (chain: string) => {
       icon: "🔵",
     };
   }
+  if (chainLower === "ethereum" || chainLower === "eth") {
+    return {
+      gradient: "bg-gradient-to-r from-indigo-500 to-blue-500",
+      light: "bg-indigo-50",
+      border: "border-indigo-200",
+      text: "text-indigo-700",
+      icon: "💎",
+    };
+  }
   return {
     gradient: "bg-gradient-to-r from-gray-500 to-gray-600",
     light: "bg-gray-50",
@@ -87,8 +96,9 @@ export const LiquidityCard: React.FC<LiquidityCardProps> = ({ data }) => {
 
   // Parallel Liquidity Display
   if (parallelData) {
-    const { token_pair, hedera_pairs, polygon_pairs, all_pairs } = parallelData;
+    const { token_pair, hedera_pairs, polygon_pairs, all_pairs, chains } = parallelData;
     const [base, quote] = token_pair.split("/");
+    const ethereum_pairs = chains?.ethereum?.pairs || [];
 
     return (
       <div className="bg-white/60 backdrop-blur-md rounded-xl p-6 my-3 border-2 border-[#DBDBE5] shadow-elevation-md animate-fade-in-up">
@@ -121,7 +131,7 @@ export const LiquidityCard: React.FC<LiquidityCardProps> = ({ data }) => {
         </div>
 
         {/* Chain Sections */}
-        {hedera_pairs.length > 0 && (
+        {(hedera_pairs.length > 0 || chains?.hedera) && (
           <div className="mb-6">
             <div className="mb-4">
               <div className="bg-purple-50 rounded-lg p-3 border border-purple-200 inline-flex items-center gap-2">
@@ -132,8 +142,9 @@ export const LiquidityCard: React.FC<LiquidityCardProps> = ({ data }) => {
                 </span>
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {hedera_pairs.map((pair, index) => {
+            {hedera_pairs.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {hedera_pairs.map((pair, index) => {
                 const chainStyle = getChainColor("hedera");
                 return (
                   <div
@@ -176,15 +187,39 @@ export const LiquidityCard: React.FC<LiquidityCardProps> = ({ data }) => {
                           </div>
                         </div>
                       </div>
+                      {pair.slot0 && (
+                        <div className="mt-2 pt-2 border-t border-purple-200">
+                          <div className="text-[10px] text-[#57575B] mb-1">Slot0 Data</div>
+                          <div className="text-xs font-mono text-[#010507] space-y-1">
+                            <div>Tick: {pair.slot0.tick}</div>
+                            <div className="truncate" title={pair.slot0.sqrtPriceX96}>
+                              sqrtPriceX96: {pair.slot0.sqrtPriceX96?.slice(0, 20)}...
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      {pair.liquidity && (
+                        <div className="mt-2 pt-2 border-t border-purple-200">
+                          <div className="text-[10px] text-[#57575B] mb-1">Liquidity</div>
+                          <div className="text-xs font-mono text-[#010507] truncate" title={pair.liquidity}>
+                            {pair.liquidity.length > 20 ? `${pair.liquidity.slice(0, 20)}...` : pair.liquidity}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
               })}
-            </div>
+              </div>
+            ) : (
+              <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border-2 border-dashed border-purple-200 text-center">
+                <p className="text-sm text-purple-600">No liquidity pools found on Hedera</p>
+              </div>
+            )}
           </div>
         )}
 
-        {polygon_pairs.length > 0 && (
+        {(polygon_pairs.length > 0 || chains?.polygon) && (
           <div className="mb-6">
             <div className="mb-4">
               <div className="bg-blue-50 rounded-lg p-3 border border-blue-200 inline-flex items-center gap-2">
@@ -195,8 +230,9 @@ export const LiquidityCard: React.FC<LiquidityCardProps> = ({ data }) => {
                 </span>
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {polygon_pairs.map((pair, index) => {
+            {polygon_pairs.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {polygon_pairs.map((pair, index) => {
                 const chainStyle = getChainColor("polygon");
                 return (
                   <div
@@ -239,11 +275,123 @@ export const LiquidityCard: React.FC<LiquidityCardProps> = ({ data }) => {
                           </div>
                         </div>
                       </div>
+                      {pair.slot0 && (
+                        <div className="mt-2 pt-2 border-t border-blue-200">
+                          <div className="text-[10px] text-[#57575B] mb-1">Slot0 Data</div>
+                          <div className="text-xs font-mono text-[#010507] space-y-1">
+                            <div>Tick: {pair.slot0.tick}</div>
+                            <div className="truncate" title={pair.slot0.sqrtPriceX96}>
+                              sqrtPriceX96: {pair.slot0.sqrtPriceX96?.slice(0, 20)}...
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      {pair.liquidity && (
+                        <div className="mt-2 pt-2 border-t border-blue-200">
+                          <div className="text-[10px] text-[#57575B] mb-1">Liquidity</div>
+                          <div className="text-xs font-mono text-[#010507] truncate" title={pair.liquidity}>
+                            {pair.liquidity.length > 20 ? `${pair.liquidity.slice(0, 20)}...` : pair.liquidity}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
               })}
+              </div>
+            ) : (
+              <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border-2 border-dashed border-blue-200 text-center">
+                <p className="text-sm text-blue-600">No liquidity pools found on Polygon</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {(ethereum_pairs.length > 0 || chains?.ethereum) && (
+          <div className="mb-6">
+            <div className="mb-4">
+              <div className="bg-indigo-50 rounded-lg p-3 border border-indigo-200 inline-flex items-center gap-2">
+                <span className="text-lg">💎</span>
+                <h3 className="text-base font-bold text-indigo-700">Ethereum Chain</h3>
+                <span className="text-xs text-indigo-600 bg-white/60 px-2 py-1 rounded">
+                  {ethereum_pairs.length} pool{ethereum_pairs.length !== 1 ? "s" : ""}
+                </span>
+              </div>
             </div>
+            {ethereum_pairs.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {ethereum_pairs.map((pair: any, index: number) => {
+                const chainStyle = getChainColor("ethereum");
+                return (
+                  <div
+                    key={index}
+                    className="bg-white/90 backdrop-blur-sm rounded-xl p-4 shadow-elevation-sm border-2 border-[#E9E9EF] hover:border-indigo-300 hover:shadow-elevation-md transition-all duration-200"
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-lg font-bold text-[#010507]">{pair.dex}</span>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 font-bold border border-indigo-300">
+                            {pair.fee_bps / 100}%
+                          </span>
+                        </div>
+                        <div
+                          className="text-xs text-[#838389] font-mono truncate"
+                          title={pair.pool_address}
+                        >
+                          {pair.pool_address.slice(0, 20)}...
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      className={`${chainStyle.light} rounded-lg p-3 border ${chainStyle.border}`}
+                    >
+                      <div className="grid grid-cols-2 gap-2 mb-2">
+                        <div>
+                          <div className="text-[10px] text-[#57575B] mb-1">TVL</div>
+                          <div className="text-sm font-bold text-[#010507]">
+                            {formatNumber(pair.tvl_usd)}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-[10px] text-[#57575B] mb-1">Reserves</div>
+                          <div className="text-xs font-semibold text-[#010507]">
+                            {formatLargeNumber(pair.reserve_base)} {pair.base}
+                          </div>
+                          <div className="text-xs font-semibold text-[#010507]">
+                            {formatLargeNumber(pair.reserve_quote)} {pair.quote}
+                          </div>
+                        </div>
+                      </div>
+                      {pair.slot0 && (
+                        <div className="mt-2 pt-2 border-t border-indigo-200">
+                          <div className="text-[10px] text-[#57575B] mb-1">Slot0 Data</div>
+                          <div className="text-xs font-mono text-[#010507] space-y-1">
+                            <div>Tick: {pair.slot0.tick}</div>
+                            <div className="truncate" title={pair.slot0.sqrtPriceX96}>
+                              sqrtPriceX96: {pair.slot0.sqrtPriceX96?.slice(0, 20)}...
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      {pair.liquidity && (
+                        <div className="mt-2 pt-2 border-t border-indigo-200">
+                          <div className="text-[10px] text-[#57575B] mb-1">Liquidity</div>
+                          <div className="text-xs font-mono text-[#010507] truncate" title={pair.liquidity}>
+                            {pair.liquidity.length > 20 ? `${pair.liquidity.slice(0, 20)}...` : pair.liquidity}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+              </div>
+            ) : (
+              <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border-2 border-dashed border-indigo-200 text-center">
+                <p className="text-sm text-indigo-600">No liquidity pools found on Ethereum</p>
+              </div>
+            )}
           </div>
         )}
 
@@ -253,7 +401,7 @@ export const LiquidityCard: React.FC<LiquidityCardProps> = ({ data }) => {
             <div className="text-5xl mb-3">💧</div>
             <p className="text-base font-semibold text-gray-700 mb-1">No liquidity pools found</p>
             <p className="text-sm text-gray-500">
-              No pools found for {token_pair} on Hedera or Polygon
+              No pools found for {token_pair} on Hedera, Polygon, or Ethereum
             </p>
           </div>
         )}

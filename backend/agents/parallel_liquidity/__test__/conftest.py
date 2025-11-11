@@ -19,6 +19,10 @@ def rpc_urls() -> Dict[str, str]:
             "HEDERA_RPC_URL",
             "https://mainnet.hashio.io/api",
         ),
+        "ethereum": os.getenv(
+            "ETHEREUM_RPC_URL",
+            "https://eth.llamarpc.com",
+        ),
     }
 
 

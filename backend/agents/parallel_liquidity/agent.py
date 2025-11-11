@@ -41,11 +41,13 @@ except ImportError:
 from lib.shared.blockchain.liquidity import (  # noqa: E402
     get_liquidity_polygon,
     get_liquidity_hedera,
+    get_liquidity_ethereum,
 )
 
 # Import independent sub-agents
 from .agents.hedera_liquidity_agent import build_hedera_liquidity_agent  # noqa: E402
 from .agents.polygon_liquidity_agent import build_polygon_liquidity_agent  # noqa: E402
+from .agents.ethereum_liquidity_agent import build_ethereum_liquidity_agent  # noqa: E402
 
 # Import core modules
 from .core.constants import (  # noqa: E402
@@ -56,6 +58,7 @@ from .core.constants import (  # noqa: E402
     SEQUENTIAL_FALLBACK_INSTRUCTION,
     OUTPUT_KEY_HEDERA,
     OUTPUT_KEY_POLYGON,
+    OUTPUT_KEY_ETHEREUM,
     get_model_name,
     check_api_keys,
     ERROR_TOKEN_PAIR_NOT_FOUND,
@@ -80,9 +83,9 @@ def _build_sequential_agent(model_name: str) -> LlmAgent:
     return LlmAgent(
         model=model_name,
         name="parallel_liquidity_agent",
-        description="Agent that retrieves liquidity from Hedera and Polygon (sequential fallback)",
+        description="Agent that retrieves liquidity from Hedera, Polygon, and Ethereum (sequential fallback)",
         instruction=SEQUENTIAL_FALLBACK_INSTRUCTION,
-        tools=[get_liquidity_hedera, get_liquidity_polygon],
+        tools=[get_liquidity_hedera, get_liquidity_polygon, get_liquidity_ethereum],
     )
 
 
@@ -90,9 +93,10 @@ def _build_parallel_agent(model_name: str) -> ParallelAgent:
     """Build parallel agent with sub-agents."""
     hedera_agent = build_hedera_liquidity_agent()
     polygon_agent = build_polygon_liquidity_agent()
+    ethereum_agent = build_ethereum_liquidity_agent()
     return ParallelAgent(
         name=AGENT_NAME,
-        sub_agents=[hedera_agent, polygon_agent],
+        sub_agents=[hedera_agent, polygon_agent, ethereum_agent],
         description=AGENT_DESCRIPTION,
     )
 
@@ -126,10 +130,11 @@ async def _ensure_session(
 
 def _extract_results_from_state(
     final_state: dict,
-) -> tuple[Optional[dict], Optional[dict]]:
-    """Extract Hedera and Polygon results from state."""
+) -> tuple[Optional[dict], Optional[dict], Optional[dict]]:
+    """Extract Hedera, Polygon, and Ethereum results from state."""
     hedera_result = final_state.get(OUTPUT_KEY_HEDERA)
     polygon_result = final_state.get(OUTPUT_KEY_POLYGON)
+    ethereum_result = final_state.get(OUTPUT_KEY_ETHEREUM)
 
     if not hedera_result:
         for key in final_state.keys():
@@ -141,6 +146,12 @@ def _extract_results_from_state(
         for key in final_state.keys():
             if "polygon" in key.lower():
                 polygon_result = final_state.get(key)
+                break
+
+    if not ethereum_result:
+        for key in final_state.keys():
+            if "ethereum" in key.lower() or "eth" in key.lower():
+                ethereum_result = final_state.get(key)
                 break
 
     # Parse JSON strings if needed
@@ -156,7 +167,13 @@ def _extract_results_from_state(
         except (json.JSONDecodeError, ValueError):
             pass
 
-    return hedera_result, polygon_result
+    if isinstance(ethereum_result, str):
+        try:
+            ethereum_result = json.loads(ethereum_result)
+        except (json.JSONDecodeError, ValueError):
+            pass
+
+    return hedera_result, polygon_result, ethereum_result
 
 
 class ParallelLiquidityAgent:
@@ -245,14 +262,15 @@ class ParallelLiquidityAgent:
             if session and hasattr(session, "state"):
                 final_state = session.state
 
-        hedera_result, polygon_result = _extract_results_from_state(final_state or {})
+        hedera_result, polygon_result, ethereum_result = _extract_results_from_state(final_state or {})
 
-        if not hedera_result or not polygon_result:
+        # At least one chain should have results
+        if not hedera_result and not polygon_result and not ethereum_result:
             print("⚠️  Results not found in state, falling back to sequential execution")
             return await self._invoke_sequential(query, token_pair, session_id)
 
-        print("✅ Successfully retrieved results from both chains via ParallelAgent")
-        combined_data = combine_results(token_pair, hedera_result, polygon_result)
+        print("✅ Successfully retrieved results from chains via ParallelAgent")
+        combined_data = combine_results(token_pair, hedera_result, polygon_result, ethereum_result)
         response = validate_and_serialize_response(combined_data)
         log_response_info(token_pair, response)
         return response
@@ -268,9 +286,13 @@ class ParallelLiquidityAgent:
             print(f"🔍 Fetching liquidity from Hedera for {token_pair}...")
             hedera_result = get_liquidity_hedera(base)
             print(f"🔍 Fetching liquidity from Polygon for {token_pair}...")
-            polygon_result = get_liquidity_polygon(base)
+            # Pass full token pair to get liquidity and slot0 from pool
+            polygon_result = get_liquidity_polygon(token_pair)
+            print(f"🔍 Fetching liquidity from Ethereum for {token_pair}...")
+            # Pass full token pair to get liquidity and slot0 from pool
+            ethereum_result = get_liquidity_ethereum(token_pair)
 
-            combined_data = combine_results(token_pair, hedera_result, polygon_result)
+            combined_data = combine_results(token_pair, hedera_result, polygon_result, ethereum_result)
             response = validate_and_serialize_response(combined_data)
             log_response_info(token_pair, response)
             return response
