@@ -43,8 +43,8 @@ class TestHederaBalance:
         with pytest.raises(ValueError):
             _parse_hedera_account_id("0.0.abc")
 
-    def test_native_balance_only(self, rpc_urls, test_account_addresses):
-        """Test that native HBAR balance is returned."""
+    def test_all_token_balances(self, rpc_urls, test_account_addresses):
+        """Test that all token balances are returned when no token_address provided."""
         account = test_account_addresses["hedera"]
         result = get_balance_hedera(account)
 
@@ -64,6 +64,24 @@ class TestHederaBalance:
         assert "balance_raw" in native_balance
         assert native_balance["decimals"] == 8
 
+        # Check that all tokens from HEDERA_TOKENS are included (excluding native)
+        token_balances = [b for b in result["balances"] if b["token_type"] == "token"]
+        expected_token_count = len(HEDERA_TOKENS) - 1  # Exclude native HBAR
+        assert len(token_balances) == expected_token_count, (
+            f"Should return balances for all {expected_token_count} tokens"
+        )
+
+        # Verify all token addresses from constants are present (excluding native)
+        expected_addresses = {
+            token_id
+            for symbol, token_id in HEDERA_TOKENS.items()
+            if token_id != "0.0.0"  # Exclude native HBAR
+        }
+        actual_addresses = {b["token_address"] for b in token_balances}
+        assert expected_addresses == actual_addresses, (
+            "All token addresses from HEDERA_TOKENS should be present"
+        )
+
     def test_token_balance_with_symbol(
         self, rpc_urls, test_account_addresses, test_token_addresses
     ):
@@ -74,14 +92,23 @@ class TestHederaBalance:
         assert result["type"] == "balance"
         assert "balances" in result
 
-        # Token balance might be 0 if account doesn't hold the token
+        # Should have native balance + 1 token balance
+        assert len(result["balances"]) == 2, "Should have native + 1 token balance"
+
+        # Check native balance exists
+        native_balance = next(
+            (b for b in result["balances"] if b["token_type"] == "native"), None
+        )
+        assert native_balance is not None, "Native HBAR balance should be present"
+
+        # Check token balance exists
         token_balance = next(
             (b for b in result["balances"] if b["token_type"] == "token"), None
         )
-        if token_balance:
-            assert token_balance["token_address"] == HEDERA_TOKENS["USDC"]
-            assert "balance" in token_balance
-            assert "balance_raw" in token_balance
+        assert token_balance is not None, "Token balance should be present"
+        assert token_balance["token_address"] == HEDERA_TOKENS["USDC"]
+        assert "balance" in token_balance
+        assert "balance_raw" in token_balance
 
     def test_token_balance_with_address(
         self, rpc_urls, test_account_addresses, test_token_addresses
@@ -94,12 +121,21 @@ class TestHederaBalance:
         assert result["type"] == "balance"
         assert "balances" in result
 
-        # Token balance might be 0 if account doesn't hold the token
+        # Should have native balance + 1 token balance
+        assert len(result["balances"]) == 2, "Should have native + 1 token balance"
+
+        # Check native balance exists
+        native_balance = next(
+            (b for b in result["balances"] if b["token_type"] == "native"), None
+        )
+        assert native_balance is not None, "Native HBAR balance should be present"
+
+        # Check token balance exists
         token_balance = next(
             (b for b in result["balances"] if b["token_type"] == "token"), None
         )
-        if token_balance:
-            assert token_balance["token_address"] == token_addr
+        assert token_balance is not None, "Token balance should be present"
+        assert token_balance["token_address"] == token_addr
 
     def test_balance_structure(self, rpc_urls, test_account_addresses):
         """Test that balance structure is correct."""
@@ -141,3 +177,50 @@ class TestHederaBalance:
 
         assert "total_usd_value" in result
         assert isinstance(result["total_usd_value"], str)
+
+    def test_all_tokens_in_constants_fetched(self, rpc_urls, test_account_addresses):
+        """Test that all tokens defined in HEDERA_TOKENS are fetched."""
+        account = test_account_addresses["hedera"]
+        result = get_balance_hedera(account)
+
+        token_balances = [b for b in result["balances"] if b["token_type"] == "token"]
+
+        # Verify we have entries for all tokens (excluding native HBAR)
+        expected_count = len(HEDERA_TOKENS) - 1  # Exclude native HBAR
+        assert len(token_balances) == expected_count, (
+            f"Expected {expected_count} token balances, got {len(token_balances)}"
+        )
+
+        # Verify each token from constants has a corresponding balance entry
+        for symbol, token_id in HEDERA_TOKENS.items():
+            if token_id == "0.0.0":  # Skip native HBAR
+                continue
+            token_entry = next(
+                (b for b in token_balances if b["token_address"] == token_id), None
+            )
+            assert token_entry is not None, (
+                f"Token {symbol} ({token_id}) should have a balance entry"
+            )
+
+    def test_token_balance_handles_errors_gracefully(
+        self, rpc_urls, test_account_addresses
+    ):
+        """Test that errors fetching individual tokens don't break the entire request."""
+        account = test_account_addresses["hedera"]
+        result = get_balance_hedera(account)
+
+        # Should still return results even if some tokens fail
+        assert "balances" in result
+        assert len(result["balances"]) > 0
+
+        # Check that all balance entries have required fields
+        for balance in result["balances"]:
+            assert "token_type" in balance
+            assert "token_symbol" in balance
+            assert "token_address" in balance
+            assert "balance" in balance
+            assert "balance_raw" in balance
+            # Error field is optional, but if present, balance should be "0"
+            if "error" in balance:
+                assert balance["balance"] == "0"
+                assert balance["balance_raw"] == "0"

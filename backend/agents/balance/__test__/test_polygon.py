@@ -20,8 +20,8 @@ class TestPolygonBalance:
         latest_block = w3.eth.block_number
         assert latest_block > 0, "Should be able to get block number"
 
-    def test_native_balance_only(self, rpc_urls, test_account_addresses):
-        """Test that native MATIC balance is returned."""
+    def test_all_token_balances(self, rpc_urls, test_account_addresses):
+        """Test that all token balances are returned when no token_address provided."""
         account = test_account_addresses["polygon"]
         result = get_balance_polygon(account)
 
@@ -41,6 +41,23 @@ class TestPolygonBalance:
         assert "balance_raw" in native_balance
         assert native_balance["decimals"] == 18
 
+        # Check that all tokens from POLYGON_TOKENS are included
+        token_balances = [b for b in result["balances"] if b["token_type"] == "token"]
+        assert len(token_balances) == len(POLYGON_TOKENS), (
+            f"Should return balances for all {len(POLYGON_TOKENS)} tokens"
+        )
+
+        # Verify all token addresses from constants are present
+        expected_addresses = {
+            Web3.to_checksum_address(addr) for addr in POLYGON_TOKENS.values()
+        }
+        actual_addresses = {
+            Web3.to_checksum_address(b["token_address"]) for b in token_balances
+        }
+        assert expected_addresses == actual_addresses, (
+            "All token addresses from POLYGON_TOKENS should be present"
+        )
+
     def test_token_balance_with_symbol(
         self, rpc_urls, test_account_addresses, test_token_addresses
     ):
@@ -50,6 +67,15 @@ class TestPolygonBalance:
 
         assert result["type"] == "balance"
         assert "balances" in result
+
+        # Should have native balance + 1 token balance
+        assert len(result["balances"]) == 2, "Should have native + 1 token balance"
+
+        # Check native balance exists
+        native_balance = next(
+            (b for b in result["balances"] if b["token_type"] == "native"), None
+        )
+        assert native_balance is not None, "Native MATIC balance should be present"
 
         # Check token balance exists
         token_balance = next(
@@ -72,6 +98,15 @@ class TestPolygonBalance:
 
         assert result["type"] == "balance"
         assert "balances" in result
+
+        # Should have native balance + 1 token balance
+        assert len(result["balances"]) == 2, "Should have native + 1 token balance"
+
+        # Check native balance exists
+        native_balance = next(
+            (b for b in result["balances"] if b["token_type"] == "native"), None
+        )
+        assert native_balance is not None, "Native MATIC balance should be present"
 
         # Check token balance exists
         token_balance = next(
@@ -120,3 +155,53 @@ class TestPolygonBalance:
 
         assert "total_usd_value" in result
         assert isinstance(result["total_usd_value"], str)
+
+    def test_all_tokens_in_constants_fetched(self, rpc_urls, test_account_addresses):
+        """Test that all tokens defined in POLYGON_TOKENS are fetched."""
+        account = test_account_addresses["polygon"]
+        result = get_balance_polygon(account)
+
+        token_balances = [b for b in result["balances"] if b["token_type"] == "token"]
+
+        # Verify we have entries for all tokens (even if balance is 0)
+        assert len(token_balances) == len(POLYGON_TOKENS), (
+            f"Expected {len(POLYGON_TOKENS)} token balances, got {len(token_balances)}"
+        )
+
+        # Verify each token from constants has a corresponding balance entry
+        for symbol, address in POLYGON_TOKENS.items():
+            checksum_address = Web3.to_checksum_address(address)
+            token_entry = next(
+                (
+                    b
+                    for b in token_balances
+                    if Web3.to_checksum_address(b["token_address"]) == checksum_address
+                ),
+                None,
+            )
+            assert token_entry is not None, (
+                f"Token {symbol} ({address}) should have a balance entry"
+            )
+
+    def test_token_balance_handles_errors_gracefully(
+        self, rpc_urls, test_account_addresses
+    ):
+        """Test that errors fetching individual tokens don't break the entire request."""
+        account = test_account_addresses["polygon"]
+        result = get_balance_polygon(account)
+
+        # Should still return results even if some tokens fail
+        assert "balances" in result
+        assert len(result["balances"]) > 0
+
+        # Check that all balance entries have required fields
+        for balance in result["balances"]:
+            assert "token_type" in balance
+            assert "token_symbol" in balance
+            assert "token_address" in balance
+            assert "balance" in balance
+            assert "balance_raw" in balance
+            # Error field is optional, but if present, balance should be "0"
+            if "error" in balance:
+                assert balance["balance"] == "0"
+                assert balance["balance_raw"] == "0"

@@ -61,8 +61,26 @@ const getTokenIcon = (symbol: string, tokenType: string): string => {
     if (sym === "MATIC" || sym === "ETH") return "💠";
     return "🪙";
   }
+  // Stablecoins
   if (sym === "USDC" || sym === "USDT") return "💵";
   if (sym.includes("USD")) return "💲";
+  // Hedera tokens
+  if (sym === "SAUCE") return "🍯";
+  if (sym === "JAM") return "🎵";
+  if (sym === "DOV") return "🌱";
+  if (sym === "HBARX") return "💎";
+  if (sym === "SHIBR") return "🐕";
+  if (sym === "SKUX") return "📦";
+  if (sym === "TNG") return "🔺";
+  if (sym === "HTC") return "⚕️";
+  // Polygon tokens
+  if (sym === "WMATIC" || sym === "POL") return "💠";
+  if (sym === "WETH") return "💎";
+  if (sym === "DAI") return "💵";
+  if (sym === "AAVE") return "🏦";
+  if (sym === "LINK") return "🔗";
+  if (sym === "QUICK") return "⚡";
+  if (sym === "SAND") return "🏖️";
   return "🪙";
 };
 
@@ -149,8 +167,15 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({ data }) => {
               </div>
             )}
 
-            {/* Token Balances Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {/* Token Count Summary */}
+            {balances.length > 0 && (
+              <div className="mb-3 text-sm text-[#57575B]">
+                Showing {balances.length} token{balances.length !== 1 ? "s" : ""}
+              </div>
+            )}
+
+            {/* Token Balances Grid - Responsive columns for more tokens */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 max-h-[800px] overflow-y-auto pr-2">
               {balances.map((balance, index) => {
                 const tokenIcon = getTokenIcon(balance.token_symbol, balance.token_type);
                 const isNative = balance.token_type === "native";
@@ -158,40 +183,42 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({ data }) => {
                 return (
                   <div
                     key={index}
-                    className="bg-white/90 backdrop-blur-sm rounded-xl p-4 shadow-elevation-sm border-2 border-[#E9E9EF] hover:border-purple-300 hover:shadow-elevation-md transition-all duration-200 group"
+                    className="bg-white/90 backdrop-blur-sm rounded-xl p-3 shadow-elevation-sm border-2 border-[#E9E9EF] hover:border-purple-300 hover:shadow-elevation-md transition-all duration-200 group"
                   >
                     {/* Token Header */}
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-3 flex-1">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
                         <div
-                          className={`flex items-center justify-center w-12 h-12 rounded-xl ${
+                          className={`flex items-center justify-center w-10 h-10 rounded-lg flex-shrink-0 ${
                             isNative
                               ? "bg-gradient-to-br from-purple-400 to-indigo-500 shadow-lg"
                               : "bg-gradient-to-br from-indigo-400 to-blue-500 shadow-lg"
                           } group-hover:scale-110 transition-transform duration-200`}
                         >
-                          <span className="text-2xl">{tokenIcon}</span>
+                          <span className="text-xl">{tokenIcon}</span>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-xl font-bold text-[#010507]">
+                          <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                            <span className="text-lg font-bold text-[#010507] truncate">
                               {formatTokenSymbol(balance.token_symbol)}
                             </span>
                             {isNative ? (
-                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-gradient-to-r from-purple-100 to-purple-200 text-purple-700 font-bold border border-purple-300">
+                              <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-gradient-to-r from-purple-100 to-purple-200 text-purple-700 font-bold border border-purple-300 flex-shrink-0">
                                 NATIVE
                               </span>
                             ) : (
-                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-gradient-to-r from-indigo-100 to-indigo-200 text-indigo-700 font-bold border border-indigo-300">
-                                ERC-20
+                              <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-gradient-to-r from-indigo-100 to-indigo-200 text-indigo-700 font-bold border border-indigo-300 flex-shrink-0">
+                                TOKEN
                               </span>
                             )}
                           </div>
                           <div
-                            className="text-[10px] text-[#838389] font-mono truncate"
+                            className="text-[9px] text-[#838389] font-mono truncate"
                             title={balance.token_address}
                           >
-                            {balance.token_address}
+                            {balance.token_address.length > 20
+                              ? `${balance.token_address.slice(0, 10)}...${balance.token_address.slice(-8)}`
+                              : balance.token_address}
                           </div>
                         </div>
                       </div>
@@ -199,26 +226,28 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({ data }) => {
 
                     {/* Balance Amount */}
                     <div
-                      className={`${chainStyle.light} rounded-lg p-3 mb-3 border ${chainStyle.border}`}
+                      className={`${chainStyle.light} rounded-lg p-2 mb-2 border ${chainStyle.border}`}
                     >
-                      <div className="text-xs text-[#57575B] mb-1">Balance</div>
-                      <div className="text-2xl font-bold text-[#010507] mb-1">
+                      <div className="text-[10px] text-[#57575B] mb-0.5">Balance</div>
+                      <div className="text-xl font-bold text-[#010507] mb-0.5 truncate" title={balance.balance}>
                         {balance.balance}
                       </div>
-                      <div className="text-[10px] text-[#838389] font-mono">
-                        Raw: {balance.balance_raw}
+                      <div className="text-[9px] text-[#838389] font-mono truncate" title={balance.balance_raw}>
+                        Raw: {balance.balance_raw.length > 15
+                          ? `${balance.balance_raw.slice(0, 10)}...`
+                          : balance.balance_raw}
                       </div>
                     </div>
 
                     {/* Token Metadata */}
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="bg-gray-50 rounded-lg p-2 text-center">
-                        <div className="text-[10px] text-[#57575B] mb-1">Decimals</div>
-                        <div className="text-sm font-bold text-[#010507]">{balance.decimals}</div>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <div className="bg-gray-50 rounded-lg p-1.5 text-center">
+                        <div className="text-[9px] text-[#57575B] mb-0.5">Decimals</div>
+                        <div className="text-xs font-bold text-[#010507]">{balance.decimals}</div>
                       </div>
-                      <div className="bg-gray-50 rounded-lg p-2 text-center">
-                        <div className="text-[10px] text-[#57575B] mb-1">Type</div>
-                        <div className="text-sm font-bold text-[#010507] capitalize">
+                      <div className="bg-gray-50 rounded-lg p-1.5 text-center">
+                        <div className="text-[9px] text-[#57575B] mb-0.5">Type</div>
+                        <div className="text-xs font-bold text-[#010507] capitalize">
                           {balance.token_type}
                         </div>
                       </div>

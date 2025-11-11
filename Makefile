@@ -153,9 +153,7 @@ format:
 
 format-backend:
 	@echo "Formatting backend (ruff check --fix + ruff format)..."
-	cd backend && uv sync --extra dev
-	cd backend && uv run ruff check --fix .
-	cd backend && uv run ruff format .
+	cd backend && uv sync --extra dev && (uv run ruff check --fix . || true) && uv run ruff format .
 
 format-frontend:
 	@echo "Formatting frontend (prettier write)..."
@@ -167,39 +165,39 @@ backend: format-backend
 # Testing
 test:
 	@echo "Running all tests..."
-	cd backend && uv run pytest
+	cd backend && uv sync --extra test && uv run pytest
 
 test-liquidity:
 	@echo "Running liquidity agent tests..."
-	cd backend && PYTHONPATH=. uv run pytest agents/liquidity/__test__ -v
+	cd backend && uv sync --extra test && PYTHONPATH=. uv run pytest agents/liquidity/__test__ -v
 
 test-liquidity-polygon:
 	@echo "Running Polygon liquidity tests..."
-	cd backend && PYTHONPATH=. uv run pytest agents/liquidity/__test__/test_polygon.py -v
+	cd backend && uv sync --extra test && PYTHONPATH=. uv run pytest agents/liquidity/__test__/test_polygon.py -v
 
 test-liquidity-hedera:
 	@echo "Running Hedera liquidity tests..."
-	cd backend && PYTHONPATH=. uv run pytest agents/liquidity/__test__/test_hedera.py -v
+	cd backend && uv sync --extra test && PYTHONPATH=. uv run pytest agents/liquidity/__test__/test_hedera.py -v
 
 test-liquidity-all-chains:
 	@echo "Running all chains liquidity tests..."
-	cd backend && PYTHONPATH=. uv run pytest agents/liquidity/__test__/test_all_chains.py -v
+	cd backend && uv sync --extra test && PYTHONPATH=. uv run pytest agents/liquidity/__test__/test_all_chains.py -v
 
 test-balance:
 	@echo "Running balance agent tests..."
-	cd backend && PYTHONPATH=. uv run pytest agents/balance/__test__ -v
+	cd backend && uv sync --extra test && PYTHONPATH=. uv run pytest agents/balance/__test__ -v
 
 test-balance-polygon:
 	@echo "Running Polygon balance tests..."
-	cd backend && PYTHONPATH=. uv run pytest -s agents/balance/__test__/test_polygon.py -v
+	cd backend && uv sync --extra test && PYTHONPATH=. uv run pytest -s agents/balance/__test__/test_polygon.py -v
 
 test-balance-hedera:
 	@echo "Running Hedera balance tests..."
-	cd backend && PYTHONPATH=. uv run pytest agents/balance/__test__/test_hedera.py -v
+	cd backend && uv sync --extra test && PYTHONPATH=. uv run pytest agents/balance/__test__/test_hedera.py -v
 
 test-balance-all-chains:
 	@echo "Running all chains balance tests..."
-	cd backend && PYTHONPATH=. uv run pytest agents/balance/__test__/test_all_chains.py -v
+	cd backend && uv sync --extra test && PYTHONPATH=. uv run pytest agents/balance/__test__/test_all_chains.py -v
 
 # Cleanup
 clean:

@@ -27,3 +27,7 @@ dev = [
     "ruff>=0.6.0",
     "black>=24.0.0",
 ]
+
+[tool.ruff.lint]
+# Ignore E402 (module level import not at top of file) - these are intentional
+ignore = ["E402"]

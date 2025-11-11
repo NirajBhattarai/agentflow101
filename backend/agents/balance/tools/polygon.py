@@ -29,6 +29,162 @@ def _format_balance(balance_wei: int, decimals: int) -> str:
     return str(balance_float)
 
 
+def _validate_web3_connection(w3: Web3) -> None:
+    """Validate Web3 connection."""
+    if not w3.is_connected():
+        raise ConnectionError("Failed to connect to Polygon RPC")
+
+
+def _validate_and_checksum_address(w3: Web3, address: str) -> str:
+    """Validate and convert address to checksum format."""
+    if not w3.is_address(address):
+        raise ValueError(f"Invalid account address: {address}")
+    return w3.to_checksum_address(address)
+
+
+def _create_native_balance_entry(balance_wei: int) -> dict:
+    """Create native MATIC balance entry."""
+    return {
+        "token_type": "native",
+        "token_symbol": "MATIC",
+        "token_address": "0x0000000000000000000000000000000000000000",
+        "balance": _format_balance(balance_wei, 18),
+        "balance_raw": str(balance_wei),
+        "decimals": 18,
+    }
+
+
+def _create_native_balance_error_entry(error: Exception) -> dict:
+    """Create native MATIC balance entry with error."""
+    return {
+        "token_type": "native",
+        "token_symbol": "MATIC",
+        "token_address": "0x0000000000000000000000000000000000000000",
+        "balance": "0",
+        "balance_raw": "0",
+        "decimals": 18,
+        "error": str(error),
+    }
+
+
+def _get_native_balance(w3: Web3, account_address: str) -> dict:
+    """Get native MATIC balance for account."""
+    try:
+        balance_wei = w3.eth.get_balance(account_address)
+        return _create_native_balance_entry(balance_wei)
+    except Exception as e:
+        return _create_native_balance_error_entry(e)
+
+
+def _resolve_token_address(token_address: str) -> str:
+    """Resolve token symbol to address if needed."""
+    if token_address.upper() in POLYGON_TOKENS:
+        return POLYGON_TOKENS[token_address.upper()]
+    return token_address
+
+
+def _get_token_decimals(token_contract) -> int:
+    """Get token decimals with fallback to 18."""
+    try:
+        return token_contract.functions.decimals().call()
+    except Exception:
+        return 18
+
+
+def _get_token_symbol(token_contract) -> str:
+    """Get token symbol with fallback to UNKNOWN."""
+    try:
+        return token_contract.functions.symbol().call()
+    except Exception:
+        return "UNKNOWN"
+
+
+def _create_token_balance_entry(
+    symbol: str, token_address: str, balance_raw: int, decimals: int
+) -> dict:
+    """Create token balance entry."""
+    return {
+        "token_type": "token",
+        "token_symbol": symbol,
+        "token_address": token_address,
+        "balance": _format_balance(balance_raw, decimals),
+        "balance_raw": str(balance_raw),
+        "decimals": decimals,
+    }
+
+
+def _create_token_balance_error_entry(token_address: str, error: Exception) -> dict:
+    """Create token balance entry with error."""
+    return {
+        "token_type": "token",
+        "token_symbol": "UNKNOWN",
+        "token_address": token_address,
+        "balance": "0",
+        "balance_raw": "0",
+        "decimals": 18,
+        "error": str(error),
+    }
+
+
+def _validate_and_checksum_token_address(w3: Web3, token_address: str) -> str:
+    """Validate and convert token address to checksum format."""
+    token_address = _resolve_token_address(token_address)
+    if not w3.is_address(token_address):
+        raise ValueError(f"Invalid token address: {token_address}")
+    return w3.to_checksum_address(token_address)
+
+
+def _fetch_token_balance_data(
+    w3: Web3, account_address: str, token_address: str
+) -> dict:
+    """Fetch token balance data from contract."""
+    token_contract = w3.eth.contract(address=token_address, abi=ERC20_ABI)
+    balance_raw = token_contract.functions.balanceOf(account_address).call()
+    decimals = _get_token_decimals(token_contract)
+    symbol = _get_token_symbol(token_contract)
+    return _create_token_balance_entry(symbol, token_address, balance_raw, decimals)
+
+
+def _get_token_balance(w3: Web3, account_address: str, token_address: str) -> dict:
+    """Get token balance for account."""
+    token_address = _validate_and_checksum_token_address(w3, token_address)
+    try:
+        return _fetch_token_balance_data(w3, account_address, token_address)
+    except Exception as e:
+        return _create_token_balance_error_entry(token_address, e)
+
+
+def _build_success_response(account_address: str, balances: list) -> dict:
+    """Build successful balance response."""
+    return {
+        "type": "balance",
+        "chain": "polygon",
+        "account_address": account_address,
+        "balances": balances,
+        "total_usd_value": "$0.00",
+    }
+
+
+def _build_error_response(account_address: str, error: Exception) -> dict:
+    """Build error balance response."""
+    return {
+        "type": "balance",
+        "chain": "polygon",
+        "account_address": account_address,
+        "error": str(error),
+        "balances": [],
+        "total_usd_value": "$0.00",
+    }
+
+
+def _get_all_token_balances(w3: Web3, account_address: str) -> list:
+    """Get balances for all tokens in POLYGON_TOKENS."""
+    balances = []
+    for token_address in POLYGON_TOKENS.values():
+        balances.append(_get_token_balance(w3, account_address, token_address))
+    return balances
+
+
 def get_balance_polygon(
     account_address: str, token_address: Optional[str] = None
 ) -> dict:
@@ -36,129 +192,23 @@ def get_balance_polygon(
 
     Args:
         account_address: The wallet address to check balance for (must be checksummed)
-        token_address: Optional token address. If not provided, returns native MATIC balance.
-                      Can be a token symbol (e.g., 'USDC') or token address.
+        token_address: Optional token address. If not provided, returns native MATIC
+                      and all token balances. Can be a token symbol (e.g., 'USDC')
+                      or token address.
 
     Returns:
         Dictionary with balance information including native and token balances.
     """
     try:
         w3 = _get_web3_instance()
-
-        # Validate connection
-        if not w3.is_connected():
-            raise ConnectionError("Failed to connect to Polygon RPC")
-
-        # Validate account address
-        if not w3.is_address(account_address):
-            raise ValueError(f"Invalid account address: {account_address}")
-
-        # Convert to checksum address
-        account_address = w3.to_checksum_address(account_address)
-
+        _validate_web3_connection(w3)
+        account_address = _validate_and_checksum_address(w3, account_address)
         balances = []
-
-        # Get native MATIC balance (always included)
-        try:
-            matic_balance_wei = w3.eth.get_balance(account_address)
-            balances.append(
-                {
-                    "token_type": "native",
-                    "token_symbol": "MATIC",
-                    "token_address": "0x0000000000000000000000000000000000000000",
-                    "balance": _format_balance(matic_balance_wei, 18),
-                    "balance_raw": str(matic_balance_wei),
-                    "decimals": 18,
-                }
-            )
-        except Exception as e:
-            # If native balance fetch fails, still include it with error
-            balances.append(
-                {
-                    "token_type": "native",
-                    "token_symbol": "MATIC",
-                    "token_address": "0x0000000000000000000000000000000000000000",
-                    "balance": "0",
-                    "balance_raw": "0",
-                    "decimals": 18,
-                    "error": str(e),
-                }
-            )
-
-        # Get token balance (if token_address provided)
+        balances.append(_get_native_balance(w3, account_address))
         if token_address:
-            # Look up token address if a symbol is provided
-            if token_address.upper() in POLYGON_TOKENS:
-                token_address = POLYGON_TOKENS[token_address.upper()]
-
-            # Validate token address
-            if not w3.is_address(token_address):
-                raise ValueError(f"Invalid token address: {token_address}")
-
-            token_address = w3.to_checksum_address(token_address)
-
-            try:
-                # Create contract instance
-                token_contract = w3.eth.contract(address=token_address, abi=ERC20_ABI)
-
-                # Get token balance
-                balance_raw = token_contract.functions.balanceOf(account_address).call()
-
-                # Get token decimals
-                try:
-                    decimals = token_contract.functions.decimals().call()
-                except Exception:
-                    decimals = 18  # Default to 18 if decimals() fails
-
-                # Get token symbol
-                try:
-                    symbol = token_contract.functions.symbol().call()
-                except Exception:
-                    symbol = "UNKNOWN"
-
-                balances.append(
-                    {
-                        "token_type": "token",
-                        "token_symbol": symbol,
-                        "token_address": token_address,
-                        "balance": _format_balance(balance_raw, decimals),
-                        "balance_raw": str(balance_raw),
-                        "decimals": decimals,
-                    }
-                )
-            except Exception as e:
-                # If token balance fetch fails, include error
-                balances.append(
-                    {
-                        "token_type": "token",
-                        "token_symbol": "UNKNOWN",
-                        "token_address": token_address,
-                        "balance": "0",
-                        "balance_raw": "0",
-                        "decimals": 18,
-                        "error": str(e),
-                    }
-                )
-
-        # Calculate approximate USD value (simplified - in production, use price oracles)
-        # This is a placeholder - real implementation should fetch token prices
-        total_usd_value = "$0.00"  # Placeholder
-
-        return {
-            "type": "balance",
-            "chain": "polygon",
-            "account_address": account_address,
-            "balances": balances,
-            "total_usd_value": total_usd_value,
-        }
-
+            balances.append(_get_token_balance(w3, account_address, token_address))
+        else:
+            balances.extend(_get_all_token_balances(w3, account_address))
+        return _build_success_response(account_address, balances)
     except Exception as e:
-        # Return error response
-        return {
-            "type": "balance",
-            "chain": "polygon",
-            "account_address": account_address,
-            "error": str(e),
-            "balances": [],
-            "total_usd_value": "$0.00",
-        }
+        return _build_error_response(account_address, e)
