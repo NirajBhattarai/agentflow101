@@ -2,7 +2,10 @@
 Tools for extracting swap parameters using LLM with structured data.
 """
 
-from .constants import get_token_address, CHAIN_TOKENS
+from lib.shared.blockchain.tokens import (  # noqa: E402
+    get_token_address,
+    CHAIN_TOKENS,
+)
 
 
 def get_token_address_for_chain(

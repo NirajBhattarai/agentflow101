@@ -1,1 +1,0 @@
-"""Bridge agent package."""

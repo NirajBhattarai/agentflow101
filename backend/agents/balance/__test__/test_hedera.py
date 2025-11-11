@@ -10,7 +10,7 @@ from agents.balance.tools.hedera import (
     _get_hedera_api_base,
     _parse_hedera_account_id,
 )
-from agents.balance.tools.constants import HEDERA_TOKENS
+from lib.shared.blockchain.tokens.constants import HEDERA_TOKENS
 
 
 class TestHederaBalance:
@@ -73,9 +73,9 @@ class TestHederaBalance:
 
         # Verify all token addresses from constants are present (excluding native)
         expected_addresses = {
-            token_id
-            for symbol, token_id in HEDERA_TOKENS.items()
-            if token_id != "0.0.0"  # Exclude native HBAR
+            token_data["tokenid"]
+            for symbol, token_data in HEDERA_TOKENS.items()
+            if token_data["tokenid"] != "0.0.0"  # Exclude native HBAR
         }
         actual_addresses = {b["token_address"] for b in token_balances}
         assert expected_addresses == actual_addresses, (
@@ -106,7 +106,7 @@ class TestHederaBalance:
             (b for b in result["balances"] if b["token_type"] == "token"), None
         )
         assert token_balance is not None, "Token balance should be present"
-        assert token_balance["token_address"] == HEDERA_TOKENS["USDC"]
+        assert token_balance["token_address"] == HEDERA_TOKENS["USDC"]["tokenid"]
         assert "balance" in token_balance
         assert "balance_raw" in token_balance
 
@@ -192,9 +192,10 @@ class TestHederaBalance:
         )
 
         # Verify each token from constants has a corresponding balance entry
-        for symbol, token_id in HEDERA_TOKENS.items():
-            if token_id == "0.0.0":  # Skip native HBAR
+        for symbol, token_data in HEDERA_TOKENS.items():
+            if token_data["tokenid"] == "0.0.0":  # Skip native HBAR
                 continue
+            token_id = token_data["tokenid"]
             token_entry = next(
                 (b for b in token_balances if b["token_address"] == token_id), None
             )

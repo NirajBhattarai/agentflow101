@@ -2,11 +2,15 @@
 Swap tools for different blockchain chains.
 """
 
-from .constants import (
+from lib.shared.blockchain.tokens import (  # noqa: E402
     CHAIN_TOKENS,
-    CHAIN_DEX_CONFIG,
     get_token_address,
+)
+from lib.shared.blockchain.dex import (  # noqa: E402
+    CHAIN_DEX_CONFIG,
     get_dex_config,
+)
+from lib.shared.blockchain.networks import (  # noqa: E402
     get_chain_rpc_url,
     get_explorer_url,
 )

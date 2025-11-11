@@ -1,7 +1,8 @@
 import os
 from typing import Optional
 import requests
-from .constants import HEDERA_TOKENS
+from lib.shared.blockchain.tokens.constants import HEDERA_TOKENS  # noqa: E402
+from lib.shared.blockchain.balance import get_token_balance_hedera  # noqa: E402
 
 # Hedera REST API endpoints
 HEDERA_MAINNET_API = "https://mainnet-public.mirrornode.hedera.com"
@@ -194,7 +195,7 @@ def _get_account_token_balances(api_base: str, account_identifier: str) -> list:
 def _resolve_token_address(token_address: str) -> str:
     """Resolve token symbol to address if needed."""
     if token_address.upper() in HEDERA_TOKENS:
-        return HEDERA_TOKENS[token_address.upper()]
+        return HEDERA_TOKENS[token_address.upper()]["tokenid"]
     return token_address
 
 
@@ -237,7 +238,52 @@ def _fetch_token_balance_data(
 def _get_specific_token_balance(
     api_base: str, account_identifier: str, token_id: str
 ) -> dict:
-    """Get balance for a specific token."""
+    """Get balance for a specific token using shared balance tools."""
+    # Try to resolve token symbol from token_id
+    token_symbol = None
+    for symbol, token_data in HEDERA_TOKENS.items():
+        if token_data["tokenid"] == token_id:
+            token_symbol = symbol
+            break
+    
+    # If token_id is a symbol, use it directly
+    if token_id.upper() in HEDERA_TOKENS:
+        token_symbol = token_id.upper()
+    
+    account_id = account_identifier if not account_identifier.startswith("0x") else None
+    if not account_id:
+        # If EVM address, need to resolve to Hedera account ID first
+        account_id = _resolve_evm_to_hedera(account_identifier, api_base)
+    
+    if token_symbol:
+        # Use shared balance tool
+        result = get_token_balance_hedera(account_id, token_symbol)
+        if "error" not in result and "token_address" in result:
+            return {
+                "token_type": "token",
+                "token_symbol": result["token_symbol"],
+                "token_address": result["token_address"],
+                "balance": result["balance"],
+                "balance_raw": result["balance_raw"],
+                "decimals": result.get("decimals", 6),
+            }
+        elif "error" not in result:
+            # Balance is 0
+            return {
+                "token_type": "token",
+                "token_symbol": result["token_symbol"],
+                "token_address": HEDERA_TOKENS[token_symbol]["tokenid"],
+                "balance": "0",
+                "balance_raw": "0",
+                "decimals": HEDERA_TOKENS[token_symbol].get("decimals", 6),
+            }
+        else:
+            symbol = result.get("token_symbol", token_symbol)
+            return _create_token_balance_error_entry(
+                HEDERA_TOKENS[token_symbol]["tokenid"], symbol, result.get("error", "Unknown error")
+            )
+    
+    # Fallback to original implementation for unknown tokens
     try:
         return _fetch_token_balance_data(api_base, account_identifier, token_id)
     except Exception as e:
@@ -246,15 +292,48 @@ def _get_specific_token_balance(
 
 
 def _get_all_token_balances(api_base: str, account_identifier: str) -> list:
-    """Get balances for all tokens in HEDERA_TOKENS."""
+    """Get balances for all tokens in HEDERA_TOKENS using shared balance tools."""
     balances = []
-    for token_id in HEDERA_TOKENS.values():
-        if token_id == "0.0.0":  # Skip native HBAR
+    account_id = account_identifier if not account_identifier.startswith("0x") else None
+    if not account_id:
+        # If EVM address, need to resolve to Hedera account ID first
+        account_id = _resolve_evm_to_hedera(account_identifier, api_base)
+    
+    for token_symbol in HEDERA_TOKENS.keys():
+        if token_symbol == "HBAR":  # Skip native HBAR (handled separately)
             continue
-        token_balance = _get_specific_token_balance(
-            api_base, account_identifier, token_id
-        )
-        balances.append(token_balance)
+        result = get_token_balance_hedera(account_id, token_symbol)
+        if "error" not in result and "token_address" in result:
+            # Convert shared tool format to agent format
+            balances.append({
+                "token_type": "token",
+                "token_symbol": result["token_symbol"],
+                "token_address": result["token_address"],
+                "balance": result["balance"],
+                "balance_raw": result["balance_raw"],
+                "decimals": result.get("decimals", 6),
+            })
+        elif "error" not in result:
+            # Balance is 0, still include entry
+            balances.append({
+                "token_type": "token",
+                "token_symbol": result["token_symbol"],
+                "token_address": HEDERA_TOKENS[token_symbol]["tokenid"],
+                "balance": "0",
+                "balance_raw": "0",
+                "decimals": HEDERA_TOKENS[token_symbol].get("decimals", 6),
+            })
+        else:
+            # Include error entry
+            balances.append({
+                "token_type": "token",
+                "token_symbol": result["token_symbol"],
+                "token_address": HEDERA_TOKENS.get(token_symbol, {}).get("tokenid", "0.0.0"),
+                "balance": "0",
+                "balance_raw": "0",
+                "decimals": 6,
+                "error": result.get("error", "Unknown error"),
+            })
     return balances
 
 

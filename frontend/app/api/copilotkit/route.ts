@@ -11,7 +11,6 @@ export async function POST(request: NextRequest) {
   // STEP 1: Define A2A agent URLs
   const balanceAgentUrl = process.env.BALANCE_AGENT_URL || "http://localhost:9997";
   const liquidityAgentUrl = process.env.LIQUIDITY_AGENT_URL || "http://localhost:9998";
-  const bridgeAgentUrl = process.env.BRIDGE_AGENT_URL || "http://localhost:9996";
   const swapAgentUrl = process.env.SWAP_AGENT_URL || "http://localhost:9995";
   const parallelLiquidityAgentUrl =
     process.env.PARALLEL_LIQUIDITY_AGENT_URL || "http://localhost:9994";
@@ -30,17 +29,16 @@ export async function POST(request: NextRequest) {
   // 4. Routing messages between orchestrator and A2A agents
   const a2aMiddlewareAgent = new A2AMiddlewareAgent({
     description:
-      "DeFi orchestrator with balance, liquidity, parallel liquidity, bridge, and swap agents (Hedera, Polygon)",
+      "DeFi orchestrator with balance, liquidity, parallel liquidity, and swap agents (Hedera, Polygon)",
     agentUrls: [
       balanceAgentUrl, // Balance Agent (ADK) - Port 9997
       liquidityAgentUrl, // Liquidity Agent (ADK) - Port 9998
       parallelLiquidityAgentUrl, // Parallel Liquidity Agent (ADK) - Port 9994
-      bridgeAgentUrl, // Bridge Agent (ADK) - Port 9996
       swapAgentUrl, // Swap Agent (ADK) - Port 9995
     ],
     orchestrationAgent,
     instructions: `
-      You are a DeFi orchestrator that coordinates specialized agents to fetch and aggregate on-chain balance, liquidity, bridge, and swap information across chains (Hedera, Polygon).
+      You are a DeFi orchestrator that coordinates specialized agents to fetch and aggregate on-chain balance, liquidity, and swap information across chains (Hedera, Polygon).
 
       AVAILABLE SPECIALIZED AGENTS:
 
@@ -62,12 +60,7 @@ export async function POST(request: NextRequest) {
          - Returns combined results from all chains in a single response
          - **RECOMMENDED** for token pair queries across multiple chains (faster than sequential queries)
 
-      4. **Bridge Agent** (ADK)
-         - Handles token bridging across blockchain chains (Hedera ↔ Polygon)
-         - Supports bridging various tokens (USDC, USDT, HBAR, MATIC, ETH, WBTC, DAI)
-         - Provides bridge quotes, fees, estimated time, and transaction status
-
-      5. **Swap Agent** (ADK)
+      4. **Swap Agent** (ADK)
          - Handles token swaps on blockchain chains (Hedera and Polygon)
          - Supports swapping various tokens (USDC, USDT, HBAR, MATIC, ETH, WBTC, DAI)
          - TEMPORARY: Direct swap execution without quotes
@@ -96,18 +89,6 @@ export async function POST(request: NextRequest) {
          - Wait for the user to submit the complete requirements
          - Use the returned values for all subsequent agent calls
 
-         **For Bridge Queries**:
-         - Before doing ANYTHING else when user asks to bridge tokens, call 'gather_bridge_requirements' to collect essential information
-         - Try to extract any mentioned details from the user's message (account address, source chain, destination chain, token, amount)
-         - Pass any extracted values as parameters to pre-fill the form:
-           * accountAddress: Extract account address if mentioned (e.g., "0.0.123456", "0x1234...")
-           * sourceChain: Extract source chain if mentioned (e.g., "hedera", "polygon")
-           * destinationChain: Extract destination chain if mentioned (e.g., "hedera", "polygon")
-           * tokenSymbol: Extract token symbol if mentioned (e.g., "USDC", "HBAR")
-           * amount: Extract amount if mentioned (e.g., "100", "100.0")
-         - Wait for the user to submit the complete requirements
-         - Use the returned values for all subsequent agent calls
-
          **For Swap Queries**:
          - Before doing ANYTHING else when user asks to swap tokens, call 'gather_swap_requirements' to collect essential information
          - Try to extract any mentioned details from the user's message (account address, chain, token in, token out, amount, slippage)
@@ -121,19 +102,6 @@ export async function POST(request: NextRequest) {
          - Wait for the user to submit the complete requirements
          - Use the returned values for all subsequent agent calls
          
-         **Bridge Workflow**:
-         1. First, check the user's balance for the token on the source chain using Balance Agent
-         2. Then, call Bridge Agent to get bridge options with fees comparison
-         3. **IMPORTANT**: Check if the response contains "requires_confirmation: true" or "amount_exceeds_threshold: true"
-            - If amount is high (exceeds threshold), DO NOT auto-initiate
-            - Show bridge options in a dropdown/box
-            - Explicitly tell user: "The bridge amount exceeds the threshold. Please review and confirm before proceeding."
-            - Wait for explicit confirmation ("okay bridge", "confirm bridge", "bridge now", "proceed")
-         4. Present the bridge options in a dropdown/box for the user to select
-         5. Wait for user to select a protocol and confirm by saying "okay bridge", "confirm bridge", "bridge now", "proceed", etc.
-         6. When user confirms, call Bridge Agent again with "initiate bridge with [protocol]" to execute
-         7. **NEVER auto-initiate bridges for high amounts without explicit user confirmation**
-
       1. **Balance Agent** - If user requests balance information
          - Pass: wallet address and chain (polygon, hedera, or all) from gathered requirements
          - Wait for balance data including native tokens, ERC20 tokens, and USD values
@@ -154,24 +122,7 @@ export async function POST(request: NextRequest) {
          - Example queries: "Get liquidity for ETH/USDT", "Find liquidity pools for HBAR/USDC"
          - **PREFER** this agent over Liquidity Agent when user specifies a token pair and wants cross-chain comparison
 
-      3. **Bridge Agent** - If user requests to bridge tokens
-         - **Step 1**: First check balance using Balance Agent:
-           * Query: "Get balance for account [accountAddress] on [sourceChain] for token [tokenSymbol]"
-           * Verify the user has sufficient balance
-         
-         - **Step 2**: Get bridge options:
-           * Format: "Bridge [amount] [token] from [source] to [destination] for account [accountAddress]"
-           * Example: "Bridge 100 USDC from hedera to polygon for account 0.0.123456"
-           * Wait for bridge options with fees comparison
-           * Present options, highlighting the one with lowest fee
-         
-         - **Step 3**: When user clicks "Bridge" button:
-           * Format: "Initiate bridge with [protocol] for [amount] [token] from [source] to [destination]"
-           * Example: "Initiate bridge with LayerZero for 100 USDC from hedera to polygon"
-           * Wait for bridge transaction details including transaction hash and status
-           * Present bridge transaction information in a clear, organized format
-
-      4. **Swap Agent** - If user requests to swap tokens
+      3. **Swap Agent** - If user requests to swap tokens
          - **Step 1**: First check balance using Balance Agent:
            * Query: "Get balance for account [accountAddress] on [chain] for token [tokenInSymbol]"
            * Verify the user has sufficient balance
@@ -187,11 +138,9 @@ export async function POST(request: NextRequest) {
       CRITICAL RULES:
       - **ALWAYS START by calling 'gather_balance_requirements' FIRST when user asks for balance information**
       - **ALWAYS START by calling 'gather_liquidity_requirements' FIRST when user asks for liquidity information**
-      - **ALWAYS START by calling 'gather_bridge_requirements' FIRST when user asks to bridge tokens**
       - **ALWAYS START by calling 'gather_swap_requirements' FIRST when user asks to swap tokens**
       - For balance queries, always gather requirements before calling agents
       - For liquidity queries, always gather requirements before calling agents
-      - For bridge queries, always gather requirements before calling agents
       - For swap queries, always gather requirements before calling agents
       - Call tools/agents ONE AT A TIME - never make multiple tool calls simultaneously
       - After making a tool call, WAIT for the result before making the next call

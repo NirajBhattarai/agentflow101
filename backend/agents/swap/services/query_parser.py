@@ -40,7 +40,7 @@ def extract_chain(query: str) -> Tuple[str, bool]:
 
 def _get_all_token_symbols(chain: str) -> list:
     """Get all available token symbols for a chain."""
-    from ..tools.constants import CHAIN_TOKENS
+    from lib.shared.blockchain.tokens import CHAIN_TOKENS  # noqa: E402
 
     available_tokens = list(CHAIN_TOKENS.get(chain, {}).keys())
     common_tokens = [
@@ -97,7 +97,7 @@ def _find_tokens_by_position(
     query_lower: str, all_tokens: list, chain: str
 ) -> Tuple[Optional[str], Optional[str]]:
     """Find tokens by their position in query."""
-    from ..tools.constants import CHAIN_TOKENS
+    from lib.shared.blockchain.tokens import CHAIN_TOKENS  # noqa: E402
 
     found_tokens = []
     token_positions = {}
@@ -129,7 +129,7 @@ def extract_token_symbols(
     if matched:
         token_in, token_out = matched
         if chain_specified:
-            from ..tools.constants import CHAIN_TOKENS
+            from lib.shared.blockchain.tokens import CHAIN_TOKENS  # noqa: E402
 
             if token_in in CHAIN_TOKENS.get(
                 chain, {}

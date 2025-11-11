@@ -5,7 +5,9 @@
         test-balance-all-chains test-swap test-swap-unit test-swap-integration \
         test-orchestrator test-orchestrator-unit test-orchestrator-integration \
         test-parallel-liquidity test-parallel-liquidity-unit test-parallel-liquidity-integration \
-        clean dev-travily dev-liquidity dev-parallel-liquidity dev-balance dev-bridge dev-swap \
+        test-pools test-liquidity-blockchain test-tokens test-tokens-constants test-tokens-address \
+        test-balance-shared \
+        clean dev-travily dev-liquidity dev-parallel-liquidity dev-balance dev-swap \
         dev-orchestrator dev-all-agents format format-backend format-frontend backend
 
 # Default target
@@ -27,10 +29,9 @@ help:
 	@echo "  make dev-liquidity       - Run Liquidity agent server (port 9998)"
 	@echo "  make dev-parallel-liquidity - Run Parallel Liquidity agent server (port 9994)"
 	@echo "  make dev-balance         - Run Balance agent server (port 9997)"
-	@echo "  make dev-bridge          - Run Bridge agent server (port 9996)"
 	@echo "  make dev-swap            - Run Swap agent server (port 9995)"
 	@echo "  make dev-orchestrator    - Run Orchestrator agent server (port 9000)"
-	@echo "  make dev-all-agents      - Run all agents (orchestrator, balance, liquidity, parallel-liquidity, bridge, swap)"
+	@echo "  make dev-all-agents      - Run all agents (orchestrator, balance, liquidity, parallel-liquidity, swap)"
 	@echo ""
 	@echo "Build:"
 	@echo "  make build-frontend      - Build frontend for production"
@@ -56,6 +57,12 @@ help:
 	@echo "  make test-parallel-liquidity - Run all parallel liquidity agent tests"
 	@echo "  make test-parallel-liquidity-unit - Run parallel liquidity agent unit tests"
 	@echo "  make test-parallel-liquidity-integration - Run parallel liquidity agent integration tests"
+	@echo "  make test-pools - Run pools tests (Uniswap V3 pool address tests)"
+	@echo "  make test-liquidity-blockchain - Run liquidity blockchain tests (liquidity and slot0)"
+	@echo "  make test-tokens - Run all token tests"
+	@echo "  make test-tokens-constants - Run token constants tests"
+	@echo "  make test-tokens-address - Run token address function tests"
+	@echo "  make test-balance-shared - Run shared balance library tests"
 	@echo ""
 	@echo "Utilities:"
 	@echo "  make clean               - Clean build artifacts and dependencies"
@@ -116,11 +123,6 @@ dev-balance:
 	@echo "Balance Agent: http://localhost:9997"
 	cd backend && uv run -m agents.balance
 
-dev-bridge:
-	@echo "Starting Bridge agent server..."
-	@echo "Bridge Agent: http://localhost:9996"
-	cd backend && uv run -m agents.bridge
-
 dev-swap:
 	@echo "Starting Swap agent server..."
 	@echo "Swap Agent: http://localhost:9995"
@@ -143,11 +145,10 @@ dev-all-agents:
 	@echo "Balance Agent: http://localhost:9997"
 	@echo "Liquidity Agent: http://localhost:9998"
 	@echo "Parallel Liquidity Agent: http://localhost:9994"
-	@echo "Bridge Agent: http://localhost:9996"
 	@echo "Swap Agent: http://localhost:9995"
 	@echo ""
 	@echo "Starting all agents in parallel..."
-	@make -j6 dev-orchestrator dev-balance dev-liquidity dev-parallel-liquidity dev-bridge dev-swap
+	@make -j5 dev-orchestrator dev-balance dev-liquidity dev-parallel-liquidity dev-swap
 
 # Production builds
 build-frontend:
@@ -251,6 +252,30 @@ test-parallel-liquidity-unit:
 test-parallel-liquidity-integration:
 	@echo "Running parallel liquidity agent integration tests..."
 	cd backend && uv sync --extra test && PYTHONPATH=. uv run pytest agents/parallel_liquidity/__test__/test_integration.py -v
+
+test-pools:
+	@echo "Running pools tests (Uniswap V3 pool address tests)..."
+	cd backend && uv sync --extra test && PYTHONPATH=. uv run pytest lib/shared/blockchain/pools/__test__/test_uniswap_v3_pool.py -v
+
+test-liquidity-blockchain:
+	@echo "Running liquidity blockchain tests (liquidity and slot0)..."
+	cd backend && uv sync --extra test && PYTHONPATH=. uv run pytest lib/shared/blockchain/liquidity/__test__/test_liquidity.py -v -s
+
+test-tokens:
+	@echo "Running all token tests..."
+	cd backend && uv sync --extra test && PYTHONPATH=. uv run pytest lib/shared/blockchain/tokens/__test__/ lib/shared/blockchain/tokens/constants/__test__/ -v
+
+test-tokens-constants:
+	@echo "Running token constants tests..."
+	cd backend && uv sync --extra test && PYTHONPATH=. uv run pytest lib/shared/blockchain/tokens/constants/__test__/test_token_constants.py -v
+
+test-tokens-address:
+	@echo "Running token address function tests..."
+	cd backend && uv sync --extra test && PYTHONPATH=. uv run pytest lib/shared/blockchain/tokens/__test__/test_token_address.py -v
+
+test-balance-shared:
+	@echo "Running shared balance library tests..."
+	cd backend && uv sync --extra test && PYTHONPATH=. uv run pytest lib/shared/blockchain/balance/__test__/test_balance.py -v
 
 # Cleanup
 clean:

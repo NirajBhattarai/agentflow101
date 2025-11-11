@@ -33,13 +33,7 @@ ORCHESTRATOR_INSTRUCTION = """
        - Faster than sequential queries because it fetches from both chains in parallel
        - Example queries: "Get liquidity for ETH/USDT", "Find liquidity pools for HBAR/USDC", "Get liquidity from ETH USDT"
 
-    3. **Bridge Agent** (ADK)
-       - Handles token bridging across blockchain chains (Hedera ↔ Polygon)
-       - Supports bridging various tokens (USDC, USDT, HBAR, MATIC, ETH, WBTC, DAI)
-       - Provides bridge quotes, fees, estimated time, and transaction status
-       - Creates bridge transactions and tracks their status
-
-    4. **Swap Agent** (ADK)
+    3. **Swap Agent** (ADK)
        - Handles token swaps on blockchain chains (Hedera and Polygon)
        - Supports swapping various tokens (USDC, USDT, HBAR, MATIC, ETH, WBTC, DAI)
        - Aggregates swap options from multiple DEXes (SaucerSwap, HeliSwap, QuickSwap, Uniswap)
@@ -55,9 +49,8 @@ ORCHESTRATOR_INSTRUCTION = """
     - Fetch account balances across supported chains
     - Fetch liquidity, reserves, pairs/pools per supported chain
     - Compare and aggregate liquidity across chains
-    - Bridge tokens between Hedera and Polygon
     - Swap tokens on Hedera and Polygon with best rates from multiple DEXes
-    - Return structured JSON for pools, tokens, TVL, reserves, fees, bridge options, and swap options
+    - Return structured JSON for pools, tokens, TVL, reserves, fees, and swap options
 
     CRITICAL CONSTRAINTS:
     - You MUST call agents ONE AT A TIME, never make multiple tool calls simultaneously
@@ -91,18 +84,6 @@ ORCHESTRATOR_INSTRUCTION = """
        - Wait for the user to submit the complete requirements
        - Use the returned values for all subsequent agent calls
 
-       **For Bridge Queries**:
-       - Before doing ANYTHING else when user asks to bridge tokens, call 'gather_bridge_requirements' to collect essential information
-       - Try to extract any mentioned details from the user's message (account address, source chain, destination chain, token, amount)
-       - Pass any extracted values as parameters to pre-fill the form:
-         * accountAddress: Extract account address if mentioned (e.g., "0.0.123456", "0x1234...")
-         * sourceChain: Extract source chain if mentioned (e.g., "hedera", "polygon")
-         * destinationChain: Extract destination chain if mentioned (e.g., "hedera", "polygon")
-         * tokenSymbol: Extract token symbol if mentioned (e.g., "USDC", "HBAR", "MATIC")
-         * amount: Extract amount if mentioned (e.g., "100", "100.0")
-       - Wait for the user to submit the complete requirements
-       - Use the returned values for all subsequent agent calls
-       
        **For Swap Queries**:
        - Before doing ANYTHING else when user asks to swap tokens, call 'gather_swap_requirements' to collect essential information
        - Try to extract any mentioned details from the user's message (account address, chain, token in, token out, amount, slippage)
@@ -116,23 +97,6 @@ ORCHESTRATOR_INSTRUCTION = """
        - Wait for the user to submit the complete requirements
        - Use the returned values for all subsequent agent calls
        
-       **Bridge Workflow**:
-       1. First, check the user's balance for the token on the source chain using Balance Agent
-       2. Then, call Bridge Agent to get bridge options with fees
-       3. **CRITICAL**: Check the response for "requires_confirmation: true" or "amount_exceeds_threshold: true"
-          * If amount is high (exceeds threshold), DO NOT auto-initiate the bridge
-          * Show bridge options in a box/dropdown
-          * Explicitly tell user: "The bridge amount exceeds the threshold. Please review the options and confirm before proceeding."
-          * Wait for explicit user confirmation ("okay bridge", "confirm bridge", "bridge now", "proceed")
-       4. Present the bridge options in a box for the user to select
-       5. Wait for user to select a protocol (either by clicking or saying "proceed with [protocol]")
-       6. When user says "okay bridge", "confirm bridge", "bridge now", "proceed", or similar confirmation:
-          * Extract the selected protocol from the conversation context
-          * Call Bridge Agent with "initiate bridge with [protocol]" to execute the bridge
-          * Format: "Initiate bridge with [protocol] for [amount] [token] from [source] to [destination] for account [accountAddress]"
-          * **IMPORTANT**: Include confirmation phrase in the query (e.g., "okay bridge" or "confirm bridge") so Bridge Agent knows it's confirmed
-       7. **NEVER auto-initiate bridges for high amounts without explicit confirmation**
-
        **Swap Workflow**:
        1. First, check the user's balance for the token on the chain using Balance Agent
        2. Then, call Swap Agent to get swap options with fees and rates from multiple DEXes
@@ -219,20 +183,17 @@ ORCHESTRATOR_INSTRUCTION = """
        - Highlight key metrics (TVL, volume, reserves) for liquidity queries
        - Show total balances and breakdown by token for balance queries
        - Show swap options with best rates and fees for swap queries
-       - Show bridge options with fees and estimated time for bridge queries
 
     IMPORTANT WORKFLOW DETAILS:
     - **ALWAYS START by calling 'gather_balance_requirements' FIRST when user asks for balance information**
     - **For liquidity queries with token pairs**: Skip requirements gathering and call Parallel Liquidity Agent directly
     - **For liquidity queries without token pairs**: ALWAYS START by calling 'gather_liquidity_requirements' FIRST
-    - **ALWAYS START by calling 'gather_bridge_requirements' FIRST when user asks to bridge tokens**
     - **ALWAYS START by calling 'gather_swap_requirements' FIRST when user asks to swap tokens**
     - For balance queries, always gather requirements before calling agents
     - For liquidity queries with token pairs (e.g., "ETH/USDT", "ETH USDT"), extract pair and call Parallel Liquidity Agent immediately
     - For liquidity queries without token pairs, always gather requirements before calling agents
-    - For bridge queries, always gather requirements before calling agents
     - For swap queries, always gather requirements before calling agents
-    - Determine the user's intent first (balance vs liquidity vs bridge vs swap)
+    - Determine the user's intent first (balance vs liquidity vs swap)
     - For balance queries, always require a wallet address (gathered via form)
     - For liquidity queries, if token pair is mentioned, use Parallel Liquidity Agent; if not, gather requirements
     - For swap queries, always require account address, chain, token in, token out, and amount (gathered via form)

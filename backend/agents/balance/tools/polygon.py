@@ -5,7 +5,8 @@ from dotenv import load_dotenv
 from web3 import Web3
 
 from .abi.erc20 import ERC20_ABI
-from .constants import POLYGON_TOKENS
+from lib.shared.blockchain.tokens.constants import POLYGON_TOKENS  # noqa: E402
+from lib.shared.blockchain.balance import get_token_balance_polygon  # noqa: E402
 
 """Ensure environment variables are loaded from backend/.env if present."""
 # Load default .env discovery first (current working directory or parents)
@@ -79,7 +80,7 @@ def _get_native_balance(w3: Web3, account_address: str) -> dict:
 def _resolve_token_address(token_address: str) -> str:
     """Resolve token symbol to address if needed."""
     if token_address.upper() in POLYGON_TOKENS:
-        return POLYGON_TOKENS[token_address.upper()]
+        return POLYGON_TOKENS[token_address.upper()]["address"]
     return token_address
 
 
@@ -146,7 +147,42 @@ def _fetch_token_balance_data(
 
 
 def _get_token_balance(w3: Web3, account_address: str, token_address: str) -> dict:
-    """Get token balance for account."""
+    """Get token balance for account using shared balance tools."""
+    # Try to resolve token symbol from address
+    token_symbol = None
+    for symbol, token_data in POLYGON_TOKENS.items():
+        if token_data["address"].lower() == token_address.lower():
+            token_symbol = symbol
+            break
+    
+    # If token_address is a symbol, use it directly
+    if token_address.upper() in POLYGON_TOKENS:
+        token_symbol = token_address.upper()
+    
+    if token_symbol:
+        # Use shared balance tool
+        result = get_token_balance_polygon(account_address, token_symbol)
+        if "error" not in result:
+            return {
+                "token_type": "token",
+                "token_symbol": result["token_symbol"],
+                "token_address": result["token_address"],
+                "balance": result["balance"],
+                "balance_raw": result["balance_raw"],
+                "decimals": result["decimals"],
+            }
+        else:
+            return {
+                "token_type": "token",
+                "token_symbol": result["token_symbol"],
+                "token_address": POLYGON_TOKENS[token_symbol]["address"],
+                "balance": "0",
+                "balance_raw": "0",
+                "decimals": result.get("decimals", 18),
+                "error": result.get("error", "Unknown error"),
+            }
+    
+    # Fallback to original implementation for unknown tokens
     token_address = _validate_and_checksum_token_address(w3, token_address)
     try:
         return _fetch_token_balance_data(w3, account_address, token_address)
@@ -178,10 +214,31 @@ def _build_error_response(account_address: str, error: Exception) -> dict:
 
 
 def _get_all_token_balances(w3: Web3, account_address: str) -> list:
-    """Get balances for all tokens in POLYGON_TOKENS."""
+    """Get balances for all tokens in POLYGON_TOKENS using shared balance tools."""
     balances = []
-    for token_address in POLYGON_TOKENS.values():
-        balances.append(_get_token_balance(w3, account_address, token_address))
+    for token_symbol in POLYGON_TOKENS.keys():
+        result = get_token_balance_polygon(account_address, token_symbol)
+        if "error" not in result:
+            # Convert shared tool format to agent format
+            balances.append({
+                "token_type": "token",
+                "token_symbol": result["token_symbol"],
+                "token_address": result["token_address"],
+                "balance": result["balance"],
+                "balance_raw": result["balance_raw"],
+                "decimals": result["decimals"],
+            })
+        else:
+            # Include error entry
+            balances.append({
+                "token_type": "token",
+                "token_symbol": result["token_symbol"],
+                "token_address": POLYGON_TOKENS.get(token_symbol, {}).get("address", "0x0"),
+                "balance": "0",
+                "balance_raw": "0",
+                "decimals": 18,
+                "error": result.get("error", "Unknown error"),
+            })
     return balances
 
 

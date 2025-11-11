@@ -16,7 +16,6 @@ import { useCopilotAction } from "@copilotkit/react-core";
 import "@copilotkit/react-ui/styles.css";
 import { BalanceRequirementsForm } from "../forms/balance/BalanceRequirementsForm";
 import { LiquidityRequirementsForm } from "../forms/liquidity/LiquidityRequirementsForm";
-import { BridgeRequirementsForm } from "../forms/bridge/BridgeRequirementsForm";
 import { SwapRequirementsForm } from "../forms/swap/SwapRequirementsForm";
 import { MessageToA2A } from "./a2a/MessageToA2A";
 import { MessageFromA2A } from "./a2a/MessageFromA2A";
@@ -25,7 +24,6 @@ import type {
   BalanceData,
   LiquidityData,
   ParallelLiquidityData,
-  BridgeData,
   SwapData,
   MessageActionRenderProps,
 } from "@/types";
@@ -33,7 +31,6 @@ import type {
 const ChatInner = ({
   onBalanceUpdate,
   onLiquidityUpdate,
-  onBridgeUpdate,
   onSwapUpdate,
 }: DeFiChatProps) => {
   const { visibleMessages } = useCopilotChat();
@@ -79,11 +76,6 @@ const ChatInner = ({
               else if (parsed.type === "liquidity" && parsed.pairs && Array.isArray(parsed.pairs)) {
                 onLiquidityUpdate?.(parsed as LiquidityData);
               }
-              // Check if it's bridge data
-              // Bridge data can have transaction OR bridge_options (or both)
-              else if (parsed.type === "bridge") {
-                onBridgeUpdate?.(parsed as BridgeData);
-              }
               // Check if it's swap data
               // Swap data can have transaction OR swap_options (or both)
               else if (parsed.type === "swap") {
@@ -105,7 +97,7 @@ const ChatInner = ({
     };
 
     extractDataFromMessages();
-  }, [visibleMessages, onBalanceUpdate, onLiquidityUpdate, onBridgeUpdate, onSwapUpdate]);
+  }, [visibleMessages, onBalanceUpdate, onLiquidityUpdate, onSwapUpdate]);
 
   // Register HITL balance requirements form (collects account info at start)
   useCopilotAction({
@@ -160,50 +152,6 @@ const ChatInner = ({
     ],
     renderAndWaitForResponse: ({ args, respond }) => {
       return <LiquidityRequirementsForm args={args} respond={respond} />;
-    },
-  });
-
-  // Register HITL bridge requirements form (collects bridge details at start)
-  useCopilotAction({
-    name: "gather_bridge_requirements",
-    description:
-      "Gather bridge requirements from the user (account address, source chain, destination chain, token, amount)",
-    parameters: [
-      {
-        name: "accountAddress",
-        type: "string",
-        description:
-          "The account address to bridge from (Hedera format: 0.0.123456 or EVM format: 0x...). May be pre-filled from user message.",
-        required: false,
-      },
-      {
-        name: "sourceChain",
-        type: "string",
-        description: "Source chain: hedera or polygon. May be pre-filled from user message.",
-        required: false,
-      },
-      {
-        name: "destinationChain",
-        type: "string",
-        description: "Destination chain: hedera or polygon. May be pre-filled from user message.",
-        required: false,
-      },
-      {
-        name: "tokenSymbol",
-        type: "string",
-        description:
-          "Token symbol to bridge (e.g., USDC, HBAR, MATIC). May be pre-filled from user message.",
-        required: false,
-      },
-      {
-        name: "amount",
-        type: "string",
-        description: "Amount to bridge (e.g., 100.0). May be pre-filled from user message.",
-        required: false,
-      },
-    ],
-    renderAndWaitForResponse: ({ args, respond }) => {
-      return <BridgeRequirementsForm args={args} respond={respond} />;
     },
   });
 
@@ -303,7 +251,6 @@ const ChatInner = ({
 export default function DeFiChat({
   onBalanceUpdate,
   onLiquidityUpdate,
-  onBridgeUpdate,
   onSwapUpdate,
 }: DeFiChatProps) {
   return (
@@ -311,7 +258,6 @@ export default function DeFiChat({
       <ChatInner
         onBalanceUpdate={onBalanceUpdate}
         onLiquidityUpdate={onLiquidityUpdate}
-        onBridgeUpdate={onBridgeUpdate}
         onSwapUpdate={onSwapUpdate}
       />
     </CopilotKit>

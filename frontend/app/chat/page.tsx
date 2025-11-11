@@ -4,18 +4,16 @@ import { useEffect, useState } from "react";
 import { useAppKitAccount } from "@reown/appkit/react";
 import { DeFiChat } from "@/components/chat";
 import { BalanceCard } from "@/components/features/balance";
-import { BridgeCard } from "@/components/features/bridge";
 import { SwapCard } from "@/components/features/swap";
 import { LiquidityCard } from "@/components/features/liquidity";
 import { WalletConnect, Logo } from "@/components/shared";
-import type { BalanceData, LiquidityData, ParallelLiquidityData, BridgeData, SwapData } from "@/types";
+import type { BalanceData, LiquidityData, ParallelLiquidityData, SwapData } from "@/types";
 import "../copilot.css";
 import Link from "next/link";
 
 export default function ChatPage() {
   const [balanceData, setBalanceData] = useState<BalanceData | null>(null);
   const [liquidityData, setLiquidityData] = useState<LiquidityData | ParallelLiquidityData | null>(null);
-  const [bridgeData, setBridgeData] = useState<BridgeData | null>(null);
   const [swapData, setSwapData] = useState<SwapData | null>(null);
   const { address } = useAppKitAccount?.() || ({} as any);
   const isConnected = Boolean(address);
@@ -78,7 +76,7 @@ export default function ChatPage() {
                   Connect your wallet
                 </h2>
                 <p className="mt-2 text-center text-sm leading-relaxed text-[#57575B]">
-                  View balances, scan liquidity, bridge tokens, and swap tokens for your address.
+                  View balances, scan liquidity, and swap tokens for your address.
                 </p>
 
                 {/* Benefits / bullets */}
@@ -90,10 +88,6 @@ export default function ChatPage() {
                   <div className="flex items-center gap-2 rounded-lg border border-[#E7E7F2] bg-white/70 px-2.5 py-2">
                     <span className="text-[13px]">📊</span>
                     <span className="font-medium">Liquidity scan</span>
-                  </div>
-                  <div className="flex items-center gap-2 rounded-lg border border-[#E7E7F2] bg-white/70 px-2.5 py-2">
-                    <span className="text-[13px]">🌉</span>
-                    <span className="font-medium">Bridge simulation</span>
                   </div>
                   <div className="flex items-center gap-2 rounded-lg border border-[#E7E7F2] bg-white/70 px-2.5 py-2">
                     <span className="text-[13px]">💱</span>
@@ -148,7 +142,6 @@ export default function ChatPage() {
               <p className="text-sm text-[#57575B] leading-relaxed">
                 Multi-Agent A2A Demo: <span className="text-purple-600 font-semibold">Balance</span>{" "}
                 + <span className="text-teal-600 font-semibold">Liquidity</span> +{" "}
-                <span className="text-orange-600 font-semibold">Bridge</span> +{" "}
                 <span className="text-green-600 font-semibold">Swap</span>
               </p>
               <p className="text-xs text-[#838389] mt-1">Orchestrator-mediated A2A Protocol</p>
@@ -157,7 +150,6 @@ export default function ChatPage() {
               <DeFiChat
                 onBalanceUpdate={setBalanceData}
                 onLiquidityUpdate={setLiquidityData}
-                onBridgeUpdate={setBridgeData}
                 onSwapUpdate={setSwapData}
               />
             </div>
@@ -169,12 +161,12 @@ export default function ChatPage() {
               <div className="mb-8">
                 <h2 className="text-3xl font-semibold text-[#010507] mb-2">Your DeFi Data</h2>
                 <p className="text-[#57575B]">
-                  Multi-agent coordination: Balance, Liquidity, Parallel Liquidity, Bridge, and Swap
+                  Multi-agent coordination: Balance, Liquidity, Parallel Liquidity, and Swap
                   agents with A2A Protocol
                 </p>
               </div>
 
-              {!balanceData && !liquidityData && !bridgeData && !swapData && (
+              {!balanceData && !liquidityData && !swapData && (
                 <div className="flex items-center justify-center h-[400px] bg-white/60 backdrop-blur-md rounded-xl border-2 border-dashed border-[#DBDBE5] shadow-elevation-sm">
                   <div className="text-center">
                     <div className="text-6xl mb-4">💰</div>
@@ -182,9 +174,7 @@ export default function ChatPage() {
                       Start Querying Your DeFi Data
                     </h3>
                     <p className="text-[#57575B] max-w-md">
-                      Ask the assistant to check your balance, get liquidity information, bridge
-                      tokens, or swap tokens. Watch as specialized agents collaborate through A2A
-                      Protocol to fetch your on-chain data and execute DeFi operations.
+                      Ask the assistant to check your balance, get liquidity information, or swap tokens. Watch as specialized agents collaborate through A2A Protocol to fetch your on-chain data and execute DeFi operations.
                     </p>
                   </div>
                 </div>
@@ -199,23 +189,6 @@ export default function ChatPage() {
               {liquidityData && (
                 <div className="mb-4">
                   <LiquidityCard data={liquidityData} />
-                </div>
-              )}
-
-              {bridgeData && (
-                <div className="mb-4">
-                  <BridgeCard
-                    data={bridgeData}
-                    onBridgeInitiate={(protocol) => {
-                      // When user clicks "Bridge" button, send a message to the chat
-                      // to trigger the orchestrator to initiate the bridge
-                      console.log("Initiating bridge with protocol:", protocol);
-                      // The orchestrator will handle this via chat message
-                      // In a real implementation, you might want to send a message programmatically
-                      // For now, the user can click the button and the UI will show the state
-                      // The actual bridge initiation happens via orchestrator when user says "do with [protocol]"
-                    }}
-                  />
                 </div>
               )}
 

@@ -5,7 +5,7 @@ Tests fetch actual balance data from Polygon chain using Web3.
 
 from web3 import Web3
 from agents.balance.tools.polygon import get_balance_polygon, _get_web3_instance
-from agents.balance.tools.constants import POLYGON_TOKENS
+from lib.shared.blockchain.tokens.constants import POLYGON_TOKENS
 
 
 class TestPolygonBalance:
@@ -49,7 +49,8 @@ class TestPolygonBalance:
 
         # Verify all token addresses from constants are present
         expected_addresses = {
-            Web3.to_checksum_address(addr) for addr in POLYGON_TOKENS.values()
+            Web3.to_checksum_address(token_data["address"]) 
+            for token_data in POLYGON_TOKENS.values()
         }
         actual_addresses = {
             Web3.to_checksum_address(b["token_address"]) for b in token_balances
@@ -83,7 +84,7 @@ class TestPolygonBalance:
         )
         assert token_balance is not None, "Token balance should be present"
         assert token_balance["token_address"] == Web3.to_checksum_address(
-            POLYGON_TOKENS["USDC"]
+            POLYGON_TOKENS["USDC"]["address"]
         )
         assert "balance" in token_balance
         assert "balance_raw" in token_balance
@@ -169,7 +170,9 @@ class TestPolygonBalance:
         )
 
         # Verify each token from constants has a corresponding balance entry
-        for symbol, address in POLYGON_TOKENS.items():
+        for symbol, token_data in POLYGON_TOKENS.items():
+            # POLYGON_TOKENS now contains dictionaries, extract address
+            address = token_data["address"]
             checksum_address = Web3.to_checksum_address(address)
             token_entry = next(
                 (

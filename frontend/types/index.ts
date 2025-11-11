@@ -371,7 +371,6 @@ export type SwapRequirementsActionRenderProps = ActionRenderProps<
 export interface DeFiChatProps {
   onBalanceUpdate?: (data: BalanceData | null) => void;
   onLiquidityUpdate?: (data: LiquidityData | ParallelLiquidityData | null) => void;
-  onBridgeUpdate?: (data: BridgeData | null) => void;
   onSwapUpdate?: (data: SwapData | null) => void;
 }
 

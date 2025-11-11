@@ -3,11 +3,9 @@ Hedera-specific swap functionality.
 """
 
 from typing import Optional, Dict, Any
-from .constants import (
-    get_token_address,
-    get_dex_config,
-    get_chain_rpc_url,
-)
+from lib.shared.blockchain.tokens import get_token_address  # noqa: E402
+from lib.shared.blockchain.dex import get_dex_config  # noqa: E402
+from lib.shared.blockchain.networks import get_chain_rpc_url  # noqa: E402
 
 
 def get_swap_hedera(
