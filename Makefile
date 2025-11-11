@@ -2,7 +2,10 @@
         dev-frontend dev-backend dev build-frontend build-backend test \
         test-liquidity test-liquidity-polygon test-liquidity-hedera \
         test-liquidity-all-chains test-balance test-balance-polygon test-balance-hedera \
-        test-balance-all-chains clean dev-travily dev-liquidity dev-parallel-liquidity dev-balance dev-bridge dev-swap \
+        test-balance-all-chains test-swap test-swap-unit test-swap-integration \
+        test-orchestrator test-orchestrator-unit test-orchestrator-integration \
+        test-parallel-liquidity test-parallel-liquidity-unit test-parallel-liquidity-integration \
+        clean dev-travily dev-liquidity dev-parallel-liquidity dev-balance dev-bridge dev-swap \
         dev-orchestrator dev-all-agents format format-backend format-frontend backend
 
 # Default target
@@ -50,6 +53,9 @@ help:
 	@echo "  make test-orchestrator - Run all orchestrator agent tests"
 	@echo "  make test-orchestrator-unit - Run orchestrator agent unit tests"
 	@echo "  make test-orchestrator-integration - Run orchestrator agent integration tests"
+	@echo "  make test-parallel-liquidity - Run all parallel liquidity agent tests"
+	@echo "  make test-parallel-liquidity-unit - Run parallel liquidity agent unit tests"
+	@echo "  make test-parallel-liquidity-integration - Run parallel liquidity agent integration tests"
 	@echo ""
 	@echo "Utilities:"
 	@echo "  make clean               - Clean build artifacts and dependencies"
@@ -233,6 +239,18 @@ test-orchestrator-unit:
 test-orchestrator-integration:
 	@echo "Running orchestrator agent integration tests..."
 	cd backend && uv sync --extra test && PYTHONPATH=. uv run pytest agents/orchestrator/__test__/test_integration.py -v
+
+test-parallel-liquidity:
+	@echo "Running all parallel liquidity agent tests..."
+	cd backend && uv sync --extra test && PYTHONPATH=. uv run pytest agents/parallel_liquidity/__test__/ -v
+
+test-parallel-liquidity-unit:
+	@echo "Running parallel liquidity agent unit tests..."
+	cd backend && uv sync --extra test && PYTHONPATH=. uv run pytest agents/parallel_liquidity/__test__/test_token_pair_extraction.py agents/parallel_liquidity/__test__/test_result_combination.py agents/parallel_liquidity/__test__/test_sub_agents.py -v
+
+test-parallel-liquidity-integration:
+	@echo "Running parallel liquidity agent integration tests..."
+	cd backend && uv sync --extra test && PYTHONPATH=. uv run pytest agents/parallel_liquidity/__test__/test_integration.py -v
 
 # Cleanup
 clean:

@@ -9,8 +9,6 @@ from agents.orchestrator.agent import (
 from agents.orchestrator.core.constants import (
     AGENT_NAME,
     DEFAULT_MODEL,
-    DEFAULT_USER_ID,
-    DEFAULT_APP_NAME,
 )
 
 
