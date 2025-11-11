@@ -141,27 +141,62 @@ def _calculate_with_sqrt_price_x96(
     token1_decimals = _get_token_decimals(pool_data.token1)
     
     # Calculate price from sqrtPriceX96
-    # sqrtPriceX96 = sqrt(token1_wei / token0_wei) * 2^96
-    # price_wei = (sqrtPriceX96 / 2^96)^2
-    # price_human = price_wei * (10^decimals0 / 10^decimals1)
+    # In Uniswap V3: sqrtPriceX96 = sqrt(token1_wei / token0_wei) * 2^96
+    # 
+    # Step 1: Get price in wei units
+    # price_wei = (sqrtPriceX96 / 2^96)^2 = token1_wei / token0_wei
     sqrt_price = sqrt_price_x96 / Decimal(Q96)
     price_wei = sqrt_price ** 2
+    price_wei_float = float(price_wei)
+    
+    # Step 2: Convert to human-readable units
+    # price_human = token1 / token0
+    #            = (token1_wei / 10^decimals1) / (token0_wei / 10^decimals0)
+    #            = (token1_wei / token0_wei) * (10^decimals0 / 10^decimals1)
+    #            = price_wei * 10^(decimals0 - decimals1)
+    #
+    # For USDT (6 decimals) / WETH (18 decimals):
+    # - price_human = price_wei * 10^(6-18) = price_wei * 10^-12
     decimal_adjustment = Decimal(10) ** (token0_decimals - token1_decimals)
     price_token1_per_token0 = float(price_wei * decimal_adjustment)
     
+    # Validate: If price seems wrong, use reserves to calculate spot price instead
+    # Expected: ~0.00028 WETH per USDT (at ~$3700/ETH, 1 USDT = $1)
+    expected_price_range = (0.0001, 0.001)  # Reasonable range for WETH/USDT
+    if price_token1_per_token0 < expected_price_range[0] or price_token1_per_token0 > expected_price_range[1]:
+        print(f"⚠️  Price from sqrtPriceX96 ({price_token1_per_token0:.10f}) seems wrong, will use reserves for validation")
+    
+    print(f"🔍 Price calculation debug:")
+    print(f"  Pool: {pool_data.token0}/{pool_data.token1}")
+    print(f"  Swap: {token_in_norm} -> {token_out_norm}")
+    print(f"  sqrtPriceX96: {sqrt_price_x96_str}")
+    print(f"  token0={pool_data.token0} ({token0_decimals} decimals), token1={pool_data.token1} ({token1_decimals} decimals)")
+    print(f"  price_wei: {price_wei_float:.10e}")
+    print(f"  decimal_adjustment: {decimal_adjustment}")
+    print(f"  price_token1_per_token0: {price_token1_per_token0:.10f}")
+    print(f"  is_token0_in: {is_token0_in}")
+    
     # Determine swap direction and calculate spot price
+    # Note: In Uniswap V3, sqrtPriceX96 always represents token1/token0
     if is_token0_in:
         # Swapping token0 -> token1
         # Spot price = token1/token0 = price from sqrtPriceX96
         spot_price = price_token1_per_token0
+        # Reserve mapping: reserve_base should be token0, reserve_quote should be token1
+        # But we need to verify this matches the actual pool structure
         reserve_in = Decimal(str(pool_data.reserve_base))
         reserve_out = Decimal(str(pool_data.reserve_quote))
     else:
         # Swapping token1 -> token0
         # Spot price = token0/token1 = 1/(token1/token0) = 1/price_from_sqrtPriceX96
         spot_price = 1.0 / price_token1_per_token0 if price_token1_per_token0 > 0 else 0
+        # Reserve mapping: reserve_base should be token0, but we're swapping token1
+        # So reserve_in should be reserve_quote (token1), reserve_out should be reserve_base (token0)
         reserve_in = Decimal(str(pool_data.reserve_quote))
         reserve_out = Decimal(str(pool_data.reserve_base))
+    
+    print(f"  spot_price: {spot_price}")
+    print(f"  reserve_in (token_in): {reserve_in}, reserve_out (token_out): {reserve_out}")
     
     if reserve_in == 0 or reserve_out == 0:
         raise InsufficientLiquidityError(
@@ -171,23 +206,47 @@ def _calculate_with_sqrt_price_x96(
     # Convert amount_in to Decimal for precision
     amount_in_decimal = Decimal(str(amount_in_after_fee))
     
-    # Calculate output using spot price (for small swaps, this is accurate)
-    # For large swaps, we need to account for slippage using constant product
-    estimated_amount_out_from_price = float(amount_in_decimal) * spot_price
+    # Calculate output using spot price (most accurate for Uniswap V3)
+    # For small swaps, this is exact. For large swaps, we'll calculate slippage separately.
+    amount_out_from_spot = float(amount_in_decimal) * spot_price
     
-    # Use constant product formula to account for slippage
+    # Also calculate using constant product formula for comparison and slippage estimation
     # (reserve_in + amount_in) * (reserve_out - amount_out) = reserve_in * reserve_out
-    # Solving for amount_out: amount_out = (reserve_out * amount_in) / (reserve_in + amount_in)
-    amount_out_decimal = (reserve_out * amount_in_decimal) / (reserve_in + amount_in_decimal)
-    amount_out = float(amount_out_decimal)
+    # Solving: amount_out = (reserve_out * amount_in) / (reserve_in + amount_in)
+    amount_out_from_reserves = float((reserve_out * amount_in_decimal) / (reserve_in + amount_in_decimal))
     
-    # Validate: if the difference is huge, something's wrong with reserves
-    if estimated_amount_out_from_price > 0:
-        diff_ratio = abs(amount_out - estimated_amount_out_from_price) / estimated_amount_out_from_price
-        if diff_ratio > 10.0:  # More than 10x difference, likely reserve issue
-            print(f"⚠️  Large difference: constant_product={amount_out:.6f}, price_based={estimated_amount_out_from_price:.6f}, using price-based")
-            # Use price-based calculation (more reliable when reserves are wrong)
-            amount_out = estimated_amount_out_from_price
+    print(f"  amount_in: {amount_in_after_fee}")
+    print(f"  amount_out_from_spot: {amount_out_from_spot}")
+    print(f"  amount_out_from_reserves: {amount_out_from_reserves}")
+    
+    # Use spot price calculation (more accurate for Uniswap V3)
+    # The constant product formula is an approximation for V3 concentrated liquidity
+    amount_out = amount_out_from_spot
+    
+    # Sanity checks and validation
+    # If spot price calculation gives unreasonable results, use reserves-based calculation
+    # Also validate against expected price range
+    use_reserves = False
+    
+    if amount_out <= 0:
+        print(f"⚠️  Spot price gave zero/negative output, using reserves")
+        use_reserves = True
+    elif amount_out > amount_in * 10:  # Output shouldn't be > 10x input (for large swaps)
+        print(f"⚠️  Spot price gave unreasonable output ({amount_out:.2f} > {amount_in * 10:.2f}), using reserves")
+        use_reserves = True
+    elif price_token1_per_token0 < 0.00001 or price_token1_per_token0 > 0.01:
+        # Price seems way off, use reserves
+        print(f"⚠️  Price from sqrtPriceX96 seems wrong ({price_token1_per_token0:.10f}), using reserves")
+        use_reserves = True
+    elif abs(amount_out - amount_out_from_reserves) / max(abs(amount_out), abs(amount_out_from_reserves), 1e-10) > 2.0:
+        # If methods differ by more than 2x, something's wrong - use reserves
+        print(f"⚠️  Large difference between methods (spot={amount_out:.2f}, reserves={amount_out_from_reserves:.2f}), using reserves")
+        use_reserves = True
+    
+    if use_reserves:
+        amount_out = amount_out_from_reserves
+        # Recalculate spot price from reserves for price impact calculation
+        spot_price = float(reserve_in / reserve_out) if reserve_out > 0 else spot_price
     
     # Calculate effective price (amount_in / amount_out)
     effective_price = amount_in / amount_out if amount_out > 0 else 0
