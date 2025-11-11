@@ -29,8 +29,9 @@ help:
 	@echo "  make dev-balance         - Run Balance agent server (port 9997)"
 	@echo "  make dev-swap            - Run Swap agent server (port 9995)"
 	@echo "  make dev-swap-router     - Run Swap Router agent server (port 9993)"
+	@echo "  make dev-pool-calculator - Run Pool Calculator agent server (port 9996)"
 	@echo "  make dev-orchestrator    - Run Orchestrator agent server (port 9000)"
-	@echo "  make dev-all-agents      - Run all agents (orchestrator, balance, multichain-liquidity, swap, swap-router)"
+	@echo "  make dev-all-agents      - Run all agents (orchestrator, balance, multichain-liquidity, swap, swap-router, pool-calculator)"
 	@echo ""
 	@echo "Build:"
 	@echo "  make build-frontend      - Build frontend for production"
@@ -132,6 +133,10 @@ dev-swap-router:
 	@echo "Swap Router Agent: http://localhost:9993"
 	cd backend && uv run -m agents.swap_router
 
+dev-pool-calculator:
+	@echo "Starting Pool Calculator agent server..."
+	@echo "Pool Calculator Agent: http://localhost:9996"
+	cd backend && uv run -m agents.pool_calculator
 
 dev-orchestrator:
 	@echo "Starting Orchestrator agent server..."
@@ -146,9 +151,10 @@ dev-all-agents:
 	@echo "Multi-Chain Liquidity Agent: http://localhost:9994"
 	@echo "Swap Agent: http://localhost:9995"
 	@echo "Swap Router Agent: http://localhost:9993"
+	@echo "Pool Calculator Agent: http://localhost:9996"
 	@echo ""
 	@echo "Starting all agents in parallel..."
-	@make -j5 dev-orchestrator dev-balance dev-multichain-liquidity dev-swap dev-swap-router
+	@make -j6 dev-orchestrator dev-balance dev-multichain-liquidity dev-swap dev-swap-router dev-pool-calculator
 
 # Production builds
 build-frontend:
