@@ -1,23 +1,26 @@
 """
-Constants for Parallel Liquidity Agent.
-
-Contains configuration values, default values, and response templates.
+Constants for Multi-Chain Liquidity Agent.
 """
 
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Default values
 DEFAULT_MODEL = "gemini-2.5-flash"
-DEFAULT_USER_ID = "remote_agent"
-DEFAULT_SESSION_ID = "default_session"
+DEFAULT_USER_ID = "multichain_liquidity_user"
+DEFAULT_SESSION_ID = "multichain_liquidity_session"
 DEFAULT_APP_NAME = "agents"
 
 # Agent configuration
-AGENT_NAME = "ParallelLiquidityAgent"
-AGENT_DESCRIPTION = "Fetches liquidity from Hedera, Polygon, and Ethereum chains in parallel"
+AGENT_NAME = "MultiChainLiquidityAgent"
+AGENT_DESCRIPTION = (
+    "Fetches liquidity from Hedera, Polygon, and Ethereum chains sequentially"
+)
 
 # Response type
-RESPONSE_TYPE = "parallel_liquidity"
+RESPONSE_TYPE = "multichain_liquidity"
 
 # Chain names
 CHAIN_HEDERA = "hedera"
@@ -41,15 +44,7 @@ ERROR_CANCEL_NOT_SUPPORTED = "cancel not supported"
 ERROR_VALIDATION_FAILED = "Validation failed"
 ERROR_RESULT_COMBINATION_FAILED = "Failed to combine results from chains"
 
-# Sequential fallback instruction
-SEQUENTIAL_FALLBACK_INSTRUCTION = """
-You are a liquidity query agent. When given a token pair like "ETH/USDT",
-fetch liquidity from Hedera, Polygon, and Ethereum chains.
-Use get_liquidity_hedera for Hedera, get_liquidity_polygon for Polygon, and get_liquidity_ethereum for Ethereum.
-Return combined results in JSON format.
-"""
-
-# Output keys for sub-agents
+# Output keys
 OUTPUT_KEY_HEDERA = "hedera_liquidity"
 OUTPUT_KEY_POLYGON = "polygon_liquidity"
 OUTPUT_KEY_ETHEREUM = "ethereum_liquidity"

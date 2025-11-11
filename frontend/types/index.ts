@@ -146,9 +146,9 @@ export interface LiquidityData {
 }
 
 /**
- * Parallel Liquidity Pair (from Parallel Liquidity Agent)
+ * Multi-Chain Liquidity Pair (from Multi-Chain Liquidity Agent)
  */
-export interface ParallelLiquidityPair {
+export interface MultiChainLiquidityPair {
   base: string;
   quote: string;
   pool_address: string;
@@ -171,28 +171,30 @@ export interface ParallelLiquidityPair {
 }
 
 /**
- * Complete parallel liquidity data from Parallel Liquidity Agent
+ * Complete multi-chain liquidity data from Multi-Chain Liquidity Agent
  */
-export interface ParallelLiquidityData {
-  type: "parallel_liquidity";
-  token_pair: string;
+export interface MultiChainLiquidityData {
+  type: "multichain_liquidity";
+  token_pair?: string;
+  chain?: string;
   chains: {
     hedera?: {
-      pairs: ParallelLiquidityPair[];
+      pairs: MultiChainLiquidityPair[];
       total_pools: number;
     };
     polygon?: {
-      pairs: ParallelLiquidityPair[];
+      pairs: MultiChainLiquidityPair[];
       total_pools: number;
     };
     ethereum?: {
-      pairs: ParallelLiquidityPair[];
+      pairs: MultiChainLiquidityPair[];
       total_pools: number;
     };
   };
-  hedera_pairs: ParallelLiquidityPair[];
-  polygon_pairs: ParallelLiquidityPair[];
-  all_pairs: ParallelLiquidityPair[];
+  hedera_pairs: MultiChainLiquidityPair[];
+  polygon_pairs: MultiChainLiquidityPair[];
+  ethereum_pairs?: MultiChainLiquidityPair[];
+  all_pairs: MultiChainLiquidityPair[];
   error?: string;
 }
 
@@ -434,7 +436,7 @@ export type SwapRequirementsActionRenderProps = ActionRenderProps<
  */
 export interface DeFiChatProps {
   onBalanceUpdate?: (data: BalanceData | null) => void;
-  onLiquidityUpdate?: (data: LiquidityData | ParallelLiquidityData | null) => void;
+  onLiquidityUpdate?: (data: LiquidityData | MultiChainLiquidityData | null) => void;
   onSwapUpdate?: (data: SwapData | null) => void;
   onSwapRouterUpdate?: (data: SwapRouterData | null) => void;
 }

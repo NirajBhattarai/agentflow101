@@ -39,9 +39,7 @@ export function SwapRouterCard({ data }: SwapRouterCardProps) {
   return (
     <div className="bg-white/80 backdrop-blur-md rounded-xl border-2 border-[#DBDBE5] shadow-elevation-md p-6">
       <div className="mb-6">
-        <h2 className="text-2xl font-semibold text-[#010507] mb-2">
-          Swap Router Recommendation
-        </h2>
+        <h2 className="text-2xl font-semibold text-[#010507] mb-2">Swap Router Recommendation</h2>
         <div className="flex items-center gap-4 text-sm text-[#57575B]">
           <span>
             {formatNumber(data.total_input)} {data.token_in}
@@ -81,10 +79,7 @@ export function SwapRouterCard({ data }: SwapRouterCardProps) {
           Recommended Routes ({data.routes.length})
         </h3>
         {data.routes.map((route: SwapRouterRoute, index: number) => (
-          <div
-            key={index}
-            className={`border-2 rounded-lg p-4 ${getChainColor(route.chain)}`}
-          >
+          <div key={index} className={`border-2 rounded-lg p-4 ${getChainColor(route.chain)}`}>
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <span className="font-semibold capitalize">{route.chain}</span>
@@ -138,12 +133,9 @@ export function SwapRouterCard({ data }: SwapRouterCardProps) {
       {data.recommendation_text && (
         <div className="mt-6 bg-gray-50 rounded-lg p-4 border border-gray-200">
           <h4 className="text-sm font-semibold text-[#010507] mb-2">Recommendation</h4>
-          <p className="text-sm text-[#57575B] whitespace-pre-line">
-            {data.recommendation_text}
-          </p>
+          <p className="text-sm text-[#57575B] whitespace-pre-line">{data.recommendation_text}</p>
         </div>
       )}
     </div>
   );
 }
-

@@ -10,12 +10,10 @@ import { A2AMiddlewareAgent } from "@ag-ui/a2a-middleware";
 export async function POST(request: NextRequest) {
   // STEP 1: Define A2A agent URLs
   const balanceAgentUrl = process.env.BALANCE_AGENT_URL || "http://localhost:9997";
-  const liquidityAgentUrl = process.env.LIQUIDITY_AGENT_URL || "http://localhost:9998";
   const swapAgentUrl = process.env.SWAP_AGENT_URL || "http://localhost:9995";
-  const parallelLiquidityAgentUrl =
-    process.env.PARALLEL_LIQUIDITY_AGENT_URL || "http://localhost:9994";
-  const swapRouterAgentUrl =
-    process.env.SWAP_ROUTER_AGENT_URL || "http://localhost:9993";
+  const multichainLiquidityAgentUrl =
+    process.env.MULTICHAIN_LIQUIDITY_AGENT_URL || "http://localhost:9994";
+  const swapRouterAgentUrl = process.env.SWAP_ROUTER_AGENT_URL || "http://localhost:9993";
 
   // STEP 2: Define orchestrator URL (speaks AG-UI Protocol)
   const orchestratorUrl = process.env.ORCHESTRATOR_URL || "http://localhost:9000";
@@ -31,11 +29,10 @@ export async function POST(request: NextRequest) {
   // 4. Routing messages between orchestrator and A2A agents
   const a2aMiddlewareAgent = new A2AMiddlewareAgent({
     description:
-      "DeFi orchestrator with balance, liquidity, parallel liquidity, swap, and swap router agents (Hedera, Polygon, Ethereum)",
+      "DeFi orchestrator with balance, multi-chain liquidity, swap, and swap router agents (Hedera, Polygon, Ethereum)",
     agentUrls: [
       balanceAgentUrl, // Balance Agent (ADK) - Port 9997
-      liquidityAgentUrl, // Liquidity Agent (ADK) - Port 9998
-      parallelLiquidityAgentUrl, // Parallel Liquidity Agent (ADK) - Port 9994
+      multichainLiquidityAgentUrl, // Multi-Chain Liquidity Agent (ADK) - Port 9994
       swapAgentUrl, // Swap Agent (ADK) - Port 9995
       swapRouterAgentUrl, // Swap Router Agent (ADK) - Port 9993
     ],
@@ -50,18 +47,14 @@ export async function POST(request: NextRequest) {
          - Can query specific chains or get balances from all chains
          - Provides comprehensive balance data including native token balances, token balances, and USD values
 
-      2. **Liquidity Agent** (ADK)
-         - Fetches liquidity information from different blockchain chains including Polygon and Hedera
+      2. **Multi-Chain Liquidity Agent** (ADK)
+         - Fetches liquidity information sequentially from multiple blockchain chains (Hedera, Polygon, Ethereum)
          - Can query specific chains or get liquidity from all chains
-         - Provides comprehensive liquidity data including pool addresses, DEX names, TVL, and 24h volume
-
-      3. **Parallel Liquidity Agent** (ADK + ParallelAgent)
-         - Fetches liquidity from multiple chains IN PARALLEL for faster results
-         - When given a token pair like "ETH/USDT", fetches from Hedera (SaucerSwap) and Polygon simultaneously
-         - Use this agent when you need liquidity for a specific token pair across multiple chains
-         - Format: "Get liquidity for ETH/USDT" or "Find liquidity pools for HBAR/USDC"
-         - Returns combined results from all chains in a single response
-         - **RECOMMENDED** for token pair queries across multiple chains (faster than sequential queries)
+         - Supports both token pair queries (e.g., "ETH/USDT") and general chain queries
+         - Provides comprehensive liquidity data including pool addresses, DEX names, TVL, reserves, liquidity, and slot0 data
+         - Format: "Get liquidity for [token_pair]" or "Get liquidity on [chain]"
+         - Example queries: "Get liquidity for ETH/USDT", "Find liquidity pools for HBAR/USDC", "Get liquidity on Polygon"
+         - Returns combined results from all queried chains in a single response
 
       4. **Swap Router Agent** (ADK)
          - Intelligent multi-chain swap routing optimizer for large swaps
@@ -126,13 +119,12 @@ export async function POST(request: NextRequest) {
          - Wait for liquidity data including pools, DEXs, TVL, reserves, and fees
          - Present liquidity information in a clear, organized format
 
-      2b. **Parallel Liquidity Agent** - If user requests liquidity for a token pair across multiple chains
-         - Use this agent when user asks for liquidity for a specific token pair (e.g., "ETH/USDT", "HBAR/USDC")
-         - Format: "Get liquidity for [token_pair]" (e.g., "Get liquidity for ETH/USDT")
-         - This agent fetches from Hedera and Polygon IN PARALLEL (faster than sequential)
-         - Returns combined results from both chains in a single response
-         - Example queries: "Get liquidity for ETH/USDT", "Find liquidity pools for HBAR/USDC"
-         - **PREFER** this agent over Liquidity Agent when user specifies a token pair and wants cross-chain comparison
+      2. **Multi-Chain Liquidity Agent** - For all liquidity queries
+         - Use this agent for all liquidity queries (with or without token pairs)
+         - If user mentions a token pair (e.g., "ETH/USDT", "HBAR/USDC"), extract and normalize it
+         - Format: "Get liquidity for [token_pair]" or "Get liquidity on [chain]"
+         - Example queries: "Get liquidity for ETH/USDT", "Find liquidity pools for HBAR/USDC", "Get liquidity on Polygon"
+         - Returns combined results from all queried chains in a single response
 
       3. **Swap Agent** - If user requests to swap tokens
          - **Step 1**: First check balance using Balance Agent:
@@ -178,9 +170,9 @@ export async function POST(request: NextRequest) {
       - "What's my HBAR balance for account 0.0.123456?" -> gather_balance_requirements with accountAddress: "0.0.123456", chain: "hedera"
       - "Get balance for 0x1234... on all chains" -> gather_balance_requirements with accountAddress: "0x1234...", chain: "all"
       - "Check USDC balance" -> gather_balance_requirements with tokenAddress: "USDC"
-      - "Get liquidity for HBAR/USDC" -> Parallel Liquidity Agent (faster, parallel execution)
-      - "Show me all pools on Hedera" -> Liquidity Agent, chain: "hedera"
-      - "Get liquidity for ETH/USDT" -> Parallel Liquidity Agent (fetches from both chains in parallel)
+      - "Get liquidity for HBAR/USDC" -> Multi-Chain Liquidity Agent
+      - "Show me all pools on Hedera" -> Multi-Chain Liquidity Agent, query: "Get liquidity on hedera"
+      - "Get liquidity for ETH/USDT" -> Multi-Chain Liquidity Agent
       - "Swap 0.01 HBAR to USDC" -> gather_swap_requirements, then Swap Agent
       - "I want to swap USDC for HBAR on Hedera" -> gather_swap_requirements, then Swap Agent
       - "Swap 50 MATIC to USDC on Polygon" -> gather_swap_requirements, then Swap Agent

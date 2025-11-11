@@ -8,13 +8,21 @@ import { SwapCard } from "@/components/features/swap";
 import { LiquidityCard } from "@/components/features/liquidity";
 import { SwapRouterCard } from "@/components/features/swap_router";
 import { WalletConnect, Logo } from "@/components/shared";
-import type { BalanceData, LiquidityData, ParallelLiquidityData, SwapData, SwapRouterData } from "@/types";
+import type {
+  BalanceData,
+  LiquidityData,
+  MultiChainLiquidityData,
+  SwapData,
+  SwapRouterData,
+} from "@/types";
 import "../copilot.css";
 import Link from "next/link";
 
 export default function ChatPage() {
   const [balanceData, setBalanceData] = useState<BalanceData | null>(null);
-  const [liquidityData, setLiquidityData] = useState<LiquidityData | ParallelLiquidityData | null>(null);
+  const [liquidityData, setLiquidityData] = useState<
+    LiquidityData | MultiChainLiquidityData | null
+  >(null);
   const [swapData, setSwapData] = useState<SwapData | null>(null);
   const [swapRouterData, setSwapRouterData] = useState<SwapRouterData | null>(null);
   const { address } = useAppKitAccount?.() || ({} as any);
@@ -164,8 +172,8 @@ export default function ChatPage() {
               <div className="mb-8">
                 <h2 className="text-3xl font-semibold text-[#010507] mb-2">Your DeFi Data</h2>
                 <p className="text-[#57575B]">
-                  Multi-agent coordination: Balance, Liquidity, Parallel Liquidity, and Swap
-                  agents with A2A Protocol
+                  Multi-agent coordination: Balance, Liquidity, Parallel Liquidity, and Swap agents
+                  with A2A Protocol
                 </p>
               </div>
 
@@ -177,7 +185,9 @@ export default function ChatPage() {
                       Start Querying Your DeFi Data
                     </h3>
                     <p className="text-[#57575B] max-w-md">
-                      Ask the assistant to check your balance, get liquidity information, or swap tokens. Watch as specialized agents collaborate through A2A Protocol to fetch your on-chain data and execute DeFi operations.
+                      Ask the assistant to check your balance, get liquidity information, or swap
+                      tokens. Watch as specialized agents collaborate through A2A Protocol to fetch
+                      your on-chain data and execute DeFi operations.
                     </p>
                   </div>
                 </div>

@@ -154,11 +154,11 @@ def _get_token_balance(w3: Web3, account_address: str, token_address: str) -> di
         if token_data["address"].lower() == token_address.lower():
             token_symbol = symbol
             break
-    
+
     # If token_address is a symbol, use it directly
     if token_address.upper() in POLYGON_TOKENS:
         token_symbol = token_address.upper()
-    
+
     if token_symbol:
         # Use shared balance tool
         result = get_token_balance_polygon(account_address, token_symbol)
@@ -181,7 +181,7 @@ def _get_token_balance(w3: Web3, account_address: str, token_address: str) -> di
                 "decimals": result.get("decimals", 18),
                 "error": result.get("error", "Unknown error"),
             }
-    
+
     # Fallback to original implementation for unknown tokens
     token_address = _validate_and_checksum_token_address(w3, token_address)
     try:
@@ -220,25 +220,31 @@ def _get_all_token_balances(w3: Web3, account_address: str) -> list:
         result = get_token_balance_polygon(account_address, token_symbol)
         if "error" not in result:
             # Convert shared tool format to agent format
-            balances.append({
-                "token_type": "token",
-                "token_symbol": result["token_symbol"],
-                "token_address": result["token_address"],
-                "balance": result["balance"],
-                "balance_raw": result["balance_raw"],
-                "decimals": result["decimals"],
-            })
+            balances.append(
+                {
+                    "token_type": "token",
+                    "token_symbol": result["token_symbol"],
+                    "token_address": result["token_address"],
+                    "balance": result["balance"],
+                    "balance_raw": result["balance_raw"],
+                    "decimals": result["decimals"],
+                }
+            )
         else:
             # Include error entry
-            balances.append({
-                "token_type": "token",
-                "token_symbol": result["token_symbol"],
-                "token_address": POLYGON_TOKENS.get(token_symbol, {}).get("address", "0x0"),
-                "balance": "0",
-                "balance_raw": "0",
-                "decimals": 18,
-                "error": result.get("error", "Unknown error"),
-            })
+            balances.append(
+                {
+                    "token_type": "token",
+                    "token_symbol": result["token_symbol"],
+                    "token_address": POLYGON_TOKENS.get(token_symbol, {}).get(
+                        "address", "0x0"
+                    ),
+                    "balance": "0",
+                    "balance_raw": "0",
+                    "decimals": 18,
+                    "error": result.get("error", "Unknown error"),
+                }
+            )
     return balances
 
 

@@ -6,10 +6,10 @@
  */
 
 import React from "react";
-import { LiquidityData, ParallelLiquidityData } from "@/types";
+import { LiquidityData, MultiChainLiquidityData } from "@/types";
 
 interface LiquidityCardProps {
-  data: LiquidityData | ParallelLiquidityData;
+  data: LiquidityData | MultiChainLiquidityData;
 }
 
 /**
@@ -77,9 +77,9 @@ const formatLargeNumber = (value: number | string): string => {
 
 export const LiquidityCard: React.FC<LiquidityCardProps> = ({ data }) => {
   // Check if it's parallel liquidity data
-  const isParallel = data.type === "parallel_liquidity";
-  const parallelData = isParallel ? (data as ParallelLiquidityData) : null;
-  const regularData = !isParallel ? (data as LiquidityData) : null;
+  const isMultiChain = data.type === "multichain_liquidity";
+  const multiChainData = isMultiChain ? (data as MultiChainLiquidityData) : null;
+  const regularData = !isMultiChain ? (data as LiquidityData) : null;
 
   // Error display
   if (data.error) {
@@ -94,11 +94,12 @@ export const LiquidityCard: React.FC<LiquidityCardProps> = ({ data }) => {
     );
   }
 
-  // Parallel Liquidity Display
-  if (parallelData) {
-    const { token_pair, hedera_pairs, polygon_pairs, all_pairs, chains } = parallelData;
-    const [base, quote] = token_pair.split("/");
-    const ethereum_pairs = chains?.ethereum?.pairs || [];
+  // Multi-Chain Liquidity Display
+  if (multiChainData) {
+    const { token_pair, chain, hedera_pairs, polygon_pairs, ethereum_pairs, all_pairs, chains } =
+      multiChainData;
+    const [base, quote] = token_pair ? token_pair.split("/") : ["", ""];
+    const ethereumPairs = ethereum_pairs || chains?.ethereum?.pairs || [];
 
     return (
       <div className="bg-white/60 backdrop-blur-md rounded-xl p-6 my-3 border-2 border-[#DBDBE5] shadow-elevation-md animate-fade-in-up">
@@ -111,12 +112,21 @@ export const LiquidityCard: React.FC<LiquidityCardProps> = ({ data }) => {
                   <span className="text-2xl">💧🚀</span>
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-[#010507] mb-1">Parallel Liquidity</h2>
+                  <h2 className="text-2xl font-bold text-[#010507] mb-1">Multi-Chain Liquidity</h2>
                   <div className="flex items-center gap-2">
-                    <span className="text-lg font-semibold text-[#010507]">
-                      {base}/{quote}
-                    </span>
-                    <span className="text-xs text-[#838389]">across multiple chains</span>
+                    {token_pair && (
+                      <>
+                        <span className="text-lg font-semibold text-[#010507]">
+                          {base}/{quote}
+                        </span>
+                        <span className="text-xs text-[#838389]">across multiple chains</span>
+                      </>
+                    )}
+                    {!token_pair && chain && (
+                      <span className="text-lg font-semibold text-[#010507]">
+                        {chain.charAt(0).toUpperCase() + chain.slice(1)} Chain
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -145,71 +155,76 @@ export const LiquidityCard: React.FC<LiquidityCardProps> = ({ data }) => {
             {hedera_pairs.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {hedera_pairs.map((pair, index) => {
-                const chainStyle = getChainColor("hedera");
-                return (
-                  <div
-                    key={index}
-                    className="bg-white/90 backdrop-blur-sm rounded-xl p-4 shadow-elevation-sm border-2 border-[#E9E9EF] hover:border-purple-300 hover:shadow-elevation-md transition-all duration-200"
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-lg font-bold text-[#010507]">{pair.dex}</span>
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-bold border border-purple-300">
-                            {pair.fee_bps / 100}%
-                          </span>
-                        </div>
-                        <div
-                          className="text-xs text-[#838389] font-mono truncate"
-                          title={pair.pool_address}
-                        >
-                          {pair.pool_address.slice(0, 20)}...
-                        </div>
-                      </div>
-                    </div>
+                  const chainStyle = getChainColor("hedera");
+                  return (
                     <div
-                      className={`${chainStyle.light} rounded-lg p-3 border ${chainStyle.border}`}
+                      key={index}
+                      className="bg-white/90 backdrop-blur-sm rounded-xl p-4 shadow-elevation-sm border-2 border-[#E9E9EF] hover:border-purple-300 hover:shadow-elevation-md transition-all duration-200"
                     >
-                      <div className="grid grid-cols-2 gap-2 mb-2">
-                        <div>
-                          <div className="text-[10px] text-[#57575B] mb-1">TVL</div>
-                          <div className="text-sm font-bold text-[#010507]">
-                            {formatNumber(pair.tvl_usd)}
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-lg font-bold text-[#010507]">{pair.dex}</span>
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-bold border border-purple-300">
+                              {pair.fee_bps / 100}%
+                            </span>
                           </div>
-                        </div>
-                        <div>
-                          <div className="text-[10px] text-[#57575B] mb-1">Reserves</div>
-                          <div className="text-xs font-semibold text-[#010507]">
-                            {formatLargeNumber(pair.reserve_base)} {pair.base}
-                          </div>
-                          <div className="text-xs font-semibold text-[#010507]">
-                            {formatLargeNumber(pair.reserve_quote)} {pair.quote}
+                          <div
+                            className="text-xs text-[#838389] font-mono truncate"
+                            title={pair.pool_address}
+                          >
+                            {pair.pool_address.slice(0, 20)}...
                           </div>
                         </div>
                       </div>
-                      {pair.slot0 && (
-                        <div className="mt-2 pt-2 border-t border-purple-200">
-                          <div className="text-[10px] text-[#57575B] mb-1">Slot0 Data</div>
-                          <div className="text-xs font-mono text-[#010507] space-y-1">
-                            <div>Tick: {pair.slot0.tick}</div>
-                            <div className="truncate" title={pair.slot0.sqrtPriceX96}>
-                              sqrtPriceX96: {pair.slot0.sqrtPriceX96?.slice(0, 20)}...
+                      <div
+                        className={`${chainStyle.light} rounded-lg p-3 border ${chainStyle.border}`}
+                      >
+                        <div className="grid grid-cols-2 gap-2 mb-2">
+                          <div>
+                            <div className="text-[10px] text-[#57575B] mb-1">TVL</div>
+                            <div className="text-sm font-bold text-[#010507]">
+                              {formatNumber(pair.tvl_usd)}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-[10px] text-[#57575B] mb-1">Reserves</div>
+                            <div className="text-xs font-semibold text-[#010507]">
+                              {formatLargeNumber(pair.reserve_base)} {pair.base}
+                            </div>
+                            <div className="text-xs font-semibold text-[#010507]">
+                              {formatLargeNumber(pair.reserve_quote)} {pair.quote}
                             </div>
                           </div>
                         </div>
-                      )}
-                      {pair.liquidity && (
-                        <div className="mt-2 pt-2 border-t border-purple-200">
-                          <div className="text-[10px] text-[#57575B] mb-1">Liquidity</div>
-                          <div className="text-xs font-mono text-[#010507] truncate" title={pair.liquidity}>
-                            {pair.liquidity.length > 20 ? `${pair.liquidity.slice(0, 20)}...` : pair.liquidity}
+                        {pair.slot0 && (
+                          <div className="mt-2 pt-2 border-t border-purple-200">
+                            <div className="text-[10px] text-[#57575B] mb-1">Slot0 Data</div>
+                            <div className="text-xs font-mono text-[#010507] space-y-1">
+                              <div>Tick: {pair.slot0.tick}</div>
+                              <div className="truncate" title={pair.slot0.sqrtPriceX96}>
+                                sqrtPriceX96: {pair.slot0.sqrtPriceX96?.slice(0, 20)}...
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        )}
+                        {pair.liquidity && (
+                          <div className="mt-2 pt-2 border-t border-purple-200">
+                            <div className="text-[10px] text-[#57575B] mb-1">Liquidity</div>
+                            <div
+                              className="text-xs font-mono text-[#010507] truncate"
+                              title={pair.liquidity}
+                            >
+                              {pair.liquidity.length > 20
+                                ? `${pair.liquidity.slice(0, 20)}...`
+                                : pair.liquidity}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
               </div>
             ) : (
               <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border-2 border-dashed border-purple-200 text-center">
@@ -233,71 +248,76 @@ export const LiquidityCard: React.FC<LiquidityCardProps> = ({ data }) => {
             {polygon_pairs.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {polygon_pairs.map((pair, index) => {
-                const chainStyle = getChainColor("polygon");
-                return (
-                  <div
-                    key={index}
-                    className="bg-white/90 backdrop-blur-sm rounded-xl p-4 shadow-elevation-sm border-2 border-[#E9E9EF] hover:border-blue-300 hover:shadow-elevation-md transition-all duration-200"
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-lg font-bold text-[#010507]">{pair.dex}</span>
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-bold border border-blue-300">
-                            {pair.fee_bps / 100}%
-                          </span>
-                        </div>
-                        <div
-                          className="text-xs text-[#838389] font-mono truncate"
-                          title={pair.pool_address}
-                        >
-                          {pair.pool_address.slice(0, 20)}...
-                        </div>
-                      </div>
-                    </div>
+                  const chainStyle = getChainColor("polygon");
+                  return (
                     <div
-                      className={`${chainStyle.light} rounded-lg p-3 border ${chainStyle.border}`}
+                      key={index}
+                      className="bg-white/90 backdrop-blur-sm rounded-xl p-4 shadow-elevation-sm border-2 border-[#E9E9EF] hover:border-blue-300 hover:shadow-elevation-md transition-all duration-200"
                     >
-                      <div className="grid grid-cols-2 gap-2 mb-2">
-                        <div>
-                          <div className="text-[10px] text-[#57575B] mb-1">TVL</div>
-                          <div className="text-sm font-bold text-[#010507]">
-                            {formatNumber(pair.tvl_usd)}
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-lg font-bold text-[#010507]">{pair.dex}</span>
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-bold border border-blue-300">
+                              {pair.fee_bps / 100}%
+                            </span>
                           </div>
-                        </div>
-                        <div>
-                          <div className="text-[10px] text-[#57575B] mb-1">Reserves</div>
-                          <div className="text-xs font-semibold text-[#010507]">
-                            {formatLargeNumber(pair.reserve_base)} {pair.base}
-                          </div>
-                          <div className="text-xs font-semibold text-[#010507]">
-                            {formatLargeNumber(pair.reserve_quote)} {pair.quote}
+                          <div
+                            className="text-xs text-[#838389] font-mono truncate"
+                            title={pair.pool_address}
+                          >
+                            {pair.pool_address.slice(0, 20)}...
                           </div>
                         </div>
                       </div>
-                      {pair.slot0 && (
-                        <div className="mt-2 pt-2 border-t border-blue-200">
-                          <div className="text-[10px] text-[#57575B] mb-1">Slot0 Data</div>
-                          <div className="text-xs font-mono text-[#010507] space-y-1">
-                            <div>Tick: {pair.slot0.tick}</div>
-                            <div className="truncate" title={pair.slot0.sqrtPriceX96}>
-                              sqrtPriceX96: {pair.slot0.sqrtPriceX96?.slice(0, 20)}...
+                      <div
+                        className={`${chainStyle.light} rounded-lg p-3 border ${chainStyle.border}`}
+                      >
+                        <div className="grid grid-cols-2 gap-2 mb-2">
+                          <div>
+                            <div className="text-[10px] text-[#57575B] mb-1">TVL</div>
+                            <div className="text-sm font-bold text-[#010507]">
+                              {formatNumber(pair.tvl_usd)}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-[10px] text-[#57575B] mb-1">Reserves</div>
+                            <div className="text-xs font-semibold text-[#010507]">
+                              {formatLargeNumber(pair.reserve_base)} {pair.base}
+                            </div>
+                            <div className="text-xs font-semibold text-[#010507]">
+                              {formatLargeNumber(pair.reserve_quote)} {pair.quote}
                             </div>
                           </div>
                         </div>
-                      )}
-                      {pair.liquidity && (
-                        <div className="mt-2 pt-2 border-t border-blue-200">
-                          <div className="text-[10px] text-[#57575B] mb-1">Liquidity</div>
-                          <div className="text-xs font-mono text-[#010507] truncate" title={pair.liquidity}>
-                            {pair.liquidity.length > 20 ? `${pair.liquidity.slice(0, 20)}...` : pair.liquidity}
+                        {pair.slot0 && (
+                          <div className="mt-2 pt-2 border-t border-blue-200">
+                            <div className="text-[10px] text-[#57575B] mb-1">Slot0 Data</div>
+                            <div className="text-xs font-mono text-[#010507] space-y-1">
+                              <div>Tick: {pair.slot0.tick}</div>
+                              <div className="truncate" title={pair.slot0.sqrtPriceX96}>
+                                sqrtPriceX96: {pair.slot0.sqrtPriceX96?.slice(0, 20)}...
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        )}
+                        {pair.liquidity && (
+                          <div className="mt-2 pt-2 border-t border-blue-200">
+                            <div className="text-[10px] text-[#57575B] mb-1">Liquidity</div>
+                            <div
+                              className="text-xs font-mono text-[#010507] truncate"
+                              title={pair.liquidity}
+                            >
+                              {pair.liquidity.length > 20
+                                ? `${pair.liquidity.slice(0, 20)}...`
+                                : pair.liquidity}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
               </div>
             ) : (
               <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border-2 border-dashed border-blue-200 text-center">
@@ -307,85 +327,90 @@ export const LiquidityCard: React.FC<LiquidityCardProps> = ({ data }) => {
           </div>
         )}
 
-        {(ethereum_pairs.length > 0 || chains?.ethereum) && (
+        {(ethereumPairs.length > 0 || chains?.ethereum) && (
           <div className="mb-6">
             <div className="mb-4">
               <div className="bg-indigo-50 rounded-lg p-3 border border-indigo-200 inline-flex items-center gap-2">
                 <span className="text-lg">💎</span>
                 <h3 className="text-base font-bold text-indigo-700">Ethereum Chain</h3>
                 <span className="text-xs text-indigo-600 bg-white/60 px-2 py-1 rounded">
-                  {ethereum_pairs.length} pool{ethereum_pairs.length !== 1 ? "s" : ""}
+                  {ethereumPairs.length} pool{ethereumPairs.length !== 1 ? "s" : ""}
                 </span>
               </div>
             </div>
-            {ethereum_pairs.length > 0 ? (
+            {ethereumPairs.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {ethereum_pairs.map((pair: any, index: number) => {
-                const chainStyle = getChainColor("ethereum");
-                return (
-                  <div
-                    key={index}
-                    className="bg-white/90 backdrop-blur-sm rounded-xl p-4 shadow-elevation-sm border-2 border-[#E9E9EF] hover:border-indigo-300 hover:shadow-elevation-md transition-all duration-200"
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-lg font-bold text-[#010507]">{pair.dex}</span>
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 font-bold border border-indigo-300">
-                            {pair.fee_bps / 100}%
-                          </span>
-                        </div>
-                        <div
-                          className="text-xs text-[#838389] font-mono truncate"
-                          title={pair.pool_address}
-                        >
-                          {pair.pool_address.slice(0, 20)}...
-                        </div>
-                      </div>
-                    </div>
+                {ethereumPairs.map((pair: any, index: number) => {
+                  const chainStyle = getChainColor("ethereum");
+                  return (
                     <div
-                      className={`${chainStyle.light} rounded-lg p-3 border ${chainStyle.border}`}
+                      key={index}
+                      className="bg-white/90 backdrop-blur-sm rounded-xl p-4 shadow-elevation-sm border-2 border-[#E9E9EF] hover:border-indigo-300 hover:shadow-elevation-md transition-all duration-200"
                     >
-                      <div className="grid grid-cols-2 gap-2 mb-2">
-                        <div>
-                          <div className="text-[10px] text-[#57575B] mb-1">TVL</div>
-                          <div className="text-sm font-bold text-[#010507]">
-                            {formatNumber(pair.tvl_usd)}
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-lg font-bold text-[#010507]">{pair.dex}</span>
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 font-bold border border-indigo-300">
+                              {pair.fee_bps / 100}%
+                            </span>
                           </div>
-                        </div>
-                        <div>
-                          <div className="text-[10px] text-[#57575B] mb-1">Reserves</div>
-                          <div className="text-xs font-semibold text-[#010507]">
-                            {formatLargeNumber(pair.reserve_base)} {pair.base}
-                          </div>
-                          <div className="text-xs font-semibold text-[#010507]">
-                            {formatLargeNumber(pair.reserve_quote)} {pair.quote}
+                          <div
+                            className="text-xs text-[#838389] font-mono truncate"
+                            title={pair.pool_address}
+                          >
+                            {pair.pool_address.slice(0, 20)}...
                           </div>
                         </div>
                       </div>
-                      {pair.slot0 && (
-                        <div className="mt-2 pt-2 border-t border-indigo-200">
-                          <div className="text-[10px] text-[#57575B] mb-1">Slot0 Data</div>
-                          <div className="text-xs font-mono text-[#010507] space-y-1">
-                            <div>Tick: {pair.slot0.tick}</div>
-                            <div className="truncate" title={pair.slot0.sqrtPriceX96}>
-                              sqrtPriceX96: {pair.slot0.sqrtPriceX96?.slice(0, 20)}...
+                      <div
+                        className={`${chainStyle.light} rounded-lg p-3 border ${chainStyle.border}`}
+                      >
+                        <div className="grid grid-cols-2 gap-2 mb-2">
+                          <div>
+                            <div className="text-[10px] text-[#57575B] mb-1">TVL</div>
+                            <div className="text-sm font-bold text-[#010507]">
+                              {formatNumber(pair.tvl_usd)}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-[10px] text-[#57575B] mb-1">Reserves</div>
+                            <div className="text-xs font-semibold text-[#010507]">
+                              {formatLargeNumber(pair.reserve_base)} {pair.base}
+                            </div>
+                            <div className="text-xs font-semibold text-[#010507]">
+                              {formatLargeNumber(pair.reserve_quote)} {pair.quote}
                             </div>
                           </div>
                         </div>
-                      )}
-                      {pair.liquidity && (
-                        <div className="mt-2 pt-2 border-t border-indigo-200">
-                          <div className="text-[10px] text-[#57575B] mb-1">Liquidity</div>
-                          <div className="text-xs font-mono text-[#010507] truncate" title={pair.liquidity}>
-                            {pair.liquidity.length > 20 ? `${pair.liquidity.slice(0, 20)}...` : pair.liquidity}
+                        {pair.slot0 && (
+                          <div className="mt-2 pt-2 border-t border-indigo-200">
+                            <div className="text-[10px] text-[#57575B] mb-1">Slot0 Data</div>
+                            <div className="text-xs font-mono text-[#010507] space-y-1">
+                              <div>Tick: {pair.slot0.tick}</div>
+                              <div className="truncate" title={pair.slot0.sqrtPriceX96}>
+                                sqrtPriceX96: {pair.slot0.sqrtPriceX96?.slice(0, 20)}...
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        )}
+                        {pair.liquidity && (
+                          <div className="mt-2 pt-2 border-t border-indigo-200">
+                            <div className="text-[10px] text-[#57575B] mb-1">Liquidity</div>
+                            <div
+                              className="text-xs font-mono text-[#010507] truncate"
+                              title={pair.liquidity}
+                            >
+                              {pair.liquidity.length > 20
+                                ? `${pair.liquidity.slice(0, 20)}...`
+                                : pair.liquidity}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
               </div>
             ) : (
               <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border-2 border-dashed border-indigo-200 text-center">

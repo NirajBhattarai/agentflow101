@@ -4,7 +4,6 @@
         test-liquidity-all-chains test-balance test-balance-polygon test-balance-hedera \
         test-balance-all-chains test-swap test-swap-unit test-swap-integration \
         test-orchestrator test-orchestrator-unit test-orchestrator-integration \
-        test-parallel-liquidity test-parallel-liquidity-unit test-parallel-liquidity-integration \
         test-pools test-liquidity-blockchain test-tokens test-tokens-constants test-tokens-address \
         test-balance-shared \
         clean dev-travily dev-liquidity dev-parallel-liquidity dev-balance dev-swap dev-swap-router \
@@ -26,13 +25,12 @@ help:
 	@echo ""
 	@echo "Agents:"
 	@echo "  make dev-travily         - Run Travily agent server (port 9999)"
-	@echo "  make dev-liquidity       - Run Liquidity agent server (port 9998)"
-	@echo "  make dev-parallel-liquidity - Run Parallel Liquidity agent server (port 9994)"
+	@echo "  make dev-multichain-liquidity - Run Multi-Chain Liquidity agent server (port 9994)"
 	@echo "  make dev-balance         - Run Balance agent server (port 9997)"
 	@echo "  make dev-swap            - Run Swap agent server (port 9995)"
 	@echo "  make dev-swap-router     - Run Swap Router agent server (port 9993)"
 	@echo "  make dev-orchestrator    - Run Orchestrator agent server (port 9000)"
-	@echo "  make dev-all-agents      - Run all agents (orchestrator, balance, liquidity, parallel-liquidity, swap, swap-router)"
+	@echo "  make dev-all-agents      - Run all agents (orchestrator, balance, multichain-liquidity, swap, swap-router)"
 	@echo ""
 	@echo "Build:"
 	@echo "  make build-frontend      - Build frontend for production"
@@ -114,10 +112,10 @@ dev-travily:
 	@echo "Travily Agent: http://localhost:9999"
 	cd travily && uv run .
 
-dev-liquidity:
-	@echo "Starting Liquidity agent server..."
-	@echo "Liquidity Agent: http://localhost:9998"
-	cd backend && uv run -m agents.liquidity
+dev-multichain-liquidity:
+	@echo "Starting Multi-Chain Liquidity agent server..."
+	@echo "Multi-Chain Liquidity Agent: http://localhost:9994"
+	cd backend && uv run -m agents.multichain_liquidity
 
 dev-balance:
 	@echo "Starting Balance agent server..."
@@ -134,10 +132,6 @@ dev-swap-router:
 	@echo "Swap Router Agent: http://localhost:9993"
 	cd backend && uv run -m agents.swap_router
 
-dev-parallel-liquidity:
-	@echo "Starting Parallel Liquidity agent server..."
-	@echo "Parallel Liquidity Agent: http://localhost:9994"
-	cd backend && uv run -m agents.parallel_liquidity
 
 dev-orchestrator:
 	@echo "Starting Orchestrator agent server..."
@@ -149,13 +143,12 @@ dev-all-agents:
 	@echo "Starting all agent servers..."
 	@echo "Orchestrator: http://localhost:9000"
 	@echo "Balance Agent: http://localhost:9997"
-	@echo "Liquidity Agent: http://localhost:9998"
-	@echo "Parallel Liquidity Agent: http://localhost:9994"
+	@echo "Multi-Chain Liquidity Agent: http://localhost:9994"
 	@echo "Swap Agent: http://localhost:9995"
 	@echo "Swap Router Agent: http://localhost:9993"
 	@echo ""
 	@echo "Starting all agents in parallel..."
-	@make -j6 dev-orchestrator dev-balance dev-liquidity dev-parallel-liquidity dev-swap dev-swap-router
+	@make -j5 dev-orchestrator dev-balance dev-multichain-liquidity dev-swap dev-swap-router
 
 # Production builds
 build-frontend:

@@ -49,7 +49,7 @@ class TestPolygonBalance:
 
         # Verify all token addresses from constants are present
         expected_addresses = {
-            Web3.to_checksum_address(token_data["address"]) 
+            Web3.to_checksum_address(token_data["address"])
             for token_data in POLYGON_TOKENS.values()
         }
         actual_addresses = {

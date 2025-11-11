@@ -23,7 +23,7 @@ import type {
   DeFiChatProps,
   BalanceData,
   LiquidityData,
-  ParallelLiquidityData,
+  MultiChainLiquidityData,
   SwapData,
   SwapRouterData,
   MessageActionRenderProps,
@@ -64,18 +64,22 @@ const ChatInner = ({
                 onBalanceUpdate?.(parsed as BalanceData);
               }
               // Check if it's liquidity data (regular or parallel)
-              else if (parsed.type === "parallel_liquidity" && parsed.token_pair) {
-                console.log("💧 Parallel Liquidity Data Received:", {
+              else if (parsed.type === "multichain_liquidity") {
+                console.log("💧 Multi-Chain Liquidity Data Received:", {
                   token_pair: parsed.token_pair,
+                  chain: parsed.chain,
                   chains: parsed.chains,
                   hedera_pairs: parsed.hedera_pairs?.length || 0,
                   polygon_pairs: parsed.polygon_pairs?.length || 0,
-                  ethereum_pairs: parsed.chains?.ethereum?.pairs?.length || 0,
+                  ethereum_pairs: parsed.ethereum_pairs?.length || 0,
                   all_pairs: parsed.all_pairs?.length || 0,
                 });
-                onLiquidityUpdate?.(parsed as ParallelLiquidityData);
-              }
-              else if (parsed.type === "liquidity" && parsed.pairs && Array.isArray(parsed.pairs)) {
+                onLiquidityUpdate?.(parsed as MultiChainLiquidityData);
+              } else if (
+                parsed.type === "liquidity" &&
+                parsed.pairs &&
+                Array.isArray(parsed.pairs)
+              ) {
                 onLiquidityUpdate?.(parsed as LiquidityData);
               }
               // Check if it's swap router data

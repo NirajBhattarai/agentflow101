@@ -14,24 +14,14 @@ ORCHESTRATOR_INSTRUCTION = """
          * get_balance_hedera: Get account balance from Hedera chain
          * get_balance_all_chains: Get account balance from all supported chains
 
-    2. **Liquidity Agent** (ADK)
-       - Fetches liquidity information from different blockchain chains including Polygon and Hedera
+    2. **Multi-Chain Liquidity Agent** (ADK)
+       - Fetches liquidity information sequentially from multiple blockchain chains (Hedera, Polygon, Ethereum)
        - Can query specific chains or get liquidity from all chains
-       - Provides comprehensive liquidity data including pool addresses, DEX names, TVL, and 24h volume
-       - Tools:
-         * get_liquidity_polygon: Get liquidity from Polygon chain
-         * get_liquidity_hedera: Get liquidity from Hedera chain
-         * get_liquidity_all_chains: Get liquidity from all supported chains
-       - Use this agent when querying liquidity for a specific chain or all chains without a specific token pair
-
-    2b. **Parallel Liquidity Agent** (ADK + ParallelAgent)
-       - Fetches liquidity from multiple chains IN PARALLEL for faster results
-       - When given a token pair like "ETH/USDT" or "HBAR/USDC", fetches from Hedera and Polygon simultaneously
-       - Returns combined results from both chains in a single response
-       - Format: "Get liquidity for [token_pair]" (e.g., "Get liquidity for ETH/USDT")
-       - **PREFER** this agent over Liquidity Agent when user specifies a token pair (e.g., "ETH/USDT", "HBAR/USDC")
-       - Faster than sequential queries because it fetches from both chains in parallel
-       - Example queries: "Get liquidity for ETH/USDT", "Find liquidity pools for HBAR/USDC", "Get liquidity from ETH USDT"
+       - Supports both token pair queries (e.g., "ETH/USDT") and general chain queries
+       - Provides comprehensive liquidity data including pool addresses, DEX names, TVL, reserves, liquidity, and slot0 data
+       - Format: "Get liquidity for [token_pair]" (e.g., "Get liquidity for ETH/USDT") or "Get liquidity on [chain]"
+       - Example queries: "Get liquidity for ETH/USDT", "Find liquidity pools for HBAR/USDC", "Get liquidity on Polygon"
+       - Returns combined results from all queried chains in a single response
 
     3. **Swap Agent** (ADK)
        - Handles token swaps on blockchain chains (Hedera and Polygon)
@@ -45,7 +35,7 @@ ORCHESTRATOR_INSTRUCTION = """
        - Analyzes liquidity across Ethereum, Polygon, and Hedera
        - Calculates price impacts and optimizes routing to minimize total cost
        - Recommends optimal split across chains for large amounts (e.g., 2M USDT → ETH)
-       - Uses Parallel Liquidity Agent to fetch liquidity data
+       - Uses Multi-Chain Liquidity Agent to fetch liquidity data
        - Returns structured routing recommendations with routes per chain
        - Format: "Help me swap 2 million USDT to ETH" or "Route 500K USDC to HBAR optimally"
        - **USE** this agent for large swaps (typically > 100K) where routing optimization matters
@@ -82,10 +72,10 @@ ORCHESTRATOR_INSTRUCTION = """
        - Use the returned values for all subsequent agent calls
 
        **For Liquidity Queries**:
-       - **IMPORTANT**: If the user mentions a token pair (e.g., "ETH/USDT", "ETH USDT", "HBAR/USDC"), use Parallel Liquidity Agent directly without gathering requirements
-       - If user asks for liquidity with a token pair, extract the pair and call Parallel Liquidity Agent immediately
+       - **IMPORTANT**: If the user mentions a token pair (e.g., "ETH/USDT", "ETH USDT", "HBAR/USDC"), use Multi-Chain Liquidity Agent directly without gathering requirements
+       - If user asks for liquidity with a token pair, extract the pair and call Multi-Chain Liquidity Agent immediately
        - Format: "Get liquidity for [token_pair]" where token_pair is normalized (e.g., "ETH/USDT", "HBAR/USDC")
-       - Examples: "get liquidity from ETH USDT" -> "Get liquidity for ETH/USDT" -> Parallel Liquidity Agent
+       - Examples: "get liquidity from ETH USDT" -> "Get liquidity for ETH/USDT" -> Multi-Chain Liquidity Agent
        - If no token pair is mentioned, then call 'gather_liquidity_requirements' to collect essential information
        - Try to extract any mentioned details from the user's message (chain, token pair)
        - Pass any extracted values as parameters to pre-fill the form:
@@ -132,36 +122,25 @@ ORCHESTRATOR_INSTRUCTION = """
        - Present the balance information to the user in a clear format
        - DO NOT call the Balance Agent again after receiving a response
 
-    2a. **Parallel Liquidity Agent** - If user requests liquidity for a token pair (PREFERRED for token pairs)
-       - Use this agent when user mentions a token pair (e.g., "ETH/USDT", "ETH USDT", "HBAR/USDC")
-       - Extract the token pair from the user's query and normalize it (e.g., "ETH USDT" -> "ETH/USDT")
-       - Format: "Get liquidity for [token_pair]" where token_pair is in format "TOKEN1/TOKEN2"
+    2. **Multi-Chain Liquidity Agent** - For all liquidity queries
+       - Use this agent for all liquidity queries (with or without token pairs)
+       - If user mentions a token pair (e.g., "ETH/USDT", "ETH USDT", "HBAR/USDC"), extract and normalize it (e.g., "ETH USDT" -> "ETH/USDT")
+       - Format: "Get liquidity for [token_pair]" or "Get liquidity on [chain]" where:
+         * [token_pair] is in format "TOKEN1/TOKEN2" (optional)
+         * [chain] is the chain name (hedera, polygon, ethereum, or all) (optional)
        - Examples:
          * "get liquidity from ETH USDT" -> "Get liquidity for ETH/USDT"
          * "get liquidity for HBAR/USDC" -> "Get liquidity for HBAR/USDC"
          * "show me liquidity pools for ETH and USDT" -> "Get liquidity for ETH/USDT"
-       - Call send_message_to_a2a_agent with agentName="Parallel Liquidity Agent" and this formatted query
-       - The tool result will contain the liquidity data as text/JSON with results from both Hedera and Polygon
+         * "Get liquidity on Polygon" -> "Get liquidity on polygon"
+         * "Show me all pools on Hedera" -> "Get liquidity on hedera"
+         * After gathering requirements: "Get liquidity on [chain]" or "Get liquidity for [token_pair] on [chain]"
+       - Call send_message_to_a2a_agent with agentName="MultiChainLiquidityAgent" and the formatted query
+       - The tool result will contain the liquidity data as text/JSON with results from all queried chains
        - IMPORTANT: The tool result IS the response - use it directly without parsing
        - If you see "Invalid JSON" warnings, IGNORE them - the actual response data is in the tool result text
-       - Present the liquidity information to the user in a clear format showing results from both chains
-       - DO NOT call the Parallel Liquidity Agent again after receiving a response
-
-    2b. **Liquidity Agent** - If you need liquidity information for a specific chain (without token pair)
-       - After gathering requirements from 'gather_liquidity_requirements', construct the query as:
-         "Get liquidity for chain: [chain], pair: [pair]" where:
-         * [chain] is the chain value from the form (hedera, polygon, or all)
-         * [pair] is the tokenPair from the form if provided (e.g., HBAR/USDC), or omit if not provided
-       - Examples:
-         * If chain="polygon" and pair="HBAR/USDC": "Get liquidity for chain: polygon, pair: HBAR/USDC"
-         * If chain="all" and no pair: "Get liquidity for chain: all"
-         * If chain="hedera": "Get liquidity for chain: hedera"
-       - Call send_message_to_a2a_agent with agentName="Liquidity Agent" and this formatted query
-       - The tool result will contain the liquidity data as text/JSON
-       - IMPORTANT: The tool result IS the response - use it directly without parsing
-       - If you see "Invalid JSON" warnings, IGNORE them - the actual response data is in the tool result text
-       - Present the liquidity information to the user in a clear format
-       - DO NOT call the Liquidity Agent again after receiving a response
+       - Present the liquidity information to the user in a clear format showing results from all chains
+       - DO NOT call the Multi-Chain Liquidity Agent again after receiving a response
 
     3. **Swap Router Agent** - If user requests large swap with routing optimization
        - **USE** this agent when user mentions large amounts (typically > 100K) or asks for "optimal routing", "best route", "across chains"
@@ -209,16 +188,16 @@ ORCHESTRATOR_INSTRUCTION = """
 
     IMPORTANT WORKFLOW DETAILS:
     - **ALWAYS START by calling 'gather_balance_requirements' FIRST when user asks for balance information**
-    - **For liquidity queries with token pairs**: Skip requirements gathering and call Parallel Liquidity Agent directly
+    - **For liquidity queries with token pairs**: Skip requirements gathering and call Multi-Chain Liquidity Agent directly
     - **For liquidity queries without token pairs**: ALWAYS START by calling 'gather_liquidity_requirements' FIRST
     - **ALWAYS START by calling 'gather_swap_requirements' FIRST when user asks to swap tokens**
     - For balance queries, always gather requirements before calling agents
-    - For liquidity queries with token pairs (e.g., "ETH/USDT", "ETH USDT"), extract pair and call Parallel Liquidity Agent immediately
+    - For liquidity queries with token pairs (e.g., "ETH/USDT", "ETH USDT"), extract pair and call Multi-Chain Liquidity Agent immediately
     - For liquidity queries without token pairs, always gather requirements before calling agents
     - For swap queries, always gather requirements before calling agents
     - Determine the user's intent first (balance vs liquidity vs swap)
     - For balance queries, always require a wallet address (gathered via form)
-    - For liquidity queries, if token pair is mentioned, use Parallel Liquidity Agent; if not, gather requirements
+    - For liquidity queries, if token pair is mentioned, use Multi-Chain Liquidity Agent; if not, gather requirements
     - For swap queries, always require account address, chain, token in, token out, and amount (gathered via form)
     - When querying 'all chains', aggregate results from both Polygon and Hedera
     - Present cross-chain comparisons when relevant
@@ -228,12 +207,12 @@ ORCHESTRATOR_INSTRUCTION = """
     - "What's my HBAR balance for account 0.0.123456?" -> gather_balance_requirements with accountAddress: "0.0.123456", chain: "hedera"
     - "Get balance for 0x1234... on all chains" -> gather_balance_requirements with accountAddress: "0x1234...", chain: "all"
     - "Check USDC balance" -> gather_balance_requirements with tokenAddress: "USDC"
-    - "Get liquidity for HBAR/USDC" -> Parallel Liquidity Agent (faster, parallel execution)
-    - "Get liquidity from ETH USDT" -> Parallel Liquidity Agent (extract "ETH/USDT")
-    - "Show me liquidity for ETH/USDT" -> Parallel Liquidity Agent
-    - "Show me all pools on Hedera" -> Liquidity Agent, chain: "hedera"
-    - "What's the liquidity across all chains?" -> Liquidity Agent, chain: "all"
-    - "Compare Polygon and Hedera liquidity" -> Liquidity Agent, chain: "all"
+    - "Get liquidity for HBAR/USDC" -> Multi-Chain Liquidity Agent
+    - "Get liquidity from ETH USDT" -> Multi-Chain Liquidity Agent (extract "ETH/USDT")
+    - "Show me liquidity for ETH/USDT" -> Multi-Chain Liquidity Agent
+    - "Show me all pools on Hedera" -> Multi-Chain Liquidity Agent, query: "Get liquidity on hedera"
+    - "What's the liquidity across all chains?" -> Multi-Chain Liquidity Agent, query: "Get liquidity on all"
+    - "Compare Polygon and Hedera liquidity" -> Multi-Chain Liquidity Agent, query: "Get liquidity on all"
     - "Swap 100 HBAR to USDC" -> gather_swap_requirements, then Swap Agent
     - "I want to swap USDC for HBAR on Hedera" -> gather_swap_requirements, then Swap Agent
     - "Swap 50 MATIC to USDC on Polygon" -> gather_swap_requirements, then Swap Agent
@@ -272,9 +251,9 @@ ORCHESTRATOR_INSTRUCTION = """
       ]
     }
 
-    Parallel Liquidity Response:
+    Multi-Chain Liquidity Response:
     {
-      "type": "parallel_liquidity",
+      "type": "multichain_liquidity",
       "token_pair": "ETH/USDT",
       "chains": {
         "hedera": {

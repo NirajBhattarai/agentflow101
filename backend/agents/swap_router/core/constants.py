@@ -30,33 +30,33 @@ SUPPORTED_CHAINS = ["ethereum", "polygon", "hedera"]
 
 # Price Impact Calculation
 PRICE_IMPACT_THRESHOLDS = {
-    "low": 0.5,      # < 0.5% - excellent
-    "medium": 1.5,   # 0.5-1.5% - good
-    "high": 3.0,     # 1.5-3% - acceptable
-    "very_high": 5.0  # > 3% - warning
+    "low": 0.5,  # < 0.5% - excellent
+    "medium": 1.5,  # 0.5-1.5% - good
+    "high": 3.0,  # 1.5-3% - acceptable
+    "very_high": 5.0,  # > 3% - warning
 }
 
 # Gas Cost Estimates (in USD, approximate)
 GAS_COST_ESTIMATES = {
     "ethereum": {
-        "swap": 50.0,   # ~$50 for a swap on Ethereum
-        "approve": 30.0, # ~$30 for approval
+        "swap": 50.0,  # ~$50 for a swap on Ethereum
+        "approve": 30.0,  # ~$30 for approval
     },
     "polygon": {
-        "swap": 0.05,   # ~$0.05 for a swap on Polygon
-        "approve": 0.03, # ~$0.03 for approval
+        "swap": 0.05,  # ~$0.05 for a swap on Polygon
+        "approve": 0.03,  # ~$0.03 for approval
     },
     "hedera": {
         "swap": 0.001,  # ~$0.001 for a swap on Hedera
-        "approve": 0.001, # ~$0.001 for approval
+        "approve": 0.001,  # ~$0.001 for approval
     },
 }
 
 # Execution Time Estimates (seconds)
 EXECUTION_TIME_ESTIMATES = {
-    "ethereum": 15,   # 15-30 seconds
-    "polygon": 120,   # 2-5 minutes
-    "hedera": 3,      # ~3 seconds
+    "ethereum": 15,  # 15-30 seconds
+    "polygon": 120,  # 2-5 minutes
+    "hedera": 3,  # ~3 seconds
 }
 
 
@@ -69,4 +69,3 @@ def check_api_keys() -> None:
     """Check if API keys are set."""
     if not os.getenv("GOOGLE_API_KEY") and not os.getenv("GEMINI_API_KEY"):
         print("⚠️  Warning: No API key found! Set GOOGLE_API_KEY or GEMINI_API_KEY")
-

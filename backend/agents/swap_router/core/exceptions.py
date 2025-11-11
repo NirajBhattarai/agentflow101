@@ -33,4 +33,3 @@ class InvalidSwapAmountError(SwapRouterError):
     """Raised when swap amount is invalid."""
 
     pass
-

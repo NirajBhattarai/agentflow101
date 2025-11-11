@@ -1,12 +1,12 @@
 """
-Result combination utilities for parallel liquidity agent.
+Result combination utilities for multi-chain liquidity agent.
 
 Handles combining liquidity results from multiple chains.
 """
 
 import json
 from typing import Optional
-from ..core.models.liquidity import LiquidityPair, StructuredParallelLiquidity
+from ..core.models.liquidity import LiquidityPair, StructuredMultiChainLiquidity
 from ..core.constants import (
     DEFAULT_HEDERA_FEE_BPS,
     DEFAULT_POLYGON_FEE_BPS,
@@ -69,32 +69,26 @@ def process_polygon_results(
     """Process Polygon liquidity results into LiquidityPair objects."""
     pairs = []
     if not polygon_result:
-        print(f"⚠️  No Polygon result provided for {base}/{quote}")
         return pairs
 
     if isinstance(polygon_result, str):
         try:
             polygon_result = json.loads(polygon_result)
         except (json.JSONDecodeError, ValueError):
-            print(f"⚠️  Failed to parse Polygon result as JSON")
             return pairs
 
     if isinstance(polygon_result, dict):
         pools = polygon_result.get("pools", [])
-        print(f"📊 Processing {len(pools)} Polygon pools for {base}/{quote}")
         for pool in pools:
-            # Skip pools with errors
             if pool.get("error"):
                 continue
-                
-            # Extract liquidity and slot0 data
+
             liquidity_value = pool.get("liquidity")
             slot0_data = pool.get("slot0")
-            
-            # Use token balances if available, otherwise estimate from liquidity
+
             token0_balance = pool.get("token0_balance_formatted")
             token1_balance = pool.get("token1_balance_formatted")
-            
+
             if token0_balance and token1_balance:
                 try:
                     reserve_base = float(token0_balance)
@@ -103,7 +97,6 @@ def process_polygon_results(
                     reserve_base = 0.0
                     reserve_quote = 0.0
             else:
-                # Fallback: estimate from liquidity (divide by 2)
                 try:
                     liquidity_float = float(liquidity_value) if liquidity_value else 0.0
                     reserve_base = liquidity_float / 2
@@ -111,15 +104,12 @@ def process_polygon_results(
                 except (ValueError, TypeError):
                     reserve_base = 0.0
                     reserve_quote = 0.0
-            
-            # Calculate TVL (simple estimate: sum of reserves)
+
             tvl_usd = reserve_base + reserve_quote
-            
-            # Get fee from pool or use default
             fee_bps = pool.get("fee", DEFAULT_POLYGON_FEE_BPS)
             if isinstance(fee_bps, float):
                 fee_bps = int(fee_bps)
-            
+
             pairs.append(
                 LiquidityPair(
                     base=base,
@@ -144,32 +134,26 @@ def process_ethereum_results(
     """Process Ethereum liquidity results into LiquidityPair objects."""
     pairs = []
     if not ethereum_result:
-        print(f"⚠️  No Ethereum result provided for {base}/{quote}")
         return pairs
 
     if isinstance(ethereum_result, str):
         try:
             ethereum_result = json.loads(ethereum_result)
         except (json.JSONDecodeError, ValueError):
-            print(f"⚠️  Failed to parse Ethereum result as JSON")
             return pairs
 
     if isinstance(ethereum_result, dict):
         pools = ethereum_result.get("pools", [])
-        print(f"📊 Processing {len(pools)} Ethereum pools for {base}/{quote}")
         for pool in pools:
-            # Skip pools with errors
             if pool.get("error"):
                 continue
-                
-            # Extract liquidity and slot0 data
+
             liquidity_value = pool.get("liquidity")
             slot0_data = pool.get("slot0")
-            
-            # Use token balances if available, otherwise estimate from liquidity
+
             token0_balance = pool.get("token0_balance_formatted")
             token1_balance = pool.get("token1_balance_formatted")
-            
+
             if token0_balance and token1_balance:
                 try:
                     reserve_base = float(token0_balance)
@@ -178,7 +162,6 @@ def process_ethereum_results(
                     reserve_base = 0.0
                     reserve_quote = 0.0
             else:
-                # Fallback: estimate from liquidity (divide by 2)
                 try:
                     liquidity_float = float(liquidity_value) if liquidity_value else 0.0
                     reserve_base = liquidity_float / 2
@@ -186,15 +169,12 @@ def process_ethereum_results(
                 except (ValueError, TypeError):
                     reserve_base = 0.0
                     reserve_quote = 0.0
-            
-            # Calculate TVL (simple estimate: sum of reserves)
+
             tvl_usd = reserve_base + reserve_quote
-            
-            # Get fee from pool or use default
             fee_bps = pool.get("fee", DEFAULT_ETHEREUM_FEE_BPS)
             if isinstance(fee_bps, float):
                 fee_bps = int(fee_bps)
-            
+
             pairs.append(
                 LiquidityPair(
                     base=base,
@@ -214,20 +194,34 @@ def process_ethereum_results(
 
 
 def combine_results(
-    token_pair: str,
+    token_pair: Optional[str],
+    chain: Optional[str],
     hedera_result: Optional[dict],
     polygon_result: Optional[dict],
     ethereum_result: Optional[dict] = None,
 ) -> dict:
     """Combine results from Hedera, Polygon, and Ethereum into unified response."""
-    base, quote = token_pair.split("/")
+    # Extract base and quote if token_pair provided
+    if token_pair:
+        base, quote = token_pair.split("/")
+    else:
+        base = "unknown"
+        quote = "unknown"
 
-    hedera_pairs = process_hedera_results(hedera_result, base, quote)
-    polygon_pairs = process_polygon_results(polygon_result, base, quote)
-    ethereum_pairs = process_ethereum_results(ethereum_result, base, quote) if ethereum_result else []
+    hedera_pairs = (
+        process_hedera_results(hedera_result, base, quote) if hedera_result else []
+    )
+    polygon_pairs = (
+        process_polygon_results(polygon_result, base, quote) if polygon_result else []
+    )
+    ethereum_pairs = (
+        process_ethereum_results(ethereum_result, base, quote)
+        if ethereum_result
+        else []
+    )
     all_pairs = hedera_pairs + polygon_pairs + ethereum_pairs
 
-    # Always include all chains, even if empty, so frontend knows which chains were queried
+    # Always include all chains, even if empty
     chains_dict = {
         "hedera": {
             "pairs": [p.model_dump() for p in hedera_pairs],
@@ -242,20 +236,21 @@ def combine_results(
             "total_pools": len(ethereum_pairs),
         },
     }
-    
-    # Debug logging
-    print(f"📊 Combined results for {token_pair}:")
+
+    print("📊 Combined results:")
     print(f"  - Hedera pairs: {len(hedera_pairs)}")
     print(f"  - Polygon pairs: {len(polygon_pairs)}")
     print(f"  - Ethereum pairs: {len(ethereum_pairs)}")
     print(f"  - Total pairs: {len(all_pairs)}")
 
-    response = StructuredParallelLiquidity(
-        type="parallel_liquidity",
+    response = StructuredMultiChainLiquidity(
+        type="multichain_liquidity",
         token_pair=token_pair,
+        chain=chain,
         chains=chains_dict,
         hedera_pairs=hedera_pairs,
         polygon_pairs=polygon_pairs,
+        ethereum_pairs=ethereum_pairs,
         all_pairs=all_pairs,
     )
 

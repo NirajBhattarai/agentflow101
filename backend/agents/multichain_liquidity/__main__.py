@@ -1,7 +1,7 @@
 """
-Liquidity Agent Server (ADK + A2A Protocol)
+Multi-Chain Liquidity Agent Server (ADK + A2A Protocol)
 
-Starts the Liquidity Agent as an A2A Protocol server.
+Starts the Multi-Chain Liquidity Agent as an A2A Protocol server.
 """
 
 import uvicorn
@@ -11,34 +11,40 @@ from a2a.server.apps import A2AStarletteApplication
 from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.tasks import InMemoryTaskStore
 from a2a.types import AgentCapabilities, AgentCard, AgentSkill
-from .liquidity_executor import LiquidityExecutor
+from .executor import MultiChainLiquidityExecutor
 
 load_dotenv()
 
-port = int(os.getenv("LIQUIDITY_PORT", 9998))
+port = int(os.getenv("MULTICHAIN_LIQUIDITY_PORT", 9994))
 
 skill = AgentSkill(
-    id="liquidity_agent",
-    name="Liquidity Query Agent",
-    description="Retrieves liquidity information from multiple blockchain chains (Polygon, Hedera) using ADK",
-    tags=["defi", "liquidity", "blockchain", "multi-chain", "adk"],
+    id="multichain_liquidity_agent",
+    name="MultiChainLiquidityAgent",
+    description="Fetches liquidity information sequentially from Hedera, Polygon, and Ethereum chains",
+    tags=["defi", "liquidity", "multi-chain", "hedera", "polygon", "ethereum", "adk"],
     examples=[
-        "Find all liquidity pools for HBAR on Hedera",
-        "Compare liquidity across all chains for a token",
-        "Get liquidity information from Polygon",
-        "Get liquidity for USDC token on Hedera",
+        "Get liquidity for ETH/USDT",
+        "Get liquidity for HBAR/USDC on all chains",
+        "Show me liquidity pools on Polygon",
+        "Get liquidity from Ethereum for USDT",
     ],
 )
 
 cardUrl = os.getenv("RENDER_EXTERNAL_URL", f"http://localhost:{port}")
 public_agent_card = AgentCard(
-    name="Liquidity Agent",
-    description="ADK-powered agent that retrieves liquidity information from multiple blockchain chains",
+    name="MultiChainLiquidityAgent",
+    description="Unified agent that fetches liquidity sequentially from Hedera, Polygon, and Ethereum chains",
     url=cardUrl,
     version="1.0.0",
     defaultInputModes=["text"],
     defaultOutputModes=["text"],
-    capabilities=AgentCapabilities(streaming=True),
+    capabilities=AgentCapabilities(
+        text=True,
+        image=False,
+        audio=False,
+        video=False,
+        function_calling=True,
+    ),
     skills=[skill],
     supportsAuthenticatedExtendedCard=False,
 )
@@ -53,7 +59,7 @@ def main():
         print()
 
     request_handler = DefaultRequestHandler(
-        agent_executor=LiquidityExecutor(),
+        agent_executor=MultiChainLiquidityExecutor(),
         task_store=InMemoryTaskStore(),
     )
 
@@ -63,7 +69,9 @@ def main():
         extended_agent_card=public_agent_card,
     )
 
-    print(f"💧 Starting Liquidity Agent (ADK + A2A) on http://0.0.0.0:{port}")
+    print(
+        f"💧 Starting Multi-Chain Liquidity Agent (ADK + A2A) on http://0.0.0.0:{port}"
+    )
     print(f"   Agent: {public_agent_card.name}")
     print(f"   Description: {public_agent_card.description}")
     uvicorn.run(server.build(), host="0.0.0.0", port=port)
