@@ -25,6 +25,7 @@ import type {
   LiquidityData,
   ParallelLiquidityData,
   SwapData,
+  SwapRouterData,
   MessageActionRenderProps,
 } from "@/types";
 
@@ -32,6 +33,7 @@ const ChatInner = ({
   onBalanceUpdate,
   onLiquidityUpdate,
   onSwapUpdate,
+  onSwapRouterUpdate,
 }: DeFiChatProps) => {
   const { visibleMessages } = useCopilotChat();
 
@@ -76,6 +78,16 @@ const ChatInner = ({
               else if (parsed.type === "liquidity" && parsed.pairs && Array.isArray(parsed.pairs)) {
                 onLiquidityUpdate?.(parsed as LiquidityData);
               }
+              // Check if it's swap router data
+              else if (parsed.type === "swap_router") {
+                console.log("🔄 Swap Router Data Received:", {
+                  total_input: parsed.total_input,
+                  token_in: parsed.token_in,
+                  total_output: parsed.total_output,
+                  routes: parsed.routes?.length || 0,
+                });
+                onSwapRouterUpdate?.(parsed as SwapRouterData);
+              }
               // Check if it's swap data
               // Swap data can have transaction OR swap_options (or both)
               else if (parsed.type === "swap") {
@@ -97,7 +109,7 @@ const ChatInner = ({
     };
 
     extractDataFromMessages();
-  }, [visibleMessages, onBalanceUpdate, onLiquidityUpdate, onSwapUpdate]);
+  }, [visibleMessages, onBalanceUpdate, onLiquidityUpdate, onSwapUpdate, onSwapRouterUpdate]);
 
   // Register HITL balance requirements form (collects account info at start)
   useCopilotAction({
@@ -252,6 +264,7 @@ export default function DeFiChat({
   onBalanceUpdate,
   onLiquidityUpdate,
   onSwapUpdate,
+  onSwapRouterUpdate,
 }: DeFiChatProps) {
   return (
     <CopilotKit runtimeUrl="/api/copilotkit" showDevConsole={false} agent="a2a_chat">
@@ -259,6 +272,7 @@ export default function DeFiChat({
         onBalanceUpdate={onBalanceUpdate}
         onLiquidityUpdate={onLiquidityUpdate}
         onSwapUpdate={onSwapUpdate}
+        onSwapRouterUpdate={onSwapRouterUpdate}
       />
     </CopilotKit>
   );

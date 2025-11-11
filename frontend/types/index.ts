@@ -323,6 +323,70 @@ export interface SwapData {
 }
 
 /**
+ * Pool data for swap routing
+ */
+export interface SwapRouterPoolData {
+  chain: string;
+  pool_address: string;
+  token0: string;
+  token1: string;
+  fee_tier: number;
+  liquidity?: string;
+  slot0?: {
+    sqrtPriceX96?: string;
+    tick?: number;
+    [key: string]: any;
+  };
+  sqrt_price_x96?: string;
+  tick?: number;
+  reserve_base: number;
+  reserve_quote: number;
+  tvl_usd: number;
+}
+
+/**
+ * Route recommendation for a single chain
+ */
+export interface SwapRouterRoute {
+  chain: string;
+  chain_id?: number;
+  amount_in: number;
+  token_in: string;
+  amount_out: number;
+  token_out: string;
+  price_impact_percent: number;
+  pool: SwapRouterPoolData;
+  gas_cost_usd: number;
+  execution_time_seconds: number;
+  confidence: number;
+  route_description: string;
+}
+
+/**
+ * Complete swap router recommendation
+ */
+export interface SwapRouterData {
+  type: string;
+  total_input: number;
+  token_in: string;
+  total_output: number;
+  token_out: string;
+  total_price_impact_percent: number;
+  total_gas_cost_usd: number;
+  net_output: number;
+  efficiency_percent: number;
+  routes: SwapRouterRoute[];
+  recommendation_text: string;
+  execution_plan?: Array<{
+    step: number;
+    action: string;
+    chainId: number;
+    details: any;
+  }>;
+  error?: string;
+}
+
+/**
  * Type for swap requirements action parameters
  */
 export type SwapRequirementsActionRenderProps = ActionRenderProps<
@@ -372,6 +436,7 @@ export interface DeFiChatProps {
   onBalanceUpdate?: (data: BalanceData | null) => void;
   onLiquidityUpdate?: (data: LiquidityData | ParallelLiquidityData | null) => void;
   onSwapUpdate?: (data: SwapData | null) => void;
+  onSwapRouterUpdate?: (data: SwapRouterData | null) => void;
 }
 
 /**

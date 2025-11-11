@@ -14,6 +14,8 @@ export async function POST(request: NextRequest) {
   const swapAgentUrl = process.env.SWAP_AGENT_URL || "http://localhost:9995";
   const parallelLiquidityAgentUrl =
     process.env.PARALLEL_LIQUIDITY_AGENT_URL || "http://localhost:9994";
+  const swapRouterAgentUrl =
+    process.env.SWAP_ROUTER_AGENT_URL || "http://localhost:9993";
 
   // STEP 2: Define orchestrator URL (speaks AG-UI Protocol)
   const orchestratorUrl = process.env.ORCHESTRATOR_URL || "http://localhost:9000";
@@ -29,12 +31,13 @@ export async function POST(request: NextRequest) {
   // 4. Routing messages between orchestrator and A2A agents
   const a2aMiddlewareAgent = new A2AMiddlewareAgent({
     description:
-      "DeFi orchestrator with balance, liquidity, parallel liquidity, and swap agents (Hedera, Polygon)",
+      "DeFi orchestrator with balance, liquidity, parallel liquidity, swap, and swap router agents (Hedera, Polygon, Ethereum)",
     agentUrls: [
       balanceAgentUrl, // Balance Agent (ADK) - Port 9997
       liquidityAgentUrl, // Liquidity Agent (ADK) - Port 9998
       parallelLiquidityAgentUrl, // Parallel Liquidity Agent (ADK) - Port 9994
       swapAgentUrl, // Swap Agent (ADK) - Port 9995
+      swapRouterAgentUrl, // Swap Router Agent (ADK) - Port 9993
     ],
     orchestrationAgent,
     instructions: `
@@ -60,11 +63,20 @@ export async function POST(request: NextRequest) {
          - Returns combined results from all chains in a single response
          - **RECOMMENDED** for token pair queries across multiple chains (faster than sequential queries)
 
-      4. **Swap Agent** (ADK)
+      4. **Swap Router Agent** (ADK)
+         - Intelligent multi-chain swap routing optimizer for large swaps
+         - Analyzes liquidity across Ethereum, Polygon, and Hedera
+         - Calculates price impacts and optimizes routing to minimize total cost
+         - Recommends optimal split across chains for large amounts
+         - Use for queries like "swap 2 million USDT to ETH" or "route 500K USDC optimally"
+         - Returns structured routing recommendations with routes per chain
+
+      5. **Swap Agent** (ADK)
          - Handles token swaps on blockchain chains (Hedera and Polygon)
          - Supports swapping various tokens (USDC, USDT, HBAR, MATIC, ETH, WBTC, DAI)
          - TEMPORARY: Direct swap execution without quotes
          - Creates swap transactions and tracks their status
+         - Use for smaller swaps or single-chain swaps
 
       WORKFLOW STRATEGY (SEQUENTIAL - ONE AT A TIME):
 

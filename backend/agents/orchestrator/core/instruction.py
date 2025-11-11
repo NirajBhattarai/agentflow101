@@ -40,6 +40,16 @@ ORCHESTRATOR_INSTRUCTION = """
        - Provides swap quotes, fees, estimated output, price impact, and transaction status
        - Creates swap transactions and tracks their status
 
+    4. **Swap Router Agent** (ADK)
+       - Intelligent multi-chain swap routing optimizer for large swaps
+       - Analyzes liquidity across Ethereum, Polygon, and Hedera
+       - Calculates price impacts and optimizes routing to minimize total cost
+       - Recommends optimal split across chains for large amounts (e.g., 2M USDT → ETH)
+       - Uses Parallel Liquidity Agent to fetch liquidity data
+       - Returns structured routing recommendations with routes per chain
+       - Format: "Help me swap 2 million USDT to ETH" or "Route 500K USDC to HBAR optimally"
+       - **USE** this agent for large swaps (typically > 100K) where routing optimization matters
+
     SUPPORTED CHAINS:
     - Polygon
     - Hedera
@@ -153,7 +163,20 @@ ORCHESTRATOR_INSTRUCTION = """
        - Present the liquidity information to the user in a clear format
        - DO NOT call the Liquidity Agent again after receiving a response
 
-    3. **Swap Agent** - If you need to swap tokens
+    3. **Swap Router Agent** - If user requests large swap with routing optimization
+       - **USE** this agent when user mentions large amounts (typically > 100K) or asks for "optimal routing", "best route", "across chains"
+       - Format: Pass the user's query directly (e.g., "Help me swap 2 million USDT to ETH" or "Route 500K USDC to HBAR optimally")
+       - Examples:
+         * "swap 2 million USDT to ETH" -> Swap Router Agent
+         * "Route 500K USDC to HBAR optimally" -> Swap Router Agent
+         * "Help me swap 1M MATIC to ETH across chains" -> Swap Router Agent
+       - Call send_message_to_a2a_agent with agentName="SwapRouterAgent" and the user's query
+       - The agent will automatically fetch liquidity, calculate price impacts, and optimize routing
+       - Returns structured routing recommendations with routes per chain, price impacts, and gas costs
+       - Present the routing recommendation clearly showing each route and total output
+       - DO NOT call the Swap Router Agent again after receiving a response
+
+    4. **Swap Agent** - If you need to swap tokens (for smaller amounts or single-chain swaps)
        - After gathering requirements from 'gather_swap_requirements', construct the query as:
          "Swap [amountIn] [tokenIn] to [tokenOut] on [chain] for account [accountAddress] with slippage [slippageTolerance]%" where:
          * [amountIn] is the amountIn from the form (e.g., "100.0")

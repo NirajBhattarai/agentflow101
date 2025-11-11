@@ -7,7 +7,7 @@
         test-parallel-liquidity test-parallel-liquidity-unit test-parallel-liquidity-integration \
         test-pools test-liquidity-blockchain test-tokens test-tokens-constants test-tokens-address \
         test-balance-shared \
-        clean dev-travily dev-liquidity dev-parallel-liquidity dev-balance dev-swap \
+        clean dev-travily dev-liquidity dev-parallel-liquidity dev-balance dev-swap dev-swap-router \
         dev-orchestrator dev-all-agents format format-backend format-frontend backend
 
 # Default target
@@ -30,8 +30,9 @@ help:
 	@echo "  make dev-parallel-liquidity - Run Parallel Liquidity agent server (port 9994)"
 	@echo "  make dev-balance         - Run Balance agent server (port 9997)"
 	@echo "  make dev-swap            - Run Swap agent server (port 9995)"
+	@echo "  make dev-swap-router     - Run Swap Router agent server (port 9993)"
 	@echo "  make dev-orchestrator    - Run Orchestrator agent server (port 9000)"
-	@echo "  make dev-all-agents      - Run all agents (orchestrator, balance, liquidity, parallel-liquidity, swap)"
+	@echo "  make dev-all-agents      - Run all agents (orchestrator, balance, liquidity, parallel-liquidity, swap, swap-router)"
 	@echo ""
 	@echo "Build:"
 	@echo "  make build-frontend      - Build frontend for production"
@@ -128,6 +129,11 @@ dev-swap:
 	@echo "Swap Agent: http://localhost:9995"
 	cd backend && uv run -m agents.swap
 
+dev-swap-router:
+	@echo "Starting Swap Router agent server..."
+	@echo "Swap Router Agent: http://localhost:9993"
+	cd backend && uv run -m agents.swap_router
+
 dev-parallel-liquidity:
 	@echo "Starting Parallel Liquidity agent server..."
 	@echo "Parallel Liquidity Agent: http://localhost:9994"
@@ -146,9 +152,10 @@ dev-all-agents:
 	@echo "Liquidity Agent: http://localhost:9998"
 	@echo "Parallel Liquidity Agent: http://localhost:9994"
 	@echo "Swap Agent: http://localhost:9995"
+	@echo "Swap Router Agent: http://localhost:9993"
 	@echo ""
 	@echo "Starting all agents in parallel..."
-	@make -j5 dev-orchestrator dev-balance dev-liquidity dev-parallel-liquidity dev-swap
+	@make -j6 dev-orchestrator dev-balance dev-liquidity dev-parallel-liquidity dev-swap dev-swap-router
 
 # Production builds
 build-frontend:
