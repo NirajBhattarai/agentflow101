@@ -95,6 +95,20 @@ def calculate_price_impact_simple(
     )
 
 
+def _get_token_decimals(token_symbol: str) -> int:
+    """Get token decimals based on symbol."""
+    decimals_map = {
+        "USDT": 6,
+        "USDC": 6,
+        "DAI": 18,
+        "WETH": 18,
+        "ETH": 18,
+        "WBTC": 8,
+        "BTC": 8,
+    }
+    return decimals_map.get(token_symbol.upper(), 18)  # Default to 18
+
+
 def _calculate_with_sqrt_price_x96(
     amount_in: float,
     amount_in_after_fee: float,
@@ -108,12 +122,13 @@ def _calculate_with_sqrt_price_x96(
     Calculate swap output using Uniswap V3 sqrtPriceX96 formula.
     
     Formula:
-    - sqrtPriceX96 = sqrt(price) * 2^96
-    - price = (sqrtPriceX96 / 2^96)^2
-    - For token0 -> token1: price = token1_amount / token0_amount
-    - For token1 -> token0: price = token0_amount / token1_amount = 1/(token1/token0)
+    - sqrtPriceX96 = sqrt(token1/token0) * 2^96 (in smallest units)
+    - price = (sqrtPriceX96 / 2^96)^2 * (10^decimals0 / 10^decimals1)
+    - This gives price in human-readable units (token1 per token0)
     
-    Uses constant product formula with reserves, but validates spot price from sqrtPriceX96.
+    For swap calculation:
+    - Use spot price from sqrtPriceX96 for small swaps
+    - Use constant product formula with reserves for larger swaps (accounts for slippage)
     """
     sqrt_price_x96_str = pool_data.sqrt_price_x96
     if isinstance(sqrt_price_x96_str, str):
@@ -121,22 +136,32 @@ def _calculate_with_sqrt_price_x96(
     else:
         sqrt_price_x96 = Decimal(str(sqrt_price_x96_str))
     
-    # Current price from sqrtPriceX96: price = (sqrtPriceX96 / Q96)^2
-    # This represents token1/token0 ratio (in token units, accounting for decimals)
-    sqrt_price = sqrt_price_x96 / Decimal(Q96)
-    price_token1_per_token0 = float(sqrt_price ** 2)
+    # Get token decimals
+    token0_decimals = _get_token_decimals(pool_data.token0)
+    token1_decimals = _get_token_decimals(pool_data.token1)
     
-    # Get reserves (these might be in wei/smallest units, so we'll use them carefully)
+    # Calculate price from sqrtPriceX96
+    # sqrtPriceX96 = sqrt(token1_wei / token0_wei) * 2^96
+    # price_wei = (sqrtPriceX96 / 2^96)^2
+    # price_human = price_wei * (10^decimals0 / 10^decimals1)
+    sqrt_price = sqrt_price_x96 / Decimal(Q96)
+    price_wei = sqrt_price ** 2
+    decimal_adjustment = Decimal(10) ** (token0_decimals - token1_decimals)
+    price_token1_per_token0 = float(price_wei * decimal_adjustment)
+    
+    # Determine swap direction and calculate spot price
     if is_token0_in:
-        reserve_in = Decimal(str(pool_data.reserve_base))
-        reserve_out = Decimal(str(pool_data.reserve_quote))
+        # Swapping token0 -> token1
         # Spot price = token1/token0 = price from sqrtPriceX96
         spot_price = price_token1_per_token0
+        reserve_in = Decimal(str(pool_data.reserve_base))
+        reserve_out = Decimal(str(pool_data.reserve_quote))
     else:
-        reserve_in = Decimal(str(pool_data.reserve_quote))
-        reserve_out = Decimal(str(pool_data.reserve_base))
+        # Swapping token1 -> token0
         # Spot price = token0/token1 = 1/(token1/token0) = 1/price_from_sqrtPriceX96
         spot_price = 1.0 / price_token1_per_token0 if price_token1_per_token0 > 0 else 0
+        reserve_in = Decimal(str(pool_data.reserve_quote))
+        reserve_out = Decimal(str(pool_data.reserve_base))
     
     if reserve_in == 0 or reserve_out == 0:
         raise InsufficientLiquidityError(
@@ -146,36 +171,23 @@ def _calculate_with_sqrt_price_x96(
     # Convert amount_in to Decimal for precision
     amount_in_decimal = Decimal(str(amount_in_after_fee))
     
-    # Method 1: Use spot price from sqrtPriceX96 for initial estimate
-    # This gives us the current exchange rate
+    # Calculate output using spot price (for small swaps, this is accurate)
+    # For large swaps, we need to account for slippage using constant product
     estimated_amount_out_from_price = float(amount_in_decimal) * spot_price
     
-    # Method 2: Use constant product formula with reserves
-    # This accounts for slippage
+    # Use constant product formula to account for slippage
     # (reserve_in + amount_in) * (reserve_out - amount_out) = reserve_in * reserve_out
-    # Solving for amount_out:
-    # amount_out = (reserve_out * amount_in) / (reserve_in + amount_in)
+    # Solving for amount_out: amount_out = (reserve_out * amount_in) / (reserve_in + amount_in)
+    amount_out_decimal = (reserve_out * amount_in_decimal) / (reserve_in + amount_in_decimal)
+    amount_out = float(amount_out_decimal)
     
-    # Check if reserves seem reasonable (not in wei)
-    # If reserves are way larger than amount_in, they might be in wei
-    reserve_ratio = float(reserve_in / amount_in_decimal) if amount_in_decimal > 0 else 0
-    
-    if reserve_ratio > 1e12:  # Reserves are way too large, likely in wei
-        # Use price-based calculation directly
-        amount_out = estimated_amount_out_from_price
-        print(f"⚠️  Reserves appear to be in wei (ratio={reserve_ratio:.2e}), using price-based calculation")
-    else:
-        # Use constant product formula (normal case)
-        amount_out_decimal = (reserve_out * amount_in_decimal) / (reserve_in + amount_in_decimal)
-        amount_out = float(amount_out_decimal)
-        
-        # Validate against price-based estimate (should be close for small swaps)
-        if estimated_amount_out_from_price > 0:
-            diff_ratio = abs(amount_out - estimated_amount_out_from_price) / estimated_amount_out_from_price
-            if diff_ratio > 0.5:  # More than 50% difference, something's wrong
-                print(f"⚠️  Large difference between methods: constant_product={amount_out:.6f}, price_based={estimated_amount_out_from_price:.6f}")
-                # Use price-based as fallback
-                amount_out = estimated_amount_out_from_price
+    # Validate: if the difference is huge, something's wrong with reserves
+    if estimated_amount_out_from_price > 0:
+        diff_ratio = abs(amount_out - estimated_amount_out_from_price) / estimated_amount_out_from_price
+        if diff_ratio > 10.0:  # More than 10x difference, likely reserve issue
+            print(f"⚠️  Large difference: constant_product={amount_out:.6f}, price_based={estimated_amount_out_from_price:.6f}, using price-based")
+            # Use price-based calculation (more reliable when reserves are wrong)
+            amount_out = estimated_amount_out_from_price
     
     # Calculate effective price (amount_in / amount_out)
     effective_price = amount_in / amount_out if amount_out > 0 else 0
@@ -188,6 +200,8 @@ def _calculate_with_sqrt_price_x96(
     
     # Fee cost
     fee_cost = amount_in * fee_percent
+    
+    print(f"💰 Price calculation: sqrtPriceX96={sqrt_price_x96_str}, price={price_token1_per_token0:.6f}, spot_price={spot_price:.6f}, amount_out={amount_out:.6f}")
     
     return PriceImpactData(
         amount_in=amount_in,
