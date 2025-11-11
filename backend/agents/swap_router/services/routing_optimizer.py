@@ -99,12 +99,14 @@ def optimize_routing(
     """
     # Select best pool per chain (highest liquidity)
     best_pools = {}
+    initial_best_pools = {}  # Keep track of initial pools as fallback
     for chain, pools in pools_by_chain.items():
         if not pools:
             continue
         # Select pool with highest TVL
         best_pool = max(pools, key=lambda p: p.tvl_usd)
         best_pools[chain] = best_pool
+        initial_best_pools[chain] = best_pool  # Keep initial reference
 
     if not best_pools:
         raise ValueError("No pools available for routing")
@@ -194,6 +196,15 @@ def optimize_routing(
         remaining = 0
     elif remaining > 0:
         print(f"  ⚠️  Warning: {remaining:,.0f} remaining but no pools available")
+        # Fallback: if all pools were removed, try to use initial pools
+        if not best_pools and initial_best_pools:
+            print(f"  🔄 Fallback: Using initial pools as all were removed during optimization")
+            best_pools = initial_best_pools.copy()
+            # Distribute remaining equally
+            per_chain = remaining / len(best_pools)
+            for chain in best_pools:
+                allocations[chain] = per_chain
+            remaining = 0
 
     # Build route recommendations
     routes = []
