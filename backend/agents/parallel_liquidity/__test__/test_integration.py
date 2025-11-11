@@ -8,10 +8,8 @@ import json
 import pytest
 from typing import List
 
-from agents.parallel_liquidity.agents.parallel_liquidity_executor import (
-    ParallelLiquidityAgent,
-    ParallelLiquidityExecutor,
-)
+from agents.parallel_liquidity.agent import ParallelLiquidityAgent
+from agents.parallel_liquidity.executor import ParallelLiquidityExecutor
 
 
 class MockRequestContext:
@@ -51,9 +49,10 @@ class TestParallelLiquidityAgentIntegration:
     @pytest.mark.asyncio
     async def test_agent_token_pair_extraction(self):
         """Test agent correctly extracts token pair from query."""
-        agent = ParallelLiquidityAgent()
+        from agents.parallel_liquidity.services.query_parser import extract_token_pair
+
         query = "Get liquidity for HBAR/USDC"
-        token_pair = agent._extract_token_pair(query)
+        token_pair = extract_token_pair(query)
         assert token_pair == "HBAR/USDC"
 
     @pytest.mark.asyncio
@@ -91,12 +90,12 @@ class TestParallelLiquidityAgentIntegration:
         self, mock_hedera_liquidity_result, mock_polygon_liquidity_result
     ):
         """Test agent correctly combines results from both chains."""
-        agent = ParallelLiquidityAgent()
+        from agents.parallel_liquidity.services.result_combiner import combine_results
+
         token_pair = "ETH/USDT"
-        result = agent._combine_results(
+        data = combine_results(
             token_pair, mock_hedera_liquidity_result, mock_polygon_liquidity_result
         )
-        data = json.loads(result)
 
         assert data["chains"]["hedera"]["total_pools"] > 0
         assert data["chains"]["polygon"]["total_pools"] > 0

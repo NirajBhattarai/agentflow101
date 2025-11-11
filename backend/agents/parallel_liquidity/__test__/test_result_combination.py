@@ -3,9 +3,6 @@ Unit tests for result combination in parallel liquidity agent.
 """
 
 import json
-from agents.parallel_liquidity.agents.parallel_liquidity_executor import (
-    ParallelLiquidityAgent,
-)
 
 
 class TestResultCombination:
@@ -15,11 +12,13 @@ class TestResultCombination:
         self, mock_hedera_liquidity_result, mock_polygon_liquidity_result
     ):
         """Test combining results from both chains."""
-        agent = ParallelLiquidityAgent()
+        from agents.parallel_liquidity.services.result_combiner import combine_results
+
         token_pair = "ETH/USDT"
-        result = agent._combine_results(
+        combined_data = combine_results(
             token_pair, mock_hedera_liquidity_result, mock_polygon_liquidity_result
         )
+        result = json.dumps(combined_data, indent=2)
         data = json.loads(result)
 
         assert data["type"] == "parallel_liquidity"
@@ -32,10 +31,11 @@ class TestResultCombination:
 
     def test_combine_results_hedera_only(self, mock_hedera_liquidity_result):
         """Test combining results with only Hedera data."""
-        agent = ParallelLiquidityAgent()
+        from agents.parallel_liquidity.services.result_combiner import combine_results
+
         token_pair = "HBAR/USDC"
-        result = agent._combine_results(token_pair, mock_hedera_liquidity_result, None)
-        data = json.loads(result)
+        combined_data = combine_results(token_pair, mock_hedera_liquidity_result, None)
+        data = combined_data
 
         assert data["type"] == "parallel_liquidity"
         assert data["token_pair"] == "HBAR/USDC"
@@ -45,10 +45,11 @@ class TestResultCombination:
 
     def test_combine_results_polygon_only(self, mock_polygon_liquidity_result):
         """Test combining results with only Polygon data."""
-        agent = ParallelLiquidityAgent()
+        from agents.parallel_liquidity.services.result_combiner import combine_results
+
         token_pair = "MATIC/USDC"
-        result = agent._combine_results(token_pair, None, mock_polygon_liquidity_result)
-        data = json.loads(result)
+        combined_data = combine_results(token_pair, None, mock_polygon_liquidity_result)
+        data = combined_data
 
         assert data["type"] == "parallel_liquidity"
         assert data["token_pair"] == "MATIC/USDC"
@@ -58,10 +59,10 @@ class TestResultCombination:
 
     def test_combine_results_no_data(self):
         """Test combining results with no data."""
-        agent = ParallelLiquidityAgent()
+        from agents.parallel_liquidity.services.result_combiner import combine_results
+
         token_pair = "ETH/USDT"
-        result = agent._combine_results(token_pair, None, None)
-        data = json.loads(result)
+        data = combine_results(token_pair, None, None)
 
         assert data["type"] == "parallel_liquidity"
         assert data["token_pair"] == "ETH/USDT"
@@ -71,11 +72,11 @@ class TestResultCombination:
 
     def test_combine_results_string_inputs(self, mock_hedera_liquidity_result):
         """Test combining results when inputs are JSON strings."""
-        agent = ParallelLiquidityAgent()
+        from agents.parallel_liquidity.services.result_combiner import combine_results
+
         token_pair = "ETH/USDT"
         hedera_json = json.dumps(mock_hedera_liquidity_result)
-        result = agent._combine_results(token_pair, hedera_json, None)
-        data = json.loads(result)
+        data = combine_results(token_pair, hedera_json, None)
 
         assert data["type"] == "parallel_liquidity"
         assert len(data["hedera_pairs"]) == 1
@@ -84,10 +85,10 @@ class TestResultCombination:
         self, mock_hedera_liquidity_result
     ):
         """Test that combined results have correct LiquidityPair structure."""
-        agent = ParallelLiquidityAgent()
+        from agents.parallel_liquidity.services.result_combiner import combine_results
+
         token_pair = "ETH/USDT"
-        result = agent._combine_results(token_pair, mock_hedera_liquidity_result, None)
-        data = json.loads(result)
+        data = combine_results(token_pair, mock_hedera_liquidity_result, None)
 
         hedera_pair = data["hedera_pairs"][0]
         assert hedera_pair["base"] == "ETH"
@@ -106,30 +107,36 @@ class TestTVLParsing:
 
     def test_parse_tvl_dollar_format(self):
         """Test parsing TVL in $1,200,000 format."""
-        agent = ParallelLiquidityAgent()
-        assert agent._parse_tvl("$1,200,000") == 1200000.0
+        from agents.parallel_liquidity.services.result_combiner import parse_tvl
+
+        assert parse_tvl("$1,200,000") == 1200000.0
 
     def test_parse_tvl_no_dollar(self):
         """Test parsing TVL without dollar sign."""
-        agent = ParallelLiquidityAgent()
-        assert agent._parse_tvl("500000") == 500000.0
+        from agents.parallel_liquidity.services.result_combiner import parse_tvl
+
+        assert parse_tvl("500000") == 500000.0
 
     def test_parse_tvl_numeric(self):
         """Test parsing TVL as numeric value."""
-        agent = ParallelLiquidityAgent()
-        assert agent._parse_tvl(1000000) == 1000000.0
+        from agents.parallel_liquidity.services.result_combiner import parse_tvl
+
+        assert parse_tvl(1000000) == 1000000.0
 
     def test_parse_tvl_invalid(self):
         """Test parsing invalid TVL string."""
-        agent = ParallelLiquidityAgent()
-        assert agent._parse_tvl("invalid") == 0.0
+        from agents.parallel_liquidity.services.result_combiner import parse_tvl
+
+        assert parse_tvl("invalid") == 0.0
 
     def test_parse_tvl_empty(self):
         """Test parsing empty TVL string."""
-        agent = ParallelLiquidityAgent()
-        assert agent._parse_tvl("") == 0.0
+        from agents.parallel_liquidity.services.result_combiner import parse_tvl
+
+        assert parse_tvl("") == 0.0
 
     def test_parse_tvl_none(self):
         """Test parsing None TVL."""
-        agent = ParallelLiquidityAgent()
-        assert agent._parse_tvl(None) == 0.0
+        from agents.parallel_liquidity.services.result_combiner import parse_tvl
+
+        assert parse_tvl(None) == 0.0

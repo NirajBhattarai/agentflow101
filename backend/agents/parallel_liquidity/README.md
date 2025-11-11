@@ -17,6 +17,83 @@ When given a token pair like "ETH/USDT", it fetches liquidity from both chains c
 - ✅ **Independent Agent**: Completely separate from the regular liquidity agent
 - ✅ **Fallback Support**: Falls back to sequential execution if ParallelAgent is unavailable
 - ✅ **A2A Protocol**: Exposes A2A Protocol endpoint for orchestrator integration
+- ✅ **Clean Architecture**: Modular structure with clear separation of concerns
+
+## Architecture
+
+The Parallel Liquidity Agent follows a clean, modular architecture with clear separation of concerns:
+
+```
+parallel_liquidity/
+├── __init__.py              # Package initialization
+├── __main__.py              # Server entry point
+├── agent.py                 # Agent definition (ParallelLiquidityAgent class)
+├── executor.py              # A2A Protocol executor (thin adapter layer)
+├── README.md                # This file
+│
+├── core/                    # Core domain logic
+│   ├── __init__.py
+│   ├── constants.py        # Configuration constants and defaults
+│   ├── exceptions.py        # Custom domain exceptions
+│   ├── response_validator.py # Response validation utilities
+│   └── models/              # Domain models (Pydantic)
+│       ├── __init__.py
+│       └── liquidity.py     # LiquidityPair, StructuredParallelLiquidity models
+│
+├── services/                # Application services
+│   ├── __init__.py
+│   ├── query_parser.py     # Token pair extraction from queries
+│   ├── result_combiner.py  # Result combination logic
+│   └── response_validator.py # Response validation and error handling
+│
+├── agents/                  # Sub-agents for parallel execution
+│   ├── __init__.py
+│   ├── hedera_liquidity_agent.py  # Hedera liquidity sub-agent
+│   └── polygon_liquidity_agent.py # Polygon liquidity sub-agent
+│
+└── __test__/               # Test suite
+    ├── conftest.py         # Test fixtures
+    ├── test_token_pair_extraction.py # Token pair extraction tests
+    ├── test_result_combination.py    # Result combination tests
+    ├── test_sub_agents.py            # Sub-agents tests
+    └── test_integration.py           # Integration tests
+```
+
+## Architecture Layers
+
+### 1. **Core Layer** (`core/`)
+Contains fundamental building blocks:
+- **`constants.py`**: All configuration values, defaults, error messages
+- **`exceptions.py`**: Custom domain exceptions (`ParallelLiquidityAgentError`, `TokenPairExtractionError`, `ResultCombinationError`, `ValidationError`)
+- **`models/liquidity.py`**: Pydantic domain models (`LiquidityPair`, `StructuredParallelLiquidity`)
+- **`response_validator.py`**: Response validation and serialization utilities
+
+### 2. **Services Layer** (`services/`)
+Contains application service utilities:
+- **`query_parser.py`**: Extracts token pairs from user queries (e.g., "ETH/USDT", "HBAR/USDC")
+- **`result_combiner.py`**: Combines liquidity results from multiple chains into unified response
+- **`response_validator.py`**: Validates response content, handles errors, and logs responses
+
+### 3. **Agent Layer** (`agent.py`)
+Defines the main agent:
+- **`ParallelLiquidityAgent`**: Google ADK agent that handles parallel liquidity queries
+  - Builds and configures the ParallelAgent with sub-agents
+  - Falls back to sequential execution if ParallelAgent unavailable
+  - Processes queries and invokes appropriate sub-agents
+  - Returns structured JSON responses
+
+### 4. **Executor Layer** (`executor.py`)
+Thin adapter layer for A2A Protocol:
+- **`ParallelLiquidityExecutor`**: Implements `AgentExecutor` interface
+  - Receives requests from orchestrator
+  - Delegates to agent and services
+  - Handles A2A Protocol-specific concerns only
+  - Minimal business logic (thin layer pattern)
+
+### 5. **Sub-Agents Layer** (`agents/`)
+Independent sub-agents for parallel execution:
+- **`hedera_liquidity_agent.py`**: Fetches liquidity from Hedera chain (SaucerSwap)
+- **`polygon_liquidity_agent.py`**: Fetches liquidity from Polygon chain
 
 ## Usage
 
@@ -61,15 +138,6 @@ Show me liquidity for MATIC/USDC
 }
 ```
 
-## Architecture
-
-The agent uses `ParallelAgent` with two sub-agents:
-
-1. **HederaLiquidityAgent**: Fetches liquidity from Hedera (SaucerSwap)
-2. **PolygonLiquidityAgent**: Fetches liquidity from Polygon
-
-Both sub-agents run concurrently, and results are combined into a unified response.
-
 ## Configuration
 
 Set environment variables:
@@ -104,8 +172,17 @@ The agent exposes an A2A Protocol endpoint that can be called by:
 - Requires Google ADK with ParallelAgent support (v0.1.0+)
 - Falls back to sequential execution if ParallelAgent unavailable
 
+## Testing
+
+Run tests using Makefile:
+
+```bash
+make test-parallel-liquidity              # Run all tests
+make test-parallel-liquidity-unit         # Run unit tests only
+make test-parallel-liquidity-integration  # Run integration tests only
+```
+
 ## See Also
 
 - [Parallel Agents Guide](../swap/PARALLEL_AGENTS_GUIDE.md)
 - [Google ADK Parallel Agents Documentation](https://google.github.io/adk-docs/agents/workflow-agents/parallel-agents/)
-
