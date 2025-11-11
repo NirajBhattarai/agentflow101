@@ -13,7 +13,7 @@ def rpc_urls() -> Dict[str, str]:
     return {
         "polygon": os.getenv(
             "POLYGON_RPC_URL",
-            "https://polygon.llamarpc.com",
+            "https://polygon-rpc.com",
         ),
         "hedera": os.getenv(
             "HEDERA_RPC_URL",
