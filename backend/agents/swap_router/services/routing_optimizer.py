@@ -79,12 +79,14 @@ def optimize_routing(
     pools_by_chain: Dict[str, List[PoolData]],
     max_slippage_percent: float = DEFAULT_MAX_SLIPPAGE_PERCENT,
     max_gas_usd: float = DEFAULT_MAX_GAS_SPEND_USD,
+    preferred_allocations: Optional[Dict[str, float]] = None,
 ) -> SwapRouterRecommendation:
     """
     Optimize swap routing across multiple chains.
 
     Uses iterative greedy algorithm to allocate amounts across chains
     to minimize total cost (price impact + gas).
+    If preferred_allocations is provided, uses those allocations instead.
 
     Args:
         total_amount: Total amount to swap
@@ -93,6 +95,7 @@ def optimize_routing(
         pools_by_chain: Dictionary mapping chain -> list of pools
         max_slippage_percent: Maximum acceptable slippage
         max_gas_usd: Maximum gas spend in USD
+        preferred_allocations: Optional preferred allocations from Pool Calculator (e.g., {"ethereum": 500000, "polygon": 300000})
 
     Returns:
         SwapRouterRecommendation with optimal routing
@@ -120,6 +123,26 @@ def optimize_routing(
     # Initialize allocation
     allocations = {chain: 0.0 for chain in best_pools.keys()}
     remaining = total_amount
+    
+    # If preferred allocations provided, use them (from Pool Calculator)
+    if preferred_allocations:
+        print(f"📊 Using preferred allocations from Pool Calculator:")
+        allocations = {}
+        for chain, amount in preferred_allocations.items():
+            if chain in best_pools and amount > 0:
+                allocations[chain] = amount
+                remaining -= amount
+                print(f"    {chain}: {amount:,.0f} {token_in}")
+        
+        # If remaining > 0, distribute proportionally
+        if remaining > 0:
+            print(f"  Distributing remaining {remaining:,.0f} proportionally")
+            total_allocated = sum(allocations.values())
+            if total_allocated > 0:
+                for chain in allocations:
+                    proportion = allocations[chain] / total_allocated
+                    allocations[chain] += remaining * proportion
+            remaining = 0
 
     # Iterative allocation
     iterations = 0

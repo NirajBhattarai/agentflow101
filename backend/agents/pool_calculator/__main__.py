@@ -1,45 +1,79 @@
 """
-Server entry point for Pool Calculator Agent.
+Pool Calculator Agent Server (ADK + A2A Protocol)
+
+Starts the Pool Calculator Agent as an A2A Protocol server.
 """
 
 import uvicorn
-from a2a.server import create_a2a_server
-from a2a.server.agent_card import AgentCard
-from a2a.server.agent_skill import AgentSkill
+import os
+from dotenv import load_dotenv
+from a2a.server.apps import A2AStarletteApplication
+from a2a.server.request_handlers import DefaultRequestHandler
+from a2a.server.tasks import InMemoryTaskStore
+from a2a.types import AgentCapabilities, AgentCard, AgentSkill
 from .executor import PoolCalculatorExecutor
 from .core.constants import AGENT_NAME, AGENT_DESCRIPTION
 
+load_dotenv()
+
+port = int(os.getenv("POOL_CALCULATOR_PORT", 9996))
+
+skill = AgentSkill(
+    id="pool_calculator_agent",
+    name=AGENT_NAME,
+    description=AGENT_DESCRIPTION,
+    tags=["defi", "pool", "calculation", "liquidity", "slot0", "adk"],
+    examples=[
+        "Calculate price from sqrtPriceX96 for USDT/WETH pool",
+        "What's the swap output for 1000 USDT in this pool?",
+        "Analyze the health of this liquidity pool",
+        "Recommend optimal swap allocation for 1M USDT to ETH",
+    ],
+)
+
+cardUrl = os.getenv("RENDER_EXTERNAL_URL", f"http://localhost:{port}")
+public_agent_card = AgentCard(
+    name=AGENT_NAME,
+    description=AGENT_DESCRIPTION,
+    url=cardUrl,
+    version="1.0.0",
+    defaultInputModes=["text"],
+    defaultOutputModes=["text"],
+    capabilities=AgentCapabilities(
+        text=True,
+        image=False,
+        audio=False,
+        video=False,
+        function_calling=True,
+    ),
+    skills=[skill],
+    supportsAuthenticatedExtendedCard=False,
+)
+
 
 def main():
-    """Start the Pool Calculator Agent server."""
-    print(f"🧮 Starting Pool Calculator Agent (ADK + A2A) on http://0.0.0.0:9996")
-    print(f"   Agent: {AGENT_NAME}")
-    print(f"   Description: {AGENT_DESCRIPTION}")
-    print(f"   Port: 9996")
-    print(f"   Features: Process liquidity/slot0 data, perform calculations, provide LLM insights")
+    if not os.getenv("GOOGLE_API_KEY") and not os.getenv("GEMINI_API_KEY"):
+        print("⚠️  Warning: No API key found!")
+        print("   Set either GOOGLE_API_KEY or GEMINI_API_KEY environment variable")
+        print("   Example: export GOOGLE_API_KEY='your-key-here'")
+        print("   Get a key from: https://aistudio.google.com/app/apikey")
+        print()
 
-    # Create A2A server
-    app = create_a2a_server(
-        id=AGENT_NAME.lower(),
+    request_handler = DefaultRequestHandler(
         agent_executor=PoolCalculatorExecutor(),
-        agent_card=AgentCard(
-            name=AGENT_NAME,
-            description=AGENT_DESCRIPTION,
-            instructions="Process liquidity and slot0 data to perform calculations and provide insights.",
-        ),
-        agent_skill=AgentSkill(
-            name=AGENT_NAME,
-            description=AGENT_DESCRIPTION,
-            examples=[
-                "Calculate price from sqrtPriceX96 for USDT/WETH pool",
-                "What's the swap output for 1000 USDT in this pool?",
-                "Analyze the health of this liquidity pool",
-            ],
-        ),
+        task_store=InMemoryTaskStore(),
     )
 
-    # Run server
-    uvicorn.run(app, host="0.0.0.0", port=9996)
+    server = A2AStarletteApplication(
+        agent_card=public_agent_card,
+        http_handler=request_handler,
+        extended_agent_card=public_agent_card,
+    )
+
+    print(f"🧮 Starting Pool Calculator Agent (ADK + A2A) on http://0.0.0.0:{port}")
+    print(f"   Agent: {public_agent_card.name}")
+    print(f"   Description: {public_agent_card.description}")
+    uvicorn.run(server.build(), host="0.0.0.0", port=port)
 
 
 if __name__ == "__main__":

@@ -23,6 +23,7 @@ from .services.liquidity_fetcher import (
     fetch_liquidity_from_multichain_agent,
     convert_liquidity_to_pool_data,
 )
+from .services.pool_calculator_client import get_optimal_allocations_from_pool_calculator
 from .services.routing_optimizer import optimize_routing
 from .services.response_builder import build_routing_response, build_error_response
 from .core.exceptions import SwapRouterError
@@ -111,14 +112,39 @@ class SwapRouterAgent:
 
             print(f"✅ Found {total_pools} pools across chains")
 
-            # Optimize routing
-            print(f"⚙️  Optimizing routing for {amount:,.0f} {token_in}...")
-            recommendation = optimize_routing(
+            # Get optimal allocations from Pool Calculator Agent (LLM reasoning)
+            print(f"🧮 Getting optimal allocations from Pool Calculator Agent...")
+            optimal_allocations = await get_optimal_allocations_from_pool_calculator(
+                liquidity_data=liquidity_data,
                 total_amount=amount,
                 token_in=token_in,
                 token_out=token_out,
-                pools_by_chain=pools_by_chain,
+                session_id=session_id,
             )
+            
+            if optimal_allocations and optimal_allocations.get("recommended_allocations"):
+                # Use allocations from Pool Calculator
+                print(f"✅ Received optimal allocations from Pool Calculator")
+                recommended = optimal_allocations["recommended_allocations"]
+                print(f"  Allocations: {recommended}")
+                
+                # Build routes using the recommended allocations
+                recommendation = optimize_routing(
+                    total_amount=amount,
+                    token_in=token_in,
+                    token_out=token_out,
+                    pools_by_chain=pools_by_chain,
+                    preferred_allocations=recommended,
+                )
+            else:
+                # Fallback to default optimization if Pool Calculator fails
+                print(f"⚠️  Pool Calculator did not return valid allocations, using default optimization")
+                recommendation = optimize_routing(
+                    total_amount=amount,
+                    token_in=token_in,
+                    token_out=token_out,
+                    pools_by_chain=pools_by_chain,
+                )
 
             print(f"✅ Routing optimized: {len(recommendation.routes)} routes")
 

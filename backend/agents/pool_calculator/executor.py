@@ -1,66 +1,82 @@
 """
-A2A Protocol Executor for Pool Calculator Agent.
+Pool Calculator Agent Executor (A2A Protocol)
+
+Handles A2A protocol requests for the Pool Calculator Agent.
 """
 
-from a2a.server.agent_execution import AgentExecutor, RequestContext
-from a2a.server.event_queue import EventQueue
-from .agent import PoolCalculatorAgent
-from .core.constants import DEFAULT_SESSION_ID
+import json
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# A2A Protocol imports
+from a2a.server.agent_execution import AgentExecutor, RequestContext  # noqa: E402
+from a2a.server.events import EventQueue  # noqa: E402
+from a2a.utils import new_agent_text_message  # noqa: E402
+
+from .core.constants import (  # noqa: E402
+    DEFAULT_USER_ID,
+    RESPONSE_TYPE,
+    ERROR_CANCEL_NOT_SUPPORTED,
+)
+from .agent import PoolCalculatorAgent  # noqa: E402
+
+
+def _get_session_id(context: RequestContext) -> str:
+    """Extract session ID from context."""
+    return getattr(context, "context_id", DEFAULT_USER_ID)
+
+
+def _build_empty_response() -> str:
+    """Build empty response fallback."""
+    return json.dumps(
+        {
+            "type": RESPONSE_TYPE,
+            "response": "No response generated",
+        }
+    )
+
+
+def _build_execution_error_response(error: Exception) -> str:
+    """Build error response."""
+    return json.dumps(
+        {
+            "type": "error",
+            "error": str(error),
+            "message": f"Pool Calculator Agent error: {error}",
+        }
+    )
 
 
 class PoolCalculatorExecutor(AgentExecutor):
-    """A2A executor for Pool Calculator Agent."""
+    """Executor for Pool Calculator Agent using A2A Protocol."""
 
     def __init__(self):
         self.agent = PoolCalculatorAgent()
 
     async def execute(
-        self, context: RequestContext, event_queue: EventQueue
+        self,
+        context: RequestContext,
+        event_queue: EventQueue,
     ) -> None:
-        """
-        Execute A2A protocol request.
-
-        Args:
-            context: Request context with message
-            event_queue: Event queue for responses
-        """
+        """Execute the pool calculator agent request."""
+        query = context.get_user_input()
+        session_id = _get_session_id(context)
         try:
-            # Get message from context
-            message = context.message
-            if isinstance(message, dict):
-                query = message.get("text", "") or message.get("query", "") or str(message)
-            else:
-                query = str(message)
-
-            if not query:
-                await event_queue.enqueue(
-                    {
-                        "type": "error",
-                        "error": "No query provided",
-                    }
-                )
-                return
-
-            # Invoke agent
-            session_id = context.session_id or DEFAULT_SESSION_ID
-            response = await self.agent.invoke(query, session_id)
-
-            # Enqueue response
-            await event_queue.enqueue(
-                {
-                    "type": "pool_calculation",
-                    "response": response,
-                    "query": query,
-                }
-            )
-
+            content = await self.agent.invoke(query, session_id)
+            if not content or not content.strip():
+                content = _build_empty_response()
+            await event_queue.enqueue_event(new_agent_text_message(content))
+            print("✅ Successfully enqueued pool calculator response")
         except Exception as e:
-            error_msg = f"Error executing pool calculator: {e}"
-            print(f"❌ {error_msg}")
-            await event_queue.enqueue(
-                {
-                    "type": "error",
-                    "error": error_msg,
-                }
-            )
+            print(f"❌ Error in execute: {e}")
+            import traceback
+
+            traceback.print_exc()
+            error_response = _build_execution_error_response(e)
+            await event_queue.enqueue_event(new_agent_text_message(error_response))
+
+    async def cancel(self, context: RequestContext, event_queue: EventQueue) -> None:
+        """Cancel execution (not supported)."""
+        raise Exception(ERROR_CANCEL_NOT_SUPPORTED)
 

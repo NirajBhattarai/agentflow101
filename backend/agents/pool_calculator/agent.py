@@ -1,8 +1,9 @@
 """
 Pool Calculator Agent Definition
 
-An agent that processes liquidity and slot0 data to perform calculations
-and provide natural language insights using LLM.
+An agent that processes liquidity and slot0 data from multiple chains,
+analyzes price impacts, and uses LLM to recommend optimal swap routing
+across chains.
 """
 
 from google.adk.agents.llm_agent import LlmAgent
@@ -24,6 +25,8 @@ from .tools.calculations import (
     calculate_swap_output,
     analyze_pool_health,
     process_pool_data,
+    prepare_pools_by_chain,
+    analyze_price_impact_for_allocation,
 )
 
 
@@ -51,6 +54,8 @@ class PoolCalculatorAgent:
             description=AGENT_DESCRIPTION,
             instruction=AGENT_INSTRUCTION,
             tools=[
+                prepare_pools_by_chain,
+                analyze_price_impact_for_allocation,
                 calculate_price_from_sqrt_price_x96,
                 calculate_swap_output,
                 analyze_pool_health,
@@ -73,10 +78,10 @@ class PoolCalculatorAgent:
 
         try:
             # Run the agent with the query
-            response = await self._runner.run(
+            response = await self._runner.run_async(
                 user_id=self._user_id,
                 session_id=session_id,
-                user_message=query,
+                message=query,
             )
 
             # Extract text response

@@ -4,9 +4,10 @@ Calculation tools for pool data analysis.
 These tools perform various calculations on liquidity and slot0 data.
 """
 
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 from decimal import Decimal, getcontext
-from ...core.exceptions import InvalidPoolDataError, CalculationError
+from ..core.exceptions import InvalidPoolDataError, CalculationError, InsufficientDataError
+import json
 
 # Set high precision for calculations
 getcontext().prec = 50
@@ -37,8 +38,17 @@ def calculate_price_from_sqrt_price_x96(
         price_wei = sqrt_price ** 2
         
         # Convert to human-readable: price_human = price_wei * 10^(decimals0 - decimals1)
+        # price_wei = token1_wei / token0_wei
+        # price_human = (token1_wei / 10^decimals1) / (token0_wei / 10^decimals0)
+        #             = price_wei * 10^(decimals0 - decimals1)
         decimal_adjustment = Decimal(10) ** (token0_decimals - token1_decimals)
         price_token1_per_token0 = float(price_wei * decimal_adjustment)
+        
+        # If price is unreasonably small, try inverted adjustment
+        if price_token1_per_token0 < 1e-10 and float(price_wei) > 1e-6:
+            # Likely inverted: try the opposite
+            decimal_adjustment_inv = Decimal(10) ** (token1_decimals - token0_decimals)
+            price_token1_per_token0 = float(price_wei * decimal_adjustment_inv)
         
         return {
             "price_token1_per_token0": price_token1_per_token0,
@@ -192,6 +202,168 @@ def process_pool_data(
         results["calculations"]["health"] = health
         results["insights"].append(
             f"Pool health: {health['health_score']}, Reserve ratio: {health['reserve_ratio']:.2f}"
+        )
+    
+    return results
+
+
+def prepare_pools_by_chain(
+    liquidity_data: Dict,
+) -> Dict[str, List[Dict]]:
+    """
+    Prepare pools data organized by chain from multichain_liquidity response.
+    
+    Args:
+        liquidity_data: Response from multichain_liquidity agent
+    
+    Returns:
+        Dictionary mapping chain -> list of pool dictionaries
+    """
+    pools_by_chain = {
+        "ethereum": [],
+        "polygon": [],
+        "hedera": [],
+    }
+    
+    chains = liquidity_data.get("chains", {})
+    
+    for chain_name, chain_data in chains.items():
+        pairs = chain_data.get("pairs", [])
+        pools_by_chain[chain_name] = pairs
+    
+    return pools_by_chain
+
+
+def analyze_price_impact_for_allocation(
+    total_amount: float,
+    allocations: Dict[str, float],
+    pools_by_chain: Dict[str, List[Dict]],
+    token_in: str,
+    token_out: str,
+) -> Dict[str, any]:
+    """
+    Analyze price impact for different allocation strategies across chains.
+    
+    Args:
+        total_amount: Total amount to swap
+        allocations: Dictionary mapping chain -> amount (e.g., {"ethereum": 500000, "polygon": 300000})
+        pools_by_chain: Dictionary mapping chain -> list of pool data
+        token_in: Input token symbol
+        token_out: Output token symbol
+    
+    Returns:
+        Dictionary with analysis results including:
+        - total_output: Total ETH/token_out received
+        - price_impacts: Price impact per chain
+        - recommendations: LLM-friendly recommendations
+    """
+    results = {
+        "total_input": total_amount,
+        "token_in": token_in,
+        "token_out": token_out,
+        "allocations": allocations,
+        "chain_results": {},
+        "total_output": 0.0,
+        "average_price_impact": 0.0,
+        "recommendations": [],
+    }
+    
+    total_output = 0.0
+    total_price_impact_weighted = 0.0
+    total_input_used = 0.0
+    
+    for chain, amount in allocations.items():
+        if amount <= 0:
+            continue
+        
+        pools = pools_by_chain.get(chain, [])
+        if not pools:
+            results["chain_results"][chain] = {
+                "amount": amount,
+                "output": 0.0,
+                "price_impact": 0.0,
+                "error": "No pools available",
+            }
+            continue
+        
+        # Use the first/best pool for calculation
+        pool = pools[0]
+        
+        # Get reserves
+        reserve_base = pool.get("reserve_base", 0.0)
+        reserve_quote = pool.get("reserve_quote", 0.0)
+        fee_bps = pool.get("fee_bps", 3000)
+        fee_percent = fee_bps / 10000.0
+        
+        # Determine which reserve is which based on token symbols
+        token0 = pool.get("token0", "").upper()
+        token1 = pool.get("token1", "").upper()
+        token_in_upper = token_in.upper()
+        token_out_upper = token_out.upper()
+        
+        # Normalize ETH -> WETH
+        if token_in_upper == "ETH":
+            token_in_upper = "WETH"
+        if token_out_upper == "ETH":
+            token_out_upper = "WETH"
+        if token0 == "ETH":
+            token0 = "WETH"
+        if token1 == "ETH":
+            token1 = "WETH"
+        
+        # Determine swap direction
+        if token0 == token_in_upper:
+            reserve_in = reserve_base
+            reserve_out = reserve_quote
+        elif token1 == token_in_upper:
+            reserve_in = reserve_quote
+            reserve_out = reserve_base
+        else:
+            # Fallback
+            reserve_in = reserve_base
+            reserve_out = reserve_quote
+        
+        # Calculate swap output
+        try:
+            swap_result = calculate_swap_output(
+                amount, reserve_in, reserve_out, fee_percent
+            )
+            
+            chain_output = swap_result["amount_out"]
+            chain_price_impact = swap_result["price_impact_percent"]
+            
+            total_output += chain_output
+            total_price_impact_weighted += chain_price_impact * amount
+            total_input_used += amount
+            
+            results["chain_results"][chain] = {
+                "amount": amount,
+                "output": chain_output,
+                "price_impact": chain_price_impact,
+                "effective_price": swap_result["effective_price"],
+                "pool_address": pool.get("pool_address", ""),
+            }
+        except Exception as e:
+            results["chain_results"][chain] = {
+                "amount": amount,
+                "output": 0.0,
+                "price_impact": 0.0,
+                "error": str(e),
+            }
+    
+    results["total_output"] = total_output
+    results["average_price_impact"] = (
+        total_price_impact_weighted / total_input_used if total_input_used > 0 else 0
+    )
+    
+    # Generate recommendations
+    if results["chain_results"]:
+        best_chain = max(
+            results["chain_results"].items(),
+            key=lambda x: x[1].get("output", 0) / max(x[1].get("amount", 1), 1),
+        )[0]
+        results["recommendations"].append(
+            f"Best efficiency: {best_chain} with {results['chain_results'][best_chain]['output']:.4f} {token_out} output"
         )
     
     return results

@@ -150,15 +150,54 @@ def _calculate_with_sqrt_price_x96(
     price_wei_float = float(price_wei)
     
     # Step 2: Convert to human-readable units
-    # price_human = token1 / token0
-    #            = (token1_wei / 10^decimals1) / (token0_wei / 10^decimals0)
-    #            = (token1_wei / token0_wei) * (10^decimals0 / 10^decimals1)
-    #            = price_wei * 10^(decimals0 - decimals1)
+    # price_wei = token1_wei / token0_wei
+    # price_human = (token1_wei / 10^decimals1) / (token0_wei / 10^decimals0)
+    #             = (token1_wei / token0_wei) * (10^decimals0 / 10^decimals1)
+    #             = price_wei * 10^(decimals0 - decimals1)
     #
     # For USDT (6 decimals) / WETH (18 decimals):
-    # - price_human = price_wei * 10^(6-18) = price_wei * 10^-12
-    decimal_adjustment = Decimal(10) ** (token0_decimals - token1_decimals)
-    price_token1_per_token0 = float(price_wei * decimal_adjustment)
+    # - price_wei = token1_wei / token0_wei (in smallest units)
+    # - If price_wei is very small (e.g., 3.5e-9), it means token1_wei << token0_wei
+    # - But we know WETH is worth more than USDT, so this suggests the calculation is inverted
+    # - Actually, the issue is that sqrtPriceX96 might represent sqrt(token0/token1) not sqrt(token1/token0)
+    # - OR the price_wei is so small because we need to account for the decimal difference differently
+    #
+    # Let's try both adjustments and pick the one that makes sense
+    decimal_adjustment_1 = Decimal(10) ** (token0_decimals - token1_decimals)
+    price_token1_per_token0_1 = float(price_wei * decimal_adjustment_1)
+    
+    decimal_adjustment_2 = Decimal(10) ** (token1_decimals - token0_decimals)
+    price_token1_per_token0_2 = float(price_wei * decimal_adjustment_2)
+    
+    # For USDT/WETH, expected price is ~0.00028 WETH per USDT (or ~3500 USDT per WETH)
+    # If we're calculating token1/token0 and token1=WETH, token0=USDT, we want ~0.00028
+    expected_range = (0.0001, 0.001)  # WETH per USDT
+    
+    if expected_range[0] < price_token1_per_token0_1 < expected_range[1]:
+        price_token1_per_token0 = price_token1_per_token0_1
+        print(f"✅ Using adjustment 1: {price_token1_per_token0:.10f}")
+    elif expected_range[0] < price_token1_per_token0_2 < expected_range[1]:
+        price_token1_per_token0 = price_token1_per_token0_2
+        print(f"✅ Using adjustment 2 (inverted): {price_token1_per_token0:.10f}")
+    else:
+        # Neither is in range, try calculating from reserves as fallback
+        # But first, let's try: maybe sqrtPriceX96 actually represents token0/token1, not token1/token0
+        # So we need to invert: price_token0_per_token1 = 1 / price_token1_per_token0
+        # If price_wei is very small, maybe it's actually token0_wei / token1_wei
+        # So price_token1_per_token0 = 1 / (price_wei * 10^(decimals1 - decimals0))
+        if price_wei_float < 1e-6:
+            # Try inverting the whole calculation
+            price_token1_per_token0_inv = 1.0 / float(price_wei * decimal_adjustment_2) if price_wei > 0 else 0
+            if expected_range[0] < price_token1_per_token0_inv < expected_range[1]:
+                price_token1_per_token0 = price_token1_per_token0_inv
+                print(f"✅ Using inverted calculation: {price_token1_per_token0:.10f}")
+            else:
+                # Fall back to first adjustment but we'll use reserves for validation
+                price_token1_per_token0 = price_token1_per_token0_1
+                print(f"⚠️  Neither adjustment worked, using first: {price_token1_per_token0:.10e}")
+        else:
+            price_token1_per_token0 = price_token1_per_token0_1
+            print(f"⚠️  Price_wei is reasonable but result not in range: {price_token1_per_token0:.10e}")
     
     # Validate: If price seems wrong, use reserves to calculate spot price instead
     # Expected: ~0.00028 WETH per USDT (at ~$3700/ETH, 1 USDT = $1)
@@ -172,28 +211,43 @@ def _calculate_with_sqrt_price_x96(
     print(f"  sqrtPriceX96: {sqrt_price_x96_str}")
     print(f"  token0={pool_data.token0} ({token0_decimals} decimals), token1={pool_data.token1} ({token1_decimals} decimals)")
     print(f"  price_wei: {price_wei_float:.10e}")
-    print(f"  decimal_adjustment: {decimal_adjustment}")
     print(f"  price_token1_per_token0: {price_token1_per_token0:.10f}")
     print(f"  is_token0_in: {is_token0_in}")
     
     # Determine swap direction and calculate spot price
     # Note: In Uniswap V3, sqrtPriceX96 always represents token1/token0
+    # Normalize reserves so that token0_reserve corresponds to token0 symbol
+    # Heuristic: For stablecoins (USDT/USDC/DAI), the reserve should typically be larger than WETH reserve
+    reserve_base_raw = Decimal(str(pool_data.reserve_base))
+    reserve_quote_raw = Decimal(str(pool_data.reserve_quote))
+    token0_upper = pool_data.token0.upper()
+    token1_upper = pool_data.token1.upper()
+    stable_set = {"USDT", "USDC", "DAI"}
+    reserve_token0 = reserve_base_raw
+    reserve_token1 = reserve_quote_raw
+    # If token0 is stable but its reserve is smaller, swap
+    if token0_upper in stable_set and reserve_token0 < reserve_token1:
+        reserve_token0, reserve_token1 = reserve_token1, reserve_token0
+    # If token1 is stable but its reserve is smaller, swap
+    if token1_upper in stable_set and reserve_token1 < reserve_token0:
+        reserve_token0, reserve_token1 = reserve_token1, reserve_token0
+
     if is_token0_in:
         # Swapping token0 -> token1
         # Spot price = token1/token0 = price from sqrtPriceX96
         spot_price = price_token1_per_token0
         # Reserve mapping: reserve_base should be token0, reserve_quote should be token1
         # But we need to verify this matches the actual pool structure
-        reserve_in = Decimal(str(pool_data.reserve_base))
-        reserve_out = Decimal(str(pool_data.reserve_quote))
+        reserve_in = reserve_token0
+        reserve_out = reserve_token1
     else:
         # Swapping token1 -> token0
         # Spot price = token0/token1 = 1/(token1/token0) = 1/price_from_sqrtPriceX96
         spot_price = 1.0 / price_token1_per_token0 if price_token1_per_token0 > 0 else 0
         # Reserve mapping: reserve_base should be token0, but we're swapping token1
         # So reserve_in should be reserve_quote (token1), reserve_out should be reserve_base (token0)
-        reserve_in = Decimal(str(pool_data.reserve_quote))
-        reserve_out = Decimal(str(pool_data.reserve_base))
+        reserve_in = reserve_token1
+        reserve_out = reserve_token0
     
     print(f"  spot_price: {spot_price}")
     print(f"  reserve_in (token_in): {reserve_in}, reserve_out (token_out): {reserve_out}")

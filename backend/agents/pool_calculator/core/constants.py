@@ -19,6 +19,9 @@ DEFAULT_SESSION_ID = "pool_calculator_session"
 # Response Type
 RESPONSE_TYPE = "pool_calculation"
 
+# Error Messages
+ERROR_CANCEL_NOT_SUPPORTED = "Cancel operation is not supported for Pool Calculator Agent"
+
 
 def get_model_name() -> str:
     """Get model name from environment or use default."""
