@@ -108,10 +108,11 @@ class MultiChainLiquidityAgent:
                 try:
                     print("🔍 Fetching liquidity from Hedera...")
                     if token_pair:
+                        # Hedera function takes a single token address/symbol
                         base, quote = token_pair.split("/")
-                        hedera_result = get_liquidity_hedera(base, quote)
+                        hedera_result = get_liquidity_hedera(base)
                     else:
-                        hedera_result = get_liquidity_hedera("", "")
+                        hedera_result = get_liquidity_hedera("")
                     print(
                         f"✅ Hedera: Found {len(hedera_result.get('pools', [])) if isinstance(hedera_result, dict) else 0} pools"
                     )
@@ -124,10 +125,10 @@ class MultiChainLiquidityAgent:
                 try:
                     print("🔍 Fetching liquidity from Polygon...")
                     if token_pair:
-                        base, quote = token_pair.split("/")
-                        polygon_result = get_liquidity_polygon(base, quote)
+                        # Polygon function expects token pair string like "ETH/USDT"
+                        polygon_result = get_liquidity_polygon(token_pair)
                     else:
-                        polygon_result = get_liquidity_polygon("", "")
+                        polygon_result = get_liquidity_polygon("")
                     print(
                         f"✅ Polygon: Found {len(polygon_result.get('pools', [])) if isinstance(polygon_result, dict) else 0} pools"
                     )
@@ -140,10 +141,10 @@ class MultiChainLiquidityAgent:
                 try:
                     print("🔍 Fetching liquidity from Ethereum...")
                     if token_pair:
-                        base, quote = token_pair.split("/")
-                        ethereum_result = get_liquidity_ethereum(base, quote)
+                        # Ethereum function expects token pair string like "ETH/USDT"
+                        ethereum_result = get_liquidity_ethereum(token_pair)
                     else:
-                        ethereum_result = get_liquidity_ethereum("", "")
+                        ethereum_result = get_liquidity_ethereum("")
                     print(
                         f"✅ Ethereum: Found {len(ethereum_result.get('pools', [])) if isinstance(ethereum_result, dict) else 0} pools"
                     )
