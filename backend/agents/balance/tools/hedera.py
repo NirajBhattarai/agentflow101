@@ -21,18 +21,17 @@ def _get_symbol_for_token_id(token_id: str) -> str:
     """Get symbol for token ID from mapping or fallback."""
     # Create reverse mapping on the fly (only used in error cases)
     token_id_to_symbol = {
-        token_data["tokenid"]: symbol 
-        for symbol, token_data in HEDERA_TOKENS.items()
+        token_data["tokenid"]: symbol for symbol, token_data in HEDERA_TOKENS.items()
     }
     return token_id_to_symbol.get(token_id) or token_id.split(".")[-1]
 
 
 def _resolve_token_symbol_from_id(token_id: str) -> Optional[str]:
     """Resolve token symbol from token ID efficiently.
-    
+
     Args:
         token_id: Token ID or symbol
-        
+
     Returns:
         Token symbol if found, None otherwise
     """
@@ -40,12 +39,12 @@ def _resolve_token_symbol_from_id(token_id: str) -> Optional[str]:
     token_id_upper = token_id.upper()
     if token_id_upper in HEDERA_TOKENS:
         return token_id_upper
-    
+
     # Check if token_id matches a token ID
     for symbol, token_data in HEDERA_TOKENS.items():
         if token_data["tokenid"] == token_id:
             return symbol
-    
+
     return None
 
 
@@ -62,7 +61,7 @@ def _get_specific_token_balance(
     """Get balance for a specific token using shared balance tools."""
     # Resolve token symbol from token_id efficiently
     token_symbol = _resolve_token_symbol_from_id(token_id)
-    
+
     # Resolve account ID (handles both EVM and Hedera formats)
     account_id = resolve_hedera_account_id(account_identifier, api_base)
 
@@ -106,27 +105,27 @@ def _get_specific_token_balance(
 
 def _get_all_token_balances(api_base: str, account_identifier: str) -> list:
     """Get balances for all tokens in HEDERA_TOKENS using shared balance tools.
-    
+
     Uses batch function for better performance.
     """
     # Resolve account ID (handles both EVM and Hedera formats)
     account_id = resolve_hedera_account_id(account_identifier, api_base)
-    
+
     # Get all token symbols except HBAR (handled separately)
-    token_symbols = [
-        symbol for symbol in HEDERA_TOKENS.keys() if symbol != "HBAR"
-    ]
-    
+    token_symbols = [symbol for symbol in HEDERA_TOKENS.keys() if symbol != "HBAR"]
+
     # Use batch function for better performance (single API call with pagination)
     results = get_multiple_token_balances_hedera(account_id, token_symbols)
-    
+
     balances = []
     for i, result in enumerate(results):
         token_symbol = token_symbols[i]
-        
+
         if "error" not in result and "token_address" in result:
             # Convert shared tool format to agent format
-            balances.append(convert_shared_result_to_agent_format(result, default_decimals=6))
+            balances.append(
+                convert_shared_result_to_agent_format(result, default_decimals=6)
+            )
         elif "error" not in result:
             # Balance is 0, still include entry
             balances.append(
@@ -157,8 +156,6 @@ def _get_all_token_balances(api_base: str, account_identifier: str) -> list:
     return balances
 
 
-
-
 def get_balance_hedera(
     account_address: str, token_address: Optional[str] = None
 ) -> dict:
@@ -176,42 +173,46 @@ def get_balance_hedera(
     # Ensure account_address is a string
     if not account_address or not isinstance(account_address, str):
         return build_error_response(
-            "hedera", 
+            "hedera",
             str(account_address) if account_address else "unknown",
-            ValueError("Invalid account address provided")
+            ValueError("Invalid account address provided"),
         )
-    
+
     try:
         # Get network from environment
         network = os.getenv("HEDERA_NETWORK", "mainnet")
         api_base = get_hedera_api_base(network)
-        
+
         # Resolve account ID (handles both EVM and Hedera formats)
         account_id = resolve_hedera_account_id(account_address, api_base)
-        
+
         # Get account identifier for API calls (prefers EVM format if available)
         account_identifier = get_account_identifier_for_api(account_address, account_id)
-        
+
         balances = []
         # Get native HBAR balance using shared tool
         native_balance = get_native_hbar_balance(account_identifier, api_base)
         if isinstance(native_balance, dict):
             balances.append(native_balance)
-        
+
         if token_address:
             token_id = _resolve_token_address(token_address)
-            token_balance = _get_specific_token_balance(api_base, account_identifier, token_id)
+            token_balance = _get_specific_token_balance(
+                api_base, account_identifier, token_id
+            )
             if isinstance(token_balance, dict):
                 balances.append(token_balance)
         else:
             all_balances = _get_all_token_balances(api_base, account_identifier)
             if isinstance(all_balances, list):
                 balances.extend(all_balances)
-        
+
         result = build_success_response("hedera", account_id, balances)
         # Ensure result is always a valid dict
         if not isinstance(result, dict):
-            return build_error_response("hedera", account_address, ValueError("Invalid response format"))
+            return build_error_response(
+                "hedera", account_address, ValueError("Invalid response format")
+            )
         return result
     except Exception as e:
         error_result = build_error_response("hedera", account_address, e)
@@ -220,7 +221,9 @@ def get_balance_hedera(
             return {
                 "type": "balance",
                 "chain": "hedera",
-                "account_address": str(account_address) if account_address else "unknown",
+                "account_address": str(account_address)
+                if account_address
+                else "unknown",
                 "error": f"Error: {str(e)}",
                 "balances": [],
                 "total_usd_value": "$0.00",

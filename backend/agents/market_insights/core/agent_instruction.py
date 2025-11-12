@@ -29,4 +29,3 @@ Always return valid JSON with clear structure including:
 
 If no network is specified, return trending tokens from all networks.
 """
-

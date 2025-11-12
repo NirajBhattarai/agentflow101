@@ -68,11 +68,11 @@ def convert_liquidity_to_pool_data(
             # Determine which token is which
             base = pair.get("base", "").upper()
             quote = pair.get("quote", "").upper()
-            
+
             # Normalize token symbols for matching (ETH -> WETH for EVM chains)
             token_in_upper = token_in.upper()
             token_out_upper = token_out.upper()
-            
+
             # Map ETH to WETH for EVM chains
             if chain_name in ["ethereum", "polygon"]:
                 if token_in_upper == "ETH":

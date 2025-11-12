@@ -86,9 +86,7 @@ def main():
         extended_agent_card=public_agent_card,
     )
 
-    print(
-        f"📊 Starting Market Insights Agent (ADK + A2A) on http://0.0.0.0:{port}"
-    )
+    print(f"📊 Starting Market Insights Agent (ADK + A2A) on http://0.0.0.0:{port}")
     print(f"   Agent: {public_agent_card.name}")
     print(f"   Description: {public_agent_card.description}")
     uvicorn.run(server.build(), host="0.0.0.0", port=port)
@@ -96,4 +94,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

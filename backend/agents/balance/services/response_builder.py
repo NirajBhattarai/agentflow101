@@ -51,7 +51,7 @@ def build_unknown_chain_response(chain: str, account_address: str) -> dict:
 
 def build_balance_response(chain: str, account_address: str) -> dict:
     """Build balance response based on chain.
-    
+
     Routes to appropriate chain tool or combines results for all chains.
     The tools already return the correct format, so we just route to them.
     """

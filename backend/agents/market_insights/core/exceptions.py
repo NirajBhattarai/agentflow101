@@ -25,4 +25,3 @@ class InvalidTokenAddressError(MarketInsightsError):
     """Exception raised when token address is invalid."""
 
     pass
-

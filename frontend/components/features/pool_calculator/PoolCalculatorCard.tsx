@@ -66,7 +66,7 @@ export function PoolCalculatorCard({ data }: PoolCalculatorCardProps) {
   const allocations = data.recommended_allocations || {};
   const totalAmount = Object.values(allocations).reduce(
     (sum: number, val: any) => sum + (typeof val === "number" ? val : parseFloat(val) || 0),
-    0
+    0,
   );
 
   return (
@@ -115,7 +115,7 @@ export function PoolCalculatorCard({ data }: PoolCalculatorCardProps) {
                     <span className="text-xl">{chainStyle.icon}</span>
                     <h4 className="font-semibold capitalize text-[#010507]">{chain}</h4>
                   </div>
-                  
+
                   {/* Percentage Bar */}
                   <div className="mb-3">
                     <div className="flex items-center justify-between mb-1">
@@ -178,4 +178,3 @@ export function PoolCalculatorCard({ data }: PoolCalculatorCardProps) {
     </div>
   );
 }
-

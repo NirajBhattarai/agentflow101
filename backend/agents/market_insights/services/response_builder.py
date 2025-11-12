@@ -113,8 +113,10 @@ def _extract_trending_data(data: Dict[str, Any]) -> List[TrendingTokenData]:
                     # Only extract token information (no pools)
                     if item.get("type") == "token":
                         token_address = attrs.get("address", "")
-                        network = attrs.get("network_id") or attrs.get("network") or "unknown"
-                        
+                        network = (
+                            attrs.get("network_id") or attrs.get("network") or "unknown"
+                        )
+
                         if token_address:
                             trending_tokens.append(
                                 TrendingTokenData(
@@ -122,10 +124,13 @@ def _extract_trending_data(data: Dict[str, Any]) -> List[TrendingTokenData]:
                                     pool_address=None,  # No pools, only tokens
                                     network=network,
                                     price_usd=attrs.get("price_usd"),
-                                    volume_24h_usd=attrs.get("volume_usd", {}).get("h24")
+                                    volume_24h_usd=attrs.get("volume_usd", {}).get(
+                                        "h24"
+                                    )
                                     if isinstance(attrs.get("volume_usd"), dict)
                                     else attrs.get("volume_usd"),
-                                    reserve_in_usd=attrs.get("total_reserve_in_usd") or attrs.get("reserve_in_usd"),
+                                    reserve_in_usd=attrs.get("total_reserve_in_usd")
+                                    or attrs.get("reserve_in_usd"),
                                     price_change_24h=attrs.get(
                                         "price_change_percentage", {}
                                     ).get("h24")
@@ -198,4 +203,3 @@ def build_error_response(error: str) -> str:
         },
         indent=2,
     )
-

@@ -25,4 +25,3 @@ class InsufficientDataError(PoolCalculatorError):
     """Raised when required data for calculation is missing."""
 
     pass
-

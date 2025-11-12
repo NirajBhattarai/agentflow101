@@ -18,10 +18,10 @@ from .shared_utils import (  # noqa: E402
 
 def _resolve_token_symbol_from_address(token_address: str) -> Optional[str]:
     """Resolve token symbol from token address efficiently.
-    
+
     Args:
         token_address: Token address or symbol
-        
+
     Returns:
         Token symbol if found, None otherwise
     """
@@ -29,13 +29,13 @@ def _resolve_token_symbol_from_address(token_address: str) -> Optional[str]:
     token_address_upper = token_address.upper()
     if token_address_upper in POLYGON_TOKENS:
         return token_address_upper
-    
+
     # Check if token_address matches a token address (case-insensitive)
     token_address_lower = token_address.lower()
     for symbol, token_data in POLYGON_TOKENS.items():
         if token_data["address"].lower() == token_address_lower:
             return symbol
-    
+
     return None
 
 
@@ -61,19 +61,19 @@ def _fetch_token_balance_data(
     try:
         token_contract = w3.eth.contract(address=token_address, abi=ERC20_ABI)
         balance_raw = token_contract.functions.balanceOf(account_address).call()
-        
+
         # Get decimals with fallback
         try:
             decimals = token_contract.functions.decimals().call()
         except Exception:
             decimals = 18
-        
+
         # Get symbol with fallback
         try:
             symbol = token_contract.functions.symbol().call()
         except Exception:
             symbol = "UNKNOWN"
-        
+
         balance_float = balance_raw / (10**decimals)
         return {
             "token_type": "token",
@@ -85,7 +85,9 @@ def _fetch_token_balance_data(
         }
     except Exception as e:
         # Use default decimals if we couldn't fetch them
-        return create_token_balance_error_entry(token_address, "UNKNOWN", str(e), decimals=18)
+        return create_token_balance_error_entry(
+            token_address, "UNKNOWN", str(e), decimals=18
+        )
 
 
 def _get_token_balance(w3: Web3, account_address: str, token_address: str) -> dict:
@@ -114,23 +116,21 @@ def _get_token_balance(w3: Web3, account_address: str, token_address: str) -> di
     return _fetch_token_balance_data(w3, account_address, token_address)
 
 
-
-
 def _get_all_token_balances(w3: Web3, account_address: str) -> list:
     """Get balances for all tokens in POLYGON_TOKENS using shared balance tools.
-    
+
     Uses batch function for better performance.
     """
     # Get all token symbols
     token_symbols = list(POLYGON_TOKENS.keys())
-    
+
     # Use batch function for better performance
     results = get_multiple_token_balances_polygon(account_address, token_symbols)
-    
+
     balances = []
     for i, result in enumerate(results):
         token_symbol = token_symbols[i]
-        
+
         if "error" not in result:
             # Convert shared tool format to agent format
             balances.append(convert_shared_result_to_agent_format(result))
@@ -171,25 +171,25 @@ def get_balance_polygon(
         return build_error_response(
             "polygon",
             str(account_address) if account_address else "unknown",
-            ValueError("Invalid account address provided")
+            ValueError("Invalid account address provided"),
         )
-    
+
     try:
         w3 = get_web3_instance("polygon")
         if not w3.is_connected():
             raise ConnectionError("Failed to connect to Polygon RPC")
-        
+
         # Validate and checksum address
         if not w3.is_address(account_address):
             raise ValueError(f"Invalid account address: {account_address}")
         account_address = w3.to_checksum_address(account_address)
-        
+
         balances = []
         # Get native MATIC balance using shared tool
         native_balance = get_native_matic_balance(account_address)
         if isinstance(native_balance, dict):
             balances.append(native_balance)
-        
+
         if token_address:
             token_balance = _get_token_balance(w3, account_address, token_address)
             if isinstance(token_balance, dict):
@@ -198,11 +198,13 @@ def get_balance_polygon(
             all_balances = _get_all_token_balances(w3, account_address)
             if isinstance(all_balances, list):
                 balances.extend(all_balances)
-        
+
         result = build_success_response("polygon", account_address, balances)
         # Ensure result is always a valid dict
         if not isinstance(result, dict):
-            return build_error_response("polygon", account_address, ValueError("Invalid response format"))
+            return build_error_response(
+                "polygon", account_address, ValueError("Invalid response format")
+            )
         return result
     except Exception as e:
         error_result = build_error_response("polygon", account_address, e)
@@ -211,7 +213,9 @@ def get_balance_polygon(
             return {
                 "type": "balance",
                 "chain": "polygon",
-                "account_address": str(account_address) if account_address else "unknown",
+                "account_address": str(account_address)
+                if account_address
+                else "unknown",
                 "error": f"Error: {str(e)}",
                 "balances": [],
                 "total_usd_value": "$0.00",

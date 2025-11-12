@@ -13,10 +13,8 @@ export async function POST(request: NextRequest) {
   const swapAgentUrl = process.env.SWAP_AGENT_URL || "http://localhost:9995";
   const multichainLiquidityAgentUrl =
     process.env.MULTICHAIN_LIQUIDITY_AGENT_URL || "http://localhost:9994";
-  const poolCalculatorAgentUrl =
-    process.env.POOL_CALCULATOR_AGENT_URL || "http://localhost:9996";
-  const marketInsightsAgentUrl =
-    process.env.MARKET_INSIGHTS_AGENT_URL || "http://localhost:9992";
+  const poolCalculatorAgentUrl = process.env.POOL_CALCULATOR_AGENT_URL || "http://localhost:9996";
+  const marketInsightsAgentUrl = process.env.MARKET_INSIGHTS_AGENT_URL || "http://localhost:9992";
   const swapRouterAgentUrl = process.env.SWAP_ROUTER_AGENT_URL || "http://localhost:9993";
 
   // STEP 2: Define orchestrator URL (speaks AG-UI Protocol)

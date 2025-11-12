@@ -53,7 +53,9 @@ export function MarketInsightsCard({ data }: MarketInsightsCardProps) {
       <div className="mb-6">
         <h2 className="text-2xl font-semibold text-[#010507] mb-2">Market Insights</h2>
         {data.network && (
-          <span className={`px-3 py-1 rounded-full text-xs font-semibold border-2 ${getNetworkColor(data.network)}`}>
+          <span
+            className={`px-3 py-1 rounded-full text-xs font-semibold border-2 ${getNetworkColor(data.network)}`}
+          >
             {data.network.toUpperCase()}
           </span>
         )}
@@ -155,10 +157,7 @@ export function MarketInsightsCard({ data }: MarketInsightsCardProps) {
               <div className="text-xs text-[#57575B] mb-2">Top Pools</div>
               <div className="space-y-2">
                 {data.token_liquidity.top_pools.map((pool, idx) => (
-                  <div
-                    key={idx}
-                    className="bg-white/60 rounded-lg p-3 border border-indigo-100"
-                  >
+                  <div key={idx} className="bg-white/60 rounded-lg p-3 border border-indigo-100">
                     <div className="flex justify-between items-center">
                       <div className="text-xs font-mono text-[#010507]">
                         {pool.pool_address.slice(0, 20)}...
@@ -187,7 +186,7 @@ export function MarketInsightsCard({ data }: MarketInsightsCardProps) {
             {data.trending_tokens.map((token, idx) => {
               const tokenAddress = token.token_address || "Unknown";
               const network = token.network || data.network || "unknown";
-              
+
               return (
                 <div
                   key={idx}
@@ -196,7 +195,9 @@ export function MarketInsightsCard({ data }: MarketInsightsCardProps) {
                   <div className="flex justify-between items-start mb-3">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
-                        <span className={`px-2 py-1 rounded text-xs font-semibold ${getNetworkColor(network)}`}>
+                        <span
+                          className={`px-2 py-1 rounded text-xs font-semibold ${getNetworkColor(network)}`}
+                        >
                           {network.toUpperCase()}
                         </span>
                         <span className="text-xs text-[#57575B]">Token</span>
@@ -235,7 +236,9 @@ export function MarketInsightsCard({ data }: MarketInsightsCardProps) {
                       </div>
                     )}
                     {token.price_change_24h !== undefined && (
-                      <div className={`rounded p-2 ${token.price_change_24h >= 0 ? "bg-green-50" : "bg-red-50"}`}>
+                      <div
+                        className={`rounded p-2 ${token.price_change_24h >= 0 ? "bg-green-50" : "bg-red-50"}`}
+                      >
                         <div className="text-[#57575B] mb-1">24h Change</div>
                         <div
                           className={`font-semibold ${
@@ -278,4 +281,3 @@ export function MarketInsightsCard({ data }: MarketInsightsCardProps) {
     </div>
   );
 }
-

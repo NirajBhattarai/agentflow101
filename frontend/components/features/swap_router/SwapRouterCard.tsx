@@ -91,7 +91,7 @@ export function SwapRouterCard({ data }: SwapRouterCardProps) {
                 Confidence: {(route.confidence * 100).toFixed(0)}%
               </div>
             </div>
-            
+
             {/* Percentage Bar */}
             <div className="mb-3">
               <div className="w-full bg-white/60 rounded-full h-2.5 overflow-hidden">

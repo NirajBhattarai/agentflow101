@@ -34,7 +34,7 @@ def get_balance_all_chains(
                 "balances": [],
                 "total_usd_value": "$0.00",
             }
-        
+
         if not isinstance(hedera_result, dict):
             hedera_result = {
                 "type": "balance",

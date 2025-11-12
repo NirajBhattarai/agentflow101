@@ -20,7 +20,9 @@ DEFAULT_SESSION_ID = "pool_calculator_session"
 RESPONSE_TYPE = "pool_calculation"
 
 # Error Messages
-ERROR_CANCEL_NOT_SUPPORTED = "Cancel operation is not supported for Pool Calculator Agent"
+ERROR_CANCEL_NOT_SUPPORTED = (
+    "Cancel operation is not supported for Pool Calculator Agent"
+)
 
 
 def get_model_name() -> str:
@@ -32,4 +34,3 @@ def check_api_keys() -> None:
     """Check if API keys are set."""
     if not os.getenv("GOOGLE_API_KEY") and not os.getenv("GEMINI_API_KEY"):
         print("⚠️  Warning: No API key found! Set GOOGLE_API_KEY or GEMINI_API_KEY")
-

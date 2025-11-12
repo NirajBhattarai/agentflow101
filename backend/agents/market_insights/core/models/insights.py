@@ -2,7 +2,7 @@
 Pydantic models for Market Insights data structures.
 """
 
-from typing import Optional, List, Dict, Any
+from typing import Optional, List
 from pydantic import BaseModel, Field
 
 
@@ -103,4 +103,3 @@ class MarketInsightsResponse(BaseModel):
                 },
             }
         }
-

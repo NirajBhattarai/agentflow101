@@ -15,9 +15,7 @@ DEFAULT_APP_NAME = "agents"
 
 # Agent configuration
 AGENT_NAME = "MarketInsightsAgent"
-AGENT_DESCRIPTION = (
-    "Fetches liquidity across pools, volume, trending token addresses, and real-time prices using CoinGecko API"
-)
+AGENT_DESCRIPTION = "Fetches liquidity across pools, volume, trending token addresses, and real-time prices using CoinGecko API"
 
 # Response type
 RESPONSE_TYPE = "market_insights"
@@ -34,8 +32,12 @@ NETWORK_HEDERA = "hedera"
 SUPPORTED_NETWORKS = [NETWORK_ETH, NETWORK_POLYGON, NETWORK_HEDERA]
 
 # Error messages
-ERROR_API_KEY_MISSING = "CoinGecko API key not found. Set COINGECKO_API_KEY environment variable."
-ERROR_NETWORK_NOT_SUPPORTED = "Network not supported. Supported networks: eth, polygon, hedera"
+ERROR_API_KEY_MISSING = (
+    "CoinGecko API key not found. Set COINGECKO_API_KEY environment variable."
+)
+ERROR_NETWORK_NOT_SUPPORTED = (
+    "Network not supported. Supported networks: eth, polygon, hedera"
+)
 ERROR_TOKEN_ADDRESS_MISSING = "Token address is required"
 ERROR_POOL_ADDRESS_MISSING = "Pool address is required"
 ERROR_EMPTY_RESPONSE = "Empty response from agent"
@@ -84,4 +86,3 @@ def check_api_keys() -> None:
         print("⚠️  Warning: No API key found! Set GOOGLE_API_KEY or GEMINI_API_KEY")
     if not os.getenv("COINGECKO_API_KEY"):
         print(f"⚠️  Warning: {ERROR_API_KEY_MISSING}")
-

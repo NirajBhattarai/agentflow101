@@ -67,7 +67,7 @@ class MarketInsightsExecutor(AgentExecutor):
             content = await self.agent.invoke(query, session_id)
             if not content or not content.strip():
                 content = _build_empty_response()
-            
+
             # Validate JSON before enqueuing
             try:
                 json.loads(content)
@@ -81,7 +81,7 @@ class MarketInsightsExecutor(AgentExecutor):
                     },
                     indent=2,
                 )
-            
+
             await event_queue.enqueue_event(new_agent_text_message(content))
             print("✅ Successfully enqueued market insights response")
         except Exception as e:
@@ -95,4 +95,3 @@ class MarketInsightsExecutor(AgentExecutor):
     async def cancel(self, context: RequestContext, event_queue: EventQueue) -> None:
         """Cancel execution (not supported)."""
         raise Exception(ERROR_CANCEL_NOT_SUPPORTED)
-

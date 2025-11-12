@@ -9,7 +9,7 @@ import requests
 from dotenv import load_dotenv
 
 # Add parent directory to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../.."))
 
 load_dotenv()
 
@@ -68,39 +68,55 @@ results = []
 for test in test_cases:
     url = f"{BASE_URL}/{test['endpoint']}"
     headers = {"x-cg-demo-api-key": API_KEY}
-    
+
     print(f"🧪 Testing: {test['name']}")
     print(f"   URL: {url}")
-    
+
     try:
-        response = requests.get(url, headers=headers, params=test['params'], timeout=10)
-        
+        response = requests.get(url, headers=headers, params=test["params"], timeout=10)
+
         if response.status_code == 200:
             data = response.json()
             if "data" in data:
                 count = len(data.get("data", []))
                 print(f"   ✅ SUCCESS - Got {count} items")
-                results.append((test['name'], True, None))
+                results.append((test["name"], True, None))
             else:
-                print(f"   ✅ SUCCESS - Response received")
-                results.append((test['name'], True, None))
+                print("   ✅ SUCCESS - Response received")
+                results.append((test["name"], True, None))
         elif response.status_code == 401:
-            error_data = response.json() if response.headers.get('content-type', '').startswith('application/json') else {}
-            error_msg = error_data.get('status', {}).get('error_message', 'Unauthorized')
+            error_data = (
+                response.json()
+                if response.headers.get("content-type", "").startswith(
+                    "application/json"
+                )
+                else {}
+            )
+            error_msg = error_data.get("status", {}).get(
+                "error_message", "Unauthorized"
+            )
             print(f"   ❌ FAILED - 401 Unauthorized: {error_msg}")
-            results.append((test['name'], False, "401: " + error_msg))
+            results.append((test["name"], False, "401: " + error_msg))
         elif response.status_code == 404:
-            error_data = response.json() if response.headers.get('content-type', '').startswith('application/json') else {}
-            error_msg = error_data.get('status', {}).get('error_message', 'Not Found')
+            error_data = (
+                response.json()
+                if response.headers.get("content-type", "").startswith(
+                    "application/json"
+                )
+                else {}
+            )
+            error_msg = error_data.get("status", {}).get("error_message", "Not Found")
             print(f"   ❌ FAILED - 404 Not Found: {error_msg}")
-            results.append((test['name'], False, "404: " + error_msg))
+            results.append((test["name"], False, "404: " + error_msg))
         else:
             print(f"   ❌ FAILED - {response.status_code}: {response.text[:200]}")
-            results.append((test['name'], False, f"{response.status_code}: {response.text[:100]}"))
+            results.append(
+                (test["name"], False, f"{response.status_code}: {response.text[:100]}")
+            )
     except Exception as e:
         print(f"   ❌ ERROR: {str(e)}")
-        results.append((test['name'], False, str(e)))
-    
+        results.append((test["name"], False, str(e)))
+
     print()
 
 # Summary
@@ -125,4 +141,3 @@ if not_working:
     print("\n⚠️  Endpoints that don't work (may require paid plan):")
     for name, error in not_working:
         print(f"   - {name}: {error}")
-

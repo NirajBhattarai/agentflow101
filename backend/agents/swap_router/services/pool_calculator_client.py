@@ -18,20 +18,20 @@ async def get_optimal_allocations_from_pool_calculator(
 ) -> Optional[Dict]:
     """
     Call Pool Calculator Agent to get optimal swap allocations across chains.
-    
+
     Args:
         liquidity_data: Liquidity data from multichain_liquidity agent
         total_amount: Total amount to swap
         token_in: Input token symbol
         token_out: Output token symbol
         session_id: Session ID
-    
+
     Returns:
         Dictionary with recommended allocations, or None if failed
     """
     try:
         agent = PoolCalculatorAgent()
-        
+
         # Build query for pool calculator
         query = f"""
 Analyze pools and recommend optimal swap allocation for swapping {total_amount:,.0f} {token_in} to {token_out}.
@@ -55,17 +55,17 @@ Please:
   "reasoning": "<explanation>"
 }}
 """
-        
+
         response = await agent.invoke(query, session_id)
-        
+
         # Try to extract JSON from response
         # The LLM might return JSON wrapped in markdown or text
         response_text = response.strip()
-        
+
         # Try to find JSON in the response
         json_start = response_text.find("{")
         json_end = response_text.rfind("}") + 1
-        
+
         if json_start >= 0 and json_end > json_start:
             json_str = response_text[json_start:json_end]
             try:
@@ -73,14 +73,14 @@ Please:
                 return result
             except json.JSONDecodeError:
                 pass
-        
+
         # If no JSON found, return None
         print(f"⚠️  Pool Calculator did not return valid JSON: {response[:200]}")
         return None
-        
+
     except Exception as e:
         print(f"❌ Error calling Pool Calculator Agent: {e}")
         import traceback
+
         traceback.print_exc()
         return None
-

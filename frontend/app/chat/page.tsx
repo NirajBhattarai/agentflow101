@@ -191,20 +191,20 @@ export default function ChatPage() {
                 !swapRouterData &&
                 !poolCalculatorData &&
                 !marketInsightsData && (
-                <div className="flex items-center justify-center h-[400px] bg-white/60 backdrop-blur-md rounded-xl border-2 border-dashed border-[#DBDBE5] shadow-elevation-sm">
-                  <div className="text-center">
-                    <div className="text-6xl mb-4">💰</div>
-                    <h3 className="text-xl font-semibold text-[#010507] mb-2">
-                      Start Querying Your DeFi Data
-                    </h3>
-                    <p className="text-[#57575B] max-w-md">
-                      Ask the assistant to check your balance, get liquidity information, or swap
-                      tokens. Watch as specialized agents collaborate through A2A Protocol to fetch
-                      your on-chain data and execute DeFi operations.
-                    </p>
+                  <div className="flex items-center justify-center h-[400px] bg-white/60 backdrop-blur-md rounded-xl border-2 border-dashed border-[#DBDBE5] shadow-elevation-sm">
+                    <div className="text-center">
+                      <div className="text-6xl mb-4">💰</div>
+                      <h3 className="text-xl font-semibold text-[#010507] mb-2">
+                        Start Querying Your DeFi Data
+                      </h3>
+                      <p className="text-[#57575B] max-w-md">
+                        Ask the assistant to check your balance, get liquidity information, or swap
+                        tokens. Watch as specialized agents collaborate through A2A Protocol to
+                        fetch your on-chain data and execute DeFi operations.
+                      </p>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
               {balanceData && (
                 <div className="mb-4">

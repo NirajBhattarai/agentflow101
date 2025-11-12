@@ -2,24 +2,19 @@
 CoinGecko API tools for fetching market insights data.
 """
 
-import os
 import requests
 from typing import Optional, Dict, Any, List
-from google.genai.types import FunctionDeclaration, Tool
+from google.genai.types import FunctionDeclaration
 from ..core.constants import (
     get_coingecko_api_key,
     get_coingecko_onchain_api_base,
     get_coingecko_api_header_name,
     get_coingecko_api_param_name,
-    NETWORK_ETH,
-    NETWORK_POLYGON,
-    NETWORK_HEDERA,
     SUPPORTED_NETWORKS,
 )
 from ..core.exceptions import (
     CoinGeckoAPIError,
     NetworkNotSupportedError,
-    InvalidTokenAddressError,
 )
 
 
@@ -35,7 +30,7 @@ def _make_api_request(
     api_base = get_coingecko_onchain_api_base()
     header_name = get_coingecko_api_header_name()
     param_name = get_coingecko_api_param_name()
-    
+
     # Log API being used (only once per session)
     if not hasattr(_make_api_request, "_logged_api_type"):
         print(f"🔑 Using CoinGecko Demo API: {api_base}")
@@ -128,7 +123,9 @@ def get_token_top_pools(network: str, token_address: str) -> Dict[str, Any]:
     return _make_api_request(endpoint)
 
 
-def get_trending_pools(network: Optional[str] = None, duration: str = "24h") -> Dict[str, Any]:
+def get_trending_pools(
+    network: Optional[str] = None, duration: str = "24h"
+) -> Dict[str, Any]:
     """
     Get trending pools on a network or across all networks.
 
@@ -172,7 +169,7 @@ def get_token_price(network: str, token_address: str) -> Dict[str, Any]:
         raise NetworkNotSupportedError(
             f"Network {network} not supported. Supported: {SUPPORTED_NETWORKS}"
         )
-    
+
     # Use simple price endpoint: /simple/networks/{network}/token_price/{addresses}
     endpoint = f"simple/networks/{network}/token_price/{token_address}"
     return _make_api_request(endpoint)
@@ -181,7 +178,7 @@ def get_token_price(network: str, token_address: str) -> Dict[str, Any]:
 def get_trending_search_pools() -> Dict[str, Any]:
     """
     Get trending pools based on search activity across all networks.
-    
+
     NOTE: This endpoint requires Analyst plan or above (paid plan).
     For demo/free tier, use get_trending_pools() instead.
 
@@ -308,4 +305,3 @@ def get_agent_tools() -> List:
         get_trending_pools,
         # get_trending_search_pools,  # Removed - requires paid plan
     ]
-

@@ -114,7 +114,7 @@ def optimize_routing(
     if not best_pools:
         raise ValueError("No pools available for routing")
 
-    print(f"🎯 Starting routing optimization:")
+    print("🎯 Starting routing optimization:")
     print(f"  Total amount: {total_amount:,.0f} {token_in}")
     print(f"  Best pools: {list(best_pools.keys())}")
     for chain, pool in best_pools.items():
@@ -123,17 +123,17 @@ def optimize_routing(
     # Initialize allocation
     allocations = {chain: 0.0 for chain in best_pools.keys()}
     remaining = total_amount
-    
+
     # If preferred allocations provided, use them (from Pool Calculator)
     if preferred_allocations:
-        print(f"📊 Using preferred allocations from Pool Calculator:")
+        print("📊 Using preferred allocations from Pool Calculator:")
         allocations = {}
         for chain, amount in preferred_allocations.items():
             if chain in best_pools and amount > 0:
                 allocations[chain] = amount
                 remaining -= amount
                 print(f"    {chain}: {amount:,.0f} {token_in}")
-        
+
         # If remaining > 0, distribute proportionally
         if remaining > 0:
             print(f"  Distributing remaining {remaining:,.0f} proportionally")
@@ -146,7 +146,9 @@ def optimize_routing(
 
     # Iterative allocation
     iterations = 0
-    print(f"  Starting iterative allocation (step={DEFAULT_ALLOCATION_STEP}, max_iterations={DEFAULT_MAX_ITERATIONS})")
+    print(
+        f"  Starting iterative allocation (step={DEFAULT_ALLOCATION_STEP}, max_iterations={DEFAULT_MAX_ITERATIONS})"
+    )
     while remaining > DEFAULT_ALLOCATION_STEP and iterations < DEFAULT_MAX_ITERATIONS:
         # Calculate marginal cost for each chain
         marginal_costs = {}
@@ -176,7 +178,9 @@ def optimize_routing(
             )
             if impact.price_impact_percent > max_slippage_percent:
                 # This chain is too expensive, remove it
-                print(f"  ⚠️  Removing {best_chain}: price impact {impact.price_impact_percent:.2f}% > max {max_slippage_percent}%")
+                print(
+                    f"  ⚠️  Removing {best_chain}: price impact {impact.price_impact_percent:.2f}% > max {max_slippage_percent}%"
+                )
                 del best_pools[best_chain]
                 if best_chain in allocations:
                     remaining += allocations[best_chain]
@@ -184,8 +188,11 @@ def optimize_routing(
                 continue
         except Exception as e:
             # Pool can't handle this amount, remove it
-            print(f"  ⚠️  Removing {best_chain}: exception during price impact calculation: {e}")
+            print(
+                f"  ⚠️  Removing {best_chain}: exception during price impact calculation: {e}"
+            )
             import traceback
+
             traceback.print_exc()
             del best_pools[best_chain]
             if best_chain in allocations:
@@ -197,11 +204,15 @@ def optimize_routing(
         allocations[best_chain] += allocation_step
         remaining -= allocation_step
         iterations += 1
-        print(f"  Iteration {iterations}: Allocated {allocation_step:,.0f} to {best_chain}, remaining: {remaining:,.0f}")
+        print(
+            f"  Iteration {iterations}: Allocated {allocation_step:,.0f} to {best_chain}, remaining: {remaining:,.0f}"
+        )
 
     # If there's remaining amount, distribute proportionally
     if remaining > 0 and best_pools:
-        print(f"  Distributing remaining {remaining:,.0f} across {len(best_pools)} chains")
+        print(
+            f"  Distributing remaining {remaining:,.0f} across {len(best_pools)} chains"
+        )
         # Distribute remaining based on current allocations
         total_allocated = sum(allocations.values())
         if total_allocated > 0:
@@ -209,7 +220,9 @@ def optimize_routing(
                 if chain in best_pools:
                     proportion = allocations[chain] / total_allocated
                     allocations[chain] += remaining * proportion
-                    print(f"    {chain}: +{remaining * proportion:,.0f} (proportion: {proportion:.2%})")
+                    print(
+                        f"    {chain}: +{remaining * proportion:,.0f} (proportion: {proportion:.2%})"
+                    )
         else:
             # Equal distribution
             per_chain = remaining / len(best_pools)
@@ -221,7 +234,9 @@ def optimize_routing(
         print(f"  ⚠️  Warning: {remaining:,.0f} remaining but no pools available")
         # Fallback: if all pools were removed, try to use initial pools
         if not best_pools and initial_best_pools:
-            print(f"  🔄 Fallback: Using initial pools as all were removed during optimization")
+            print(
+                "  🔄 Fallback: Using initial pools as all were removed during optimization"
+            )
             best_pools = initial_best_pools.copy()
             # Distribute remaining equally
             per_chain = remaining / len(best_pools)
@@ -235,13 +250,15 @@ def optimize_routing(
     total_price_impact_weighted = 0.0
     total_gas_cost = 0.0
 
-    print(f"📋 Building routes from allocations:")
+    print("📋 Building routes from allocations:")
     print(f"  Allocations: {allocations}")
     print(f"  Best pools: {list(best_pools.keys())}")
     print(f"  Remaining: {remaining}")
 
     for chain, amount in allocations.items():
-        print(f"  Processing {chain}: amount={amount}, in best_pools={chain in best_pools}")
+        print(
+            f"  Processing {chain}: amount={amount}, in best_pools={chain in best_pools}"
+        )
         if amount <= 0:
             print(f"    ⏭️  Skipping {chain}: amount <= 0")
             continue
@@ -255,13 +272,15 @@ def optimize_routing(
 
         # Calculate output and impact
         try:
-            print(f"  Calculating route for {chain}: {amount:,.0f} {token_in} → {token_out}")
+            print(
+                f"  Calculating route for {chain}: {amount:,.0f} {token_in} → {token_out}"
+            )
             print(f"    Pool: {pool.pool_address[:20]}...")
             print(f"    Pool tokens: {pool.token0}/{pool.token1}")
             print(f"    Reserves: base={pool.reserve_base}, quote={pool.reserve_quote}")
-            
+
             impact = calculate_price_impact_simple(amount, pool, token_in, token_out)
-            
+
             print(f"    Price impact: {impact.price_impact_percent:.2f}%")
             print(f"    Output: {impact.amount_out:.4f} {token_out}")
 
@@ -287,6 +306,7 @@ def optimize_routing(
         except Exception as e:
             print(f"❌ Error calculating route for {chain}: {e}")
             import traceback
+
             traceback.print_exc()
             continue
 

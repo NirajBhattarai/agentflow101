@@ -85,12 +85,7 @@ export async function approveToken(
   console.log(`   Swap amount: ${amount.toString()}`);
   console.log(`   Approval amount (with 10% buffer): ${approvalAmount.toString()}`);
 
-  // Hedera: use fixed gas limit, don't estimate, no gasPrice
-  const overrides: ethers.Overrides = {
-    gasLimit: 7_000_000, // Max gas for Hedera
-  };
-
-  const tx = await tokenContract.approve(spender, approvalAmount, overrides);
+  const tx = await tokenContract.approve(spender, approvalAmount);
   return tx;
 }
 

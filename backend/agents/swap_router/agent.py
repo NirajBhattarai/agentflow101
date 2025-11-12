@@ -23,7 +23,9 @@ from .services.liquidity_fetcher import (
     fetch_liquidity_from_multichain_agent,
     convert_liquidity_to_pool_data,
 )
-from .services.pool_calculator_client import get_optimal_allocations_from_pool_calculator
+from .services.pool_calculator_client import (
+    get_optimal_allocations_from_pool_calculator,
+)
 from .services.routing_optimizer import optimize_routing
 from .services.response_builder import build_routing_response, build_error_response
 from .core.exceptions import SwapRouterError
@@ -76,18 +78,18 @@ class SwapRouterAgent:
         try:
             # Check if this is sequential mode (has liquidity data in query)
             is_sequential_mode = (
-                "liquidity data" in query.lower() or
-                "pool calculator" in query.lower() or
-                "recommendations" in query.lower()
+                "liquidity data" in query.lower()
+                or "pool calculator" in query.lower()
+                or "recommendations" in query.lower()
             )
 
             if is_sequential_mode:
                 # Sequential mode: Extract liquidity data and pool calculator results from query
-                print(f"📋 Sequential mode detected - extracting pre-fetched data")
+                print("📋 Sequential mode detected - extracting pre-fetched data")
                 return await self._invoke_sequential_mode(query, session_id)
             else:
                 # Direct mode: Parse query and fetch liquidity internally
-                print(f"📋 Direct mode - fetching liquidity internally")
+                print("📋 Direct mode - fetching liquidity internally")
                 return await self._invoke_direct_mode(query, session_id)
 
         except SwapRouterError as e:
@@ -96,6 +98,7 @@ class SwapRouterAgent:
         except Exception as e:
             print(f"❌ Unexpected error: {e}")
             import traceback
+
             traceback.print_exc()
             return build_error_response("internal_error", {"message": str(e)})
 
@@ -145,7 +148,7 @@ class SwapRouterAgent:
         print(f"✅ Found {total_pools} pools across chains")
 
         # Get optimal allocations from Pool Calculator Agent (LLM reasoning)
-        print(f"🧮 Getting optimal allocations from Pool Calculator Agent...")
+        print("🧮 Getting optimal allocations from Pool Calculator Agent...")
         optimal_allocations = await get_optimal_allocations_from_pool_calculator(
             liquidity_data=liquidity_data,
             total_amount=amount,
@@ -153,13 +156,13 @@ class SwapRouterAgent:
             token_out=token_out,
             session_id=session_id,
         )
-        
+
         if optimal_allocations and optimal_allocations.get("recommended_allocations"):
             # Use allocations from Pool Calculator
-            print(f"✅ Received optimal allocations from Pool Calculator")
+            print("✅ Received optimal allocations from Pool Calculator")
             recommended = optimal_allocations["recommended_allocations"]
             print(f"  Allocations: {recommended}")
-            
+
             # Build routes using the recommended allocations
             recommendation = optimize_routing(
                 total_amount=amount,
@@ -170,7 +173,9 @@ class SwapRouterAgent:
             )
         else:
             # Fallback to default optimization if Pool Calculator fails
-            print(f"⚠️  Pool Calculator did not return valid allocations, using default optimization")
+            print(
+                "⚠️  Pool Calculator did not return valid allocations, using default optimization"
+            )
             recommendation = optimize_routing(
                 total_amount=amount,
                 token_in=token_in,
@@ -190,7 +195,7 @@ class SwapRouterAgent:
 
         # Parse query to extract amount, tokens, liquidity data, and allocations
         params = parse_swap_router_query(query)
-        
+
         if not params.get("amount"):
             return build_error_response(
                 "amount_not_found",
@@ -208,13 +213,13 @@ class SwapRouterAgent:
         optimal_allocations = None
 
         # Look for JSON in the query
-        json_match = re.search(r'\{.*\}', query, re.DOTALL)
+        json_match = re.search(r"\{.*\}", query, re.DOTALL)
         if json_match:
             try:
                 data = json.loads(json_match.group(0))
                 if "chains" in data or "type" in data:
                     liquidity_data = data
-                    print(f"✅ Extracted liquidity data from query")
+                    print("✅ Extracted liquidity data from query")
             except json.JSONDecodeError:
                 pass
 
@@ -226,14 +231,14 @@ class SwapRouterAgent:
                     alloc_str = "{" + alloc_match.group(0).split("{", 1)[1]
                     alloc_data = json.loads(alloc_str)
                     optimal_allocations = alloc_data
-                    print(f"✅ Extracted pool calculator allocations from query")
+                    print("✅ Extracted pool calculator allocations from query")
                 except (json.JSONDecodeError, IndexError):
                     pass
 
         # If liquidity data not found in query, try to parse from text
         if not liquidity_data:
             # The orchestrator should pass liquidity data, but if not, we'll need to fetch it
-            print(f"⚠️  Liquidity data not found in query, attempting to fetch...")
+            print("⚠️  Liquidity data not found in query, attempting to fetch...")
             token_pair = f"{token_in}/{token_out}"
             liquidity_data = await fetch_liquidity_from_multichain_agent(
                 token_pair, session_id
@@ -242,7 +247,7 @@ class SwapRouterAgent:
         if not liquidity_data or not liquidity_data.get("chains"):
             return build_error_response(
                 "liquidity_not_found",
-                {"message": f"No liquidity data available"},
+                {"message": "No liquidity data available"},
             )
 
         # Convert to PoolData objects
@@ -251,15 +256,21 @@ class SwapRouterAgent:
         )
 
         # Filter out chains with no pools (skip them)
-        pools_by_chain = {chain: pools for chain, pools in pools_by_chain.items() if pools}
-        
+        pools_by_chain = {
+            chain: pools for chain, pools in pools_by_chain.items() if pools
+        }
+
         if not pools_by_chain:
             return build_error_response(
                 "no_pools_found",
-                {"message": f"No pools available on any chain for {token_in}/{token_out}"},
+                {
+                    "message": f"No pools available on any chain for {token_in}/{token_out}"
+                },
             )
 
-        print(f"✅ Found pools on {len(pools_by_chain)} chain(s): {list(pools_by_chain.keys())}")
+        print(
+            f"✅ Found pools on {len(pools_by_chain)} chain(s): {list(pools_by_chain.keys())}"
+        )
         total_pools = sum(len(pools) for pools in pools_by_chain.values())
         print(f"   Total pools: {total_pools}")
 
@@ -277,7 +288,7 @@ class SwapRouterAgent:
                 preferred_allocations=recommended,
             )
         else:
-            print(f"📊 Optimizing routing without pool calculator allocations")
+            print("📊 Optimizing routing without pool calculator allocations")
             recommendation = optimize_routing(
                 total_amount=amount,
                 token_in=token_in,
