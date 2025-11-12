@@ -19,30 +19,6 @@ def add_chain_to_balances(balances: list, chain: str) -> list:
     return [{**balance, "chain": chain} for balance in balances]
 
 
-def build_polygon_response(account_address: str) -> dict:
-    """Build response for Polygon chain."""
-    result = get_balance_polygon(account_address)
-    return {
-        "type": RESPONSE_TYPE,
-        "chain": CHAIN_POLYGON,
-        "account_address": result.get("account_address", account_address),
-        "balances": result.get("balances", []),
-        "total_usd_value": result.get("total_usd_value", DEFAULT_TOTAL_USD_VALUE),
-    }
-
-
-def build_hedera_response(account_address: str) -> dict:
-    """Build response for Hedera chain."""
-    result = get_balance_hedera(account_address)
-    return {
-        "type": RESPONSE_TYPE,
-        "chain": CHAIN_HEDERA,
-        "account_address": result.get("account_address", account_address),
-        "balances": result.get("balances", []),
-        "total_usd_value": result.get("total_usd_value", DEFAULT_TOTAL_USD_VALUE),
-    }
-
-
 def build_all_chains_response(account_address: str) -> dict:
     """Build response for all chains."""
     polygon_result = get_balance_polygon(account_address)
@@ -74,11 +50,15 @@ def build_unknown_chain_response(chain: str, account_address: str) -> dict:
 
 
 def build_balance_response(chain: str, account_address: str) -> dict:
-    """Build balance response based on chain."""
+    """Build balance response based on chain.
+    
+    Routes to appropriate chain tool or combines results for all chains.
+    The tools already return the correct format, so we just route to them.
+    """
     if chain == CHAIN_POLYGON:
-        return build_polygon_response(account_address)
+        return get_balance_polygon(account_address)
     if chain == CHAIN_HEDERA:
-        return build_hedera_response(account_address)
+        return get_balance_hedera(account_address)
     if chain == CHAIN_ALL:
         return build_all_chains_response(account_address)
     return build_unknown_chain_response(chain, account_address)

@@ -14,8 +14,6 @@ from .query_parser import (  # noqa: F401
 )
 from .response_builder import (  # noqa: F401
     add_chain_to_balances,
-    build_polygon_response,
-    build_hedera_response,
     build_all_chains_response,
     build_unknown_chain_response,
     build_balance_response,

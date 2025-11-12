@@ -18,23 +18,71 @@ def get_balance_all_chains(
     Returns:
         Dictionary with balance information across all chains.
     """
+    try:
+        # Fetch balances from all chains
+        # Note: Each chain will validate its own address format
+        polygon_result = get_balance_polygon(account_address, token_address)
+        hedera_result = get_balance_hedera(account_address, token_address)
 
-    # Fetch balances from all chains
-    # Note: Each chain will validate its own address format
-    polygon_result = get_balance_polygon(account_address, token_address)
-    hedera_result = get_balance_hedera(account_address, token_address)
+        # Ensure both results are valid dicts
+        if not isinstance(polygon_result, dict):
+            polygon_result = {
+                "type": "balance",
+                "chain": "polygon",
+                "account_address": account_address,
+                "error": "Invalid response from Polygon balance tool",
+                "balances": [],
+                "total_usd_value": "$0.00",
+            }
+        
+        if not isinstance(hedera_result, dict):
+            hedera_result = {
+                "type": "balance",
+                "chain": "hedera",
+                "account_address": account_address,
+                "error": "Invalid response from Hedera balance tool",
+                "balances": [],
+                "total_usd_value": "$0.00",
+            }
 
-    # Calculate total USD value (placeholder - in production, use price oracles)
-    # This would require fetching token prices from an oracle service
-    total_usd_value = "$0.00"  # Placeholder - real implementation needed
+        # Calculate total USD value (placeholder - in production, use price oracles)
+        # This would require fetching token prices from an oracle service
+        total_usd_value = "$0.00"  # Placeholder - real implementation needed
 
-    return {
-        "type": "balance_summary",
-        "account_address": account_address,
-        "token_address": token_address,
-        "chains": {
-            "polygon": polygon_result,
-            "hedera": hedera_result,
-        },
-        "total_usd_value": total_usd_value,
-    }
+        return {
+            "type": "balance_summary",
+            "account_address": account_address,
+            "token_address": token_address,
+            "chains": {
+                "polygon": polygon_result,
+                "hedera": hedera_result,
+            },
+            "total_usd_value": total_usd_value,
+        }
+    except Exception as e:
+        # Always return a valid dict, even on error
+        return {
+            "type": "balance_summary",
+            "account_address": account_address or "unknown",
+            "token_address": token_address,
+            "chains": {
+                "polygon": {
+                    "type": "balance",
+                    "chain": "polygon",
+                    "account_address": account_address or "unknown",
+                    "error": f"Error fetching Polygon balance: {str(e)}",
+                    "balances": [],
+                    "total_usd_value": "$0.00",
+                },
+                "hedera": {
+                    "type": "balance",
+                    "chain": "hedera",
+                    "account_address": account_address or "unknown",
+                    "error": f"Error fetching Hedera balance: {str(e)}",
+                    "balances": [],
+                    "total_usd_value": "$0.00",
+                },
+            },
+            "total_usd_value": "$0.00",
+            "error": str(e),
+        }
