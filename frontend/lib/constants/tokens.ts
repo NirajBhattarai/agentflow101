@@ -46,15 +46,8 @@ export const POLYGON_TOKENS: Token[] = [
 export const ALL_TOKENS: Token[] = [...HEDERA_TOKENS, ...POLYGON_TOKENS];
 
 // Bridgeable tokens (tokens that can be bridged)
-export const BRIDGEABLE_TOKENS: Token[] = [
-  { symbol: "USDC", name: "USD Coin" },
-  { symbol: "USDT", name: "Tether USD" },
-  { symbol: "HBAR", name: "Hedera Hashgraph" },
-  { symbol: "MATIC", name: "Polygon" },
-  { symbol: "ETH", name: "Ethereum" },
-  { symbol: "WBTC", name: "Wrapped Bitcoin" },
-  { symbol: "DAI", name: "Dai Stablecoin" },
-];
+// Note: EtaBridge only supports USDC for bridging between Hedera and Polygon
+export const BRIDGEABLE_TOKENS: Token[] = [{ symbol: "USDC", name: "USD Coin" }];
 
 // Standard token pairs for liquidity queries
 export const STANDARD_PAIRS = [

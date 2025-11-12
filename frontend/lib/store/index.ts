@@ -1,9 +1,11 @@
 import { configureStore } from "@reduxjs/toolkit";
 import swapReducer from "./slices/swapSlice";
+import bridgeReducer from "./slices/bridgeSlice";
 
 export const store = configureStore({
   reducer: {
     swap: swapReducer,
+    bridge: bridgeReducer,
   },
 });
 

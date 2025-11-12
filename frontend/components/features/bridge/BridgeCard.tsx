@@ -5,8 +5,14 @@
  * Uses orange/amber styling to match the Bridge Agent branding.
  */
 
-import React, { useState } from "react";
-import { BridgeData, BridgeOption } from "@/types";
+import React, { useState, useEffect } from "react";
+import { BridgeData, BridgeOption, BridgeTransaction } from "@/types";
+import { useAppKitAccount } from "@reown/appkit/react";
+import { useWalletClient } from "wagmi";
+import { executeBridge } from "@/lib/features/bridge";
+import { useAppDispatch, useAppSelector } from "@/lib/store/hooks";
+import { resetBridgeState } from "@/lib/store/slices/bridgeSlice";
+import { ApprovalDialog } from "./components/ApprovalDialog";
 
 interface BridgeCardProps {
   data: BridgeData;
@@ -45,11 +51,168 @@ const getStatusColor = (status: string) => {
 };
 
 export const BridgeCard: React.FC<BridgeCardProps> = ({ data, onBridgeInitiate }) => {
-  const { transaction, balance_check, bridge_options } = data;
+  // Early validation
+  if (!data) {
+    console.error("❌ BridgeCard: No data provided!");
+    return null;
+  }
+
+  const { transaction: initialTransaction, balance_check, bridge_options } = data;
+
+  // Debug logging
+  useEffect(() => {
+    console.log("🌉 BridgeCard rendered with data:", {
+      has_data: !!data,
+      source_chain: data?.source_chain,
+      destination_chain: data?.destination_chain,
+      token_symbol: data?.token_symbol,
+      amount: data?.amount,
+      has_bridge_options: !!bridge_options,
+      bridge_options_count: bridge_options?.length || 0,
+      has_transaction: !!initialTransaction,
+      has_balance_check: !!balance_check,
+      full_data: data,
+    });
+    console.log("🌉 BridgeCard is visible in DOM");
+  }, [data, bridge_options, initialTransaction, balance_check]);
   const [initiating, setInitiating] = useState<string | null>(null);
   const [bridgingState, setBridgingState] = useState<"idle" | "bridging" | "done">("idle");
   const [selectedProtocol, setSelectedProtocol] = useState<string | null>(null);
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [showApprovalDialog, setShowApprovalDialog] = useState(false);
+  const [bridgeError, setBridgeError] = useState<string | null>(null);
+  const [pendingTransaction, setPendingTransaction] = useState<BridgeTransaction | null>(null);
+  // Use pendingTransaction if created, otherwise use initialTransaction
+  const transaction = pendingTransaction || initialTransaction;
+
+  // Auto-create transaction from bridge options when they're available (like swap does)
+  useEffect(() => {
+    // Only auto-create if we have bridge_options but no transaction yet
+    if (bridge_options && bridge_options.length > 0 && !transaction) {
+      // Find recommended option or use first option
+      const recommendedOption =
+        bridge_options.find((opt) => opt.is_recommended) || bridge_options[0];
+
+      if (recommendedOption && balance_check?.balance_sufficient) {
+        const newTransaction: BridgeTransaction = {
+          source_chain: data.source_chain,
+          destination_chain: data.destination_chain,
+          token_symbol: data.token_symbol,
+          token_address: recommendedOption.token_address || "",
+          amount: data.amount,
+          bridge_protocol: recommendedOption.bridge_protocol,
+          bridge_fee: recommendedOption.bridge_fee,
+          estimated_time: recommendedOption.estimated_time,
+          transaction_hash: null,
+          status: "pending",
+          bridge_contract_address:
+            recommendedOption.bridge_contract_address ||
+            "0xdc038e291d83e218c7bdf549059412ed7ed9133e",
+          source_chain_id:
+            recommendedOption.source_chain_id || (data.source_chain === "hedera" ? 296 : 30106),
+          destination_chain_id:
+            recommendedOption.destination_chain_id ||
+            (data.destination_chain === "hedera" ? 296 : 30106),
+        };
+        setPendingTransaction(newTransaction);
+        setSelectedProtocol(recommendedOption.bridge_protocol);
+        console.log("🌉 Auto-created bridge transaction from options:", newTransaction);
+      }
+    }
+  }, [bridge_options, transaction, balance_check, data]);
+
+  // Wallet connection hooks
+  const { address, isConnected } = useAppKitAccount?.() || ({} as any);
+  const { data: walletClient } = useWalletClient();
+  const dispatch = useAppDispatch();
+
+  // Redux hooks
+  const {
+    approvalStatus,
+    isBridging,
+    bridgeError: reduxBridgeError,
+    txHash,
+  } = useAppSelector((state) => state.bridge);
+
+  // Reset bridge state when component unmounts or transaction changes
+  useEffect(() => {
+    return () => {
+      dispatch(resetBridgeState());
+    };
+  }, [dispatch, transaction]);
+
+  // Sync Redux bridge error with local state
+  useEffect(() => {
+    if (reduxBridgeError) {
+      setBridgeError(reduxBridgeError);
+    }
+  }, [reduxBridgeError]);
+
+  // Show approval dialog when approval is needed
+  useEffect(() => {
+    if (approvalStatus?.status === "needs_approval") {
+      setShowApprovalDialog(true);
+    }
+  }, [approvalStatus]);
+
+  /**
+   * Execute bridge transaction
+   */
+  const executeBridgeTransaction = async () => {
+    if (!isConnected) {
+      setBridgeError("Please connect your wallet first");
+      return;
+    }
+
+    if (!address || !walletClient) {
+      setBridgeError("Wallet address or client not available");
+      return;
+    }
+
+    if (!transaction) {
+      setBridgeError("No bridge transaction data available");
+      return;
+    }
+
+    if (!balance_check?.balance_sufficient) {
+      setBridgeError("Insufficient balance to bridge");
+      return;
+    }
+
+    setBridgingState("bridging");
+    setBridgeError(null);
+    setShowConfirmation(false);
+    setShowApprovalDialog(false);
+    dispatch(resetBridgeState());
+
+    const result = await executeBridge(transaction as any, walletClient, address, dispatch, {
+      onStateChange: (state) => {
+        setBridgingState(state);
+      },
+      onError: (error) => {
+        setBridgeError(error);
+        setBridgingState("idle");
+      },
+      onTxHash: (hash) => {
+        console.log("Bridge transaction hash:", hash);
+      },
+      onProgress: (message) => {
+        console.log(message);
+      },
+    });
+
+    if (result.success) {
+      onBridgeInitiate?.(transaction?.bridge_protocol || "EtaBridge");
+    }
+  };
+
+  // Always render the card if we have bridge data
+  console.log("🌉 BridgeCard render check:", {
+    has_data: !!data,
+    has_transaction: !!transaction,
+    has_bridge_options: !!bridge_options,
+    bridge_options_count: bridge_options?.length || 0,
+  });
 
   return (
     <div className="bg-white/60 backdrop-blur-md rounded-xl p-6 my-3 border-2 border-[#DBDBE5] shadow-elevation-md animate-fade-in-up">
@@ -86,13 +249,13 @@ export const BridgeCard: React.FC<BridgeCardProps> = ({ data, onBridgeInitiate }
       </div>
 
       {/* Error Message */}
-      {data.error && (
+      {(data.error || bridgeError) && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-          <p className="text-sm text-red-800">{data.error}</p>
+          <p className="text-sm text-red-800">{data.error || bridgeError}</p>
         </div>
       )}
 
-      {/* Balance Check */}
+      {/* Balance Check - Enhanced with help text */}
       {balance_check && (
         <div
           className={`rounded-xl p-4 mb-4 border ${
@@ -102,21 +265,42 @@ export const BridgeCard: React.FC<BridgeCardProps> = ({ data, onBridgeInitiate }
           }`}
         >
           <div className="flex items-center justify-between">
-            <div>
-              <div className="text-xs text-[#57575B] mb-1">Balance Check</div>
-              <div className="text-sm font-semibold text-[#010507]">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="text-xs text-[#57575B]">Balance Check</div>
+                <div className="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
+                  💡 Balance from Balance Agent
+                </div>
+              </div>
+              <div className="text-sm font-semibold text-[#010507] mb-1">
                 {balance_check.balance_sufficient ? (
                   <span className="text-green-700">✓ Sufficient Balance</span>
                 ) : (
                   <span className="text-red-700">✗ Insufficient Balance</span>
                 )}
               </div>
-              <div className="text-xs text-[#57575B] mt-1">
-                Available: {balance_check.balance} {balance_check.token_symbol} | Required:{" "}
-                {balance_check.required_amount} {balance_check.token_symbol}
+              <div className="text-xs text-[#57575B]">
+                Available:{" "}
+                <span className="font-semibold">
+                  {balance_check.balance} {balance_check.token_symbol}
+                </span>
               </div>
+              <div className="text-xs text-[#57575B] mt-1">
+                Required:{" "}
+                <span className="font-semibold">
+                  {balance_check.required_amount} {balance_check.token_symbol}
+                </span>
+              </div>
+              {!balance_check.balance_sufficient && (
+                <div className="text-xs text-red-600 mt-2">
+                  ⚠️ You need more {balance_check.token_symbol} to complete this bridge. Please add
+                  funds to your wallet.
+                </div>
+              )}
             </div>
-            {!balance_check.balance_sufficient && <div className="text-red-600 font-bold">⚠️</div>}
+            {!balance_check.balance_sufficient && (
+              <div className="text-red-600 font-bold text-2xl">⚠️</div>
+            )}
           </div>
         </div>
       )}
@@ -130,15 +314,21 @@ export const BridgeCard: React.FC<BridgeCardProps> = ({ data, onBridgeInitiate }
               {data.amount} {data.token_symbol}
             </div>
           </div>
-          {data.account_address && (
-            <div>
-              <div className="text-xs text-[#57575B] mb-1">Account</div>
-              <div className="text-sm font-mono text-[#010507] break-all">
-                {data.account_address.slice(0, 10)}...{data.account_address.slice(-8)}
-              </div>
+          <div>
+            <div className="text-xs text-[#57575B] mb-1">Bridge To</div>
+            <div className="text-lg font-semibold text-[#010507]">
+              {data.destination_chain.toUpperCase()}
             </div>
-          )}
+          </div>
         </div>
+        {data.account_address && (
+          <div className="mt-3 pt-3 border-t border-orange-200">
+            <div className="text-xs text-[#57575B] mb-1">Account</div>
+            <div className="text-sm font-mono text-[#010507] break-all">
+              {data.account_address.slice(0, 10)}...{data.account_address.slice(-8)}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* High Amount Warning */}
@@ -159,103 +349,163 @@ export const BridgeCard: React.FC<BridgeCardProps> = ({ data, onBridgeInitiate }
       )}
 
       {/* Bridge Options Display Box (if not yet initiated) */}
-      {bridge_options && bridge_options.length > 0 && !transaction && !showConfirmation && (
-        <div className="mb-4">
-          <div className="bg-white/90 backdrop-blur-md rounded-xl p-5 border-2 border-[#DBDBE5] shadow-elevation-md">
-            <h3 className="text-lg font-semibold text-[#010507] mb-2">
-              Available Bridge Protocols
-            </h3>
-            <p className="text-sm text-[#57575B] mb-4">
-              {data.requires_confirmation && data.amount_exceeds_threshold
-                ? "Please select a protocol and confirm to proceed with the bridge."
-                : "Please select a protocol to proceed with the bridge. You can say 'Proceed with [Protocol Name]' or click on a protocol below."}
-            </p>
-            <div className="space-y-3">
-              {bridge_options.map((option: BridgeOption, index: number) => (
-                <div
-                  key={index}
-                  onClick={() => {
-                    if (balance_check?.balance_sufficient && !initiating) {
-                      setSelectedProtocol(option.bridge_protocol);
-                    }
-                  }}
-                  className={`rounded-lg p-4 border-2 transition-all cursor-pointer ${
-                    selectedProtocol === option.bridge_protocol
-                      ? "border-orange-500 bg-orange-50 ring-2 ring-orange-200"
-                      : option.is_recommended
-                        ? "border-orange-300 bg-orange-50/50 hover:border-orange-400 hover:bg-orange-50"
-                        : "border-[#E9E9EF] bg-white/80 hover:border-orange-200 hover:bg-orange-50/30"
-                  } ${!balance_check?.balance_sufficient ? "opacity-50 cursor-not-allowed" : ""}`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-base font-bold text-[#010507]">
-                          {option.bridge_protocol}
-                        </span>
-                        {option.is_recommended && (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-500 text-white">
-                            RECOMMENDED
-                          </span>
+      {/* Show options if: no transaction (same as swap card) */}
+      {/* Also show a loading/placeholder if bridge_options is empty but we have bridge data */}
+      {!transaction && (
+        <>
+          {bridge_options && bridge_options.length > 0 ? (
+            <div className="mb-4">
+              <div className="bg-white/90 backdrop-blur-md rounded-xl p-5 border-2 border-[#DBDBE5] shadow-elevation-md">
+                <h3 className="text-lg font-semibold text-[#010507] mb-2">
+                  Available Bridge Protocols
+                </h3>
+                <p className="text-sm text-[#57575B] mb-4">
+                  {data.requires_confirmation && data.amount_exceeds_threshold
+                    ? "Please select a protocol and confirm to proceed with the bridge."
+                    : "Please select a protocol to proceed with the bridge. You can say 'Proceed with [Protocol Name]' or click on a protocol below."}
+                </p>
+                <div className="space-y-3">
+                  {bridge_options.map((option: BridgeOption, index: number) => (
+                    <div
+                      key={index}
+                      onClick={() => {
+                        if (balance_check?.balance_sufficient && !initiating) {
+                          setSelectedProtocol(option.bridge_protocol);
+                        }
+                      }}
+                      className={`rounded-lg p-4 border-2 transition-all cursor-pointer ${
+                        selectedProtocol === option.bridge_protocol
+                          ? "border-orange-500 bg-orange-50 ring-2 ring-orange-200"
+                          : option.is_recommended
+                            ? "border-orange-300 bg-orange-50/50 hover:border-orange-400 hover:bg-orange-50"
+                            : "border-[#E9E9EF] bg-white/80 hover:border-orange-200 hover:bg-orange-50/30"
+                      } ${!balance_check?.balance_sufficient ? "opacity-50 cursor-not-allowed" : ""}`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-base font-bold text-[#010507]">
+                              {option.bridge_protocol}
+                            </span>
+                            {option.is_recommended && (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-500 text-white">
+                                RECOMMENDED
+                              </span>
+                            )}
+                          </div>
+                          <div className="grid grid-cols-2 gap-3 text-sm">
+                            <div>
+                              <span className="text-[#57575B]">Fee: </span>
+                              <span className="font-bold text-[#010507]">{option.bridge_fee}</span>
+                            </div>
+                            <div>
+                              <span className="text-[#57575B]">Estimated Time: </span>
+                              <span className="font-semibold text-[#010507]">
+                                {option.estimated_time}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        {selectedProtocol === option.bridge_protocol && (
+                          <div className="ml-3 flex-shrink-0">
+                            <div className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center">
+                              <span className="text-white text-xs font-bold">✓</span>
+                            </div>
+                          </div>
                         )}
                       </div>
-                      <div className="grid grid-cols-2 gap-3 text-sm">
-                        <div>
-                          <span className="text-[#57575B]">Fee: </span>
-                          <span className="font-bold text-[#010507]">{option.bridge_fee}</span>
-                        </div>
-                        <div>
-                          <span className="text-[#57575B]">Estimated Time: </span>
-                          <span className="font-semibold text-[#010507]">
-                            {option.estimated_time}
-                          </span>
-                        </div>
-                      </div>
                     </div>
-                    {selectedProtocol === option.bridge_protocol && (
-                      <div className="ml-3 flex-shrink-0">
-                        <div className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center">
-                          <span className="text-white text-xs font-bold">✓</span>
-                        </div>
-                      </div>
-                    )}
+                  ))}
+                </div>
+
+                {/* Selected Option Action Button */}
+                {selectedProtocol && (
+                  <div className="mt-4 pt-4 border-t border-[#E9E9EF]">
+                    {(() => {
+                      const option = bridge_options.find(
+                        (opt) => opt.bridge_protocol === selectedProtocol,
+                      );
+                      if (!option) return null;
+                      return (
+                        <button
+                          onClick={() => {
+                            if (!balance_check?.balance_sufficient || !isConnected) return;
+
+                            // Create transaction object from selected option
+                            if (option && !transaction) {
+                              const newTransaction: BridgeTransaction = {
+                                source_chain: data.source_chain,
+                                destination_chain: data.destination_chain,
+                                token_symbol: data.token_symbol,
+                                token_address: option.token_address || "", // Get from bridge option
+                                amount: data.amount,
+                                bridge_protocol: option.bridge_protocol,
+                                bridge_fee: option.bridge_fee,
+                                estimated_time: option.estimated_time,
+                                transaction_hash: null,
+                                status: "pending",
+                                bridge_contract_address:
+                                  option.bridge_contract_address ||
+                                  "0xdc038e291d83e218c7bdf549059412ed7ed9133e",
+                                source_chain_id:
+                                  option.source_chain_id ||
+                                  (data.source_chain === "hedera" ? 296 : 30106),
+                                destination_chain_id:
+                                  option.destination_chain_id ||
+                                  (data.destination_chain === "hedera" ? 296 : 30106),
+                              };
+                              setPendingTransaction(newTransaction);
+                            }
+
+                            setShowApprovalDialog(true);
+                          }}
+                          disabled={
+                            !balance_check?.balance_sufficient ||
+                            !isConnected ||
+                            bridgingState === "bridging"
+                          }
+                          className={`w-full px-4 py-3 rounded-lg font-semibold text-sm transition-all shadow-sm ${
+                            balance_check?.balance_sufficient &&
+                            isConnected &&
+                            bridgingState !== "bridging"
+                              ? "bg-orange-500 hover:bg-orange-600 text-white shadow-md hover:shadow-lg"
+                              : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                          }`}
+                        >
+                          {bridgingState === "bridging" ? (
+                            <span className="flex items-center justify-center gap-2">
+                              <span className="animate-spin">⏳</span>
+                              Bridging...
+                            </span>
+                          ) : !isConnected ? (
+                            "Connect Wallet to Bridge"
+                          ) : (
+                            `Bridge with ${option.bridge_protocol}`
+                          )}
+                        </button>
+                      );
+                    })()}
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            // Show loading state if bridge_options is not yet available
+            <div className="mb-4">
+              <div className="bg-white/90 backdrop-blur-md rounded-xl p-5 border-2 border-[#DBDBE5] shadow-elevation-md">
+                <div className="flex items-center justify-center py-8">
+                  <div className="text-center">
+                    <div className="animate-spin text-4xl mb-2">⏳</div>
+                    <p className="text-sm text-[#57575B]">Loading bridge options...</p>
                   </div>
                 </div>
-              ))}
-            </div>
-
-            {/* Selected Option Action Button */}
-            {selectedProtocol && (
-              <div className="mt-4 pt-4 border-t border-[#E9E9EF]">
-                {(() => {
-                  const option = bridge_options.find(
-                    (opt) => opt.bridge_protocol === selectedProtocol,
-                  );
-                  if (!option) return null;
-                  return (
-                    <button
-                      onClick={() => {
-                        if (!balance_check?.balance_sufficient) return;
-                        setShowConfirmation(true);
-                      }}
-                      disabled={!balance_check?.balance_sufficient}
-                      className={`w-full px-4 py-3 rounded-lg font-semibold text-sm transition-all shadow-sm ${
-                        balance_check?.balance_sufficient
-                          ? "bg-orange-500 hover:bg-orange-600 text-white shadow-md hover:shadow-lg"
-                          : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                      }`}
-                    >
-                      Proceed with {option.bridge_protocol}
-                    </button>
-                  );
-                })()}
               </div>
-            )}
-          </div>
-        </div>
+            </div>
+          )}
+        </>
       )}
 
-      {/* Transaction Information (after bridge is initiated) */}
+      {/* Transaction Information (show when transaction exists, even without hash - like swap) */}
       {transaction && (
         <div className="space-y-3">
           <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 shadow-elevation-sm border border-[#E9E9EF]">
@@ -297,17 +547,17 @@ export const BridgeCard: React.FC<BridgeCardProps> = ({ data, onBridgeInitiate }
         </div>
       )}
 
-      {/* Status Message */}
-      {transaction && transaction.status === "pending" && (
-        <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+      {/* Status Messages - Only show if transaction has been executed (has hash) */}
+      {transaction && transaction.transaction_hash && transaction.status === "pending" && (
+        <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
           <p className="text-sm text-yellow-800">
-            ⏳ Bridge transaction is pending. It will be completed in approximately{" "}
-            {transaction.estimated_time}.
+            ⏳ Bridge transaction is pending. Transaction hash:{" "}
+            {transaction.transaction_hash.slice(0, 10)}...
           </p>
         </div>
       )}
 
-      {transaction && transaction.status === "completed" && (
+      {transaction && transaction.transaction_hash && transaction.status === "completed" && (
         <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-4">
           <div className="flex items-center justify-between mb-3">
             <div>
@@ -320,59 +570,66 @@ export const BridgeCard: React.FC<BridgeCardProps> = ({ data, onBridgeInitiate }
               </p>
             </div>
           </div>
-          <button
-            onClick={() => {
-              setInitiating(transaction.bridge_protocol);
-              setBridgingState("bridging");
-
-              // Simulate bridge confirmation process
-              setTimeout(() => {
-                setBridgingState("done");
-                setTimeout(() => {
-                  setInitiating(null);
-                  setBridgingState("idle");
-                }, 1000);
-              }, 2000);
-            }}
-            disabled={initiating !== null && bridgingState !== "idle"}
-            className={`w-full px-4 py-3 rounded-lg font-semibold text-sm transition-all shadow-sm ${
-              initiating === null || bridgingState === "idle"
-                ? "bg-green-600 hover:bg-green-700 text-white shadow-md hover:shadow-lg"
-                : bridgingState === "bridging"
-                  ? "bg-yellow-500 text-white cursor-not-allowed"
-                  : "bg-green-500 text-white cursor-not-allowed"
-            }`}
-          >
-            {bridgingState === "bridging" && initiating === transaction.bridge_protocol ? (
-              <span className="flex items-center justify-center gap-2">
-                <span className="animate-spin">⏳</span>
-                Bridging...
-              </span>
-            ) : bridgingState === "done" && initiating === transaction.bridge_protocol ? (
-              <span className="flex items-center justify-center gap-2">✓ Done</span>
-            ) : (
-              `Bridge with ${transaction.bridge_protocol}`
-            )}
-          </button>
-          {bridgingState === "bridging" && initiating === transaction.bridge_protocol && (
-            <p className="text-xs text-green-700 mt-2 text-center">
-              Processing bridge confirmation...
-            </p>
-          )}
-          {bridgingState === "done" && initiating === transaction.bridge_protocol && (
-            <p className="text-xs text-green-700 mt-2 text-center">
-              Bridge completed! Your tokens are now on {transaction.destination_chain}.
-            </p>
-          )}
         </div>
       )}
 
-      {transaction && transaction.status === "failed" && (
+      {transaction && transaction.transaction_hash && transaction.status === "failed" && (
         <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-3">
           <p className="text-sm text-red-800">
             ❌ Bridge transaction failed. Please try again or contact support.
           </p>
         </div>
+      )}
+
+      {/* Bridge Action Button (like SwapActionButton) - Show when transaction is pending */}
+      {transaction && transaction.status === "pending" && !transaction.transaction_hash && (
+        <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <button
+            onClick={() => {
+              if (!isConnected) {
+                setBridgeError("Please connect your wallet first");
+                return;
+              }
+              setShowApprovalDialog(true);
+            }}
+            disabled={
+              bridgingState === "bridging" || !isConnected || !balance_check?.balance_sufficient
+            }
+            className={`w-full px-4 py-3 rounded-lg font-semibold text-sm transition-all shadow-sm ${
+              bridgingState === "bridging"
+                ? "bg-yellow-500 text-white cursor-not-allowed"
+                : !isConnected || !balance_check?.balance_sufficient
+                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  : "bg-orange-600 hover:bg-orange-700 text-white shadow-md hover:shadow-lg"
+            }`}
+          >
+            {bridgingState === "bridging" ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="animate-spin">⏳</span>
+                Bridging...
+              </span>
+            ) : !isConnected ? (
+              "Connect Wallet to Bridge"
+            ) : !balance_check?.balance_sufficient ? (
+              "Insufficient Balance"
+            ) : (
+              `Execute Bridge with ${transaction.bridge_protocol}`
+            )}
+          </button>
+        </div>
+      )}
+
+      {/* Approval Dialog */}
+      {showApprovalDialog && (
+        <ApprovalDialog
+          data={data}
+          bridgingState={bridgingState}
+          onConfirm={executeBridgeTransaction}
+          onCancel={() => {
+            setShowApprovalDialog(false);
+            dispatch(resetBridgeState());
+          }}
+        />
       )}
     </div>
   );

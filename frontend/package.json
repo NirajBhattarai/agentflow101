@@ -22,6 +22,7 @@
     "@copilotkit/react-ui": "1.10.5",
     "@copilotkit/runtime": "1.10.5",
     "@hashgraph/sdk": "^2.76.0",
+    "@layerzerolabs/lz-v2-utilities": "^3.0.145",
     "@reduxjs/toolkit": "^2.10.1",
     "@reown/appkit": "^1.8.13",
     "@reown/appkit-adapter-wagmi": "^1.8.13",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useAppKitAccount } from "@reown/appkit/react";
 import { DeFiChat } from "@/components/chat";
 import { BalanceCard } from "@/components/features/balance";
@@ -9,6 +9,7 @@ import { LiquidityCard } from "@/components/features/liquidity";
 import { SwapRouterCard } from "@/components/features/swap_router";
 import { PoolCalculatorCard } from "@/components/features/pool_calculator";
 import { MarketInsightsCard } from "@/components/features/market_insights";
+import { BridgeCard } from "@/components/features/bridge";
 import { WalletConnect, Logo } from "@/components/shared";
 import type {
   BalanceData,
@@ -18,6 +19,7 @@ import type {
   SwapRouterData,
   PoolCalculatorData,
   MarketInsightsData,
+  BridgeData,
 } from "@/types";
 import "../copilot.css";
 import Link from "next/link";
@@ -31,8 +33,45 @@ export default function ChatPage() {
   const [swapRouterData, setSwapRouterData] = useState<SwapRouterData | null>(null);
   const [poolCalculatorData, setPoolCalculatorData] = useState<PoolCalculatorData | null>(null);
   const [marketInsightsData, setMarketInsightsData] = useState<MarketInsightsData | null>(null);
+  const [bridgeData, setBridgeData] = useState<BridgeData | null>(null);
   const { address } = useAppKitAccount?.() || ({} as any);
   const isConnected = Boolean(address);
+
+  // Stable callback for bridge updates
+  const handleBridgeUpdate = useCallback((data: BridgeData | null) => {
+    console.log("🌉 handleBridgeUpdate called with data:", data);
+    console.log("🌉 Setting bridgeData state with:", data);
+    setBridgeData((prev) => {
+      console.log("🌉 setBridgeData functional update - prev:", prev, "new:", data);
+      return data;
+    });
+    console.log("🌉 setBridgeData called");
+  }, []);
+
+  // Debug logging for bridge data
+  useEffect(() => {
+    console.log("🌉 BridgeData state changed:", {
+      has_data: !!bridgeData,
+      is_null: bridgeData === null,
+      is_undefined: bridgeData === undefined,
+      value: bridgeData,
+    });
+    if (bridgeData) {
+      console.log("🌉 BridgeData state updated in ChatPage:", {
+        has_data: !!bridgeData,
+        source_chain: bridgeData.source_chain,
+        destination_chain: bridgeData.destination_chain,
+        token_symbol: bridgeData.token_symbol,
+        amount: bridgeData.amount,
+        has_bridge_options: !!bridgeData.bridge_options,
+        bridge_options_count: bridgeData.bridge_options?.length || 0,
+        full_bridge_data: bridgeData,
+      });
+      console.log("🌉 BridgeCard should render now - bridgeData exists:", !!bridgeData);
+    } else {
+      console.log("⚠️ BridgeData is null/undefined - card will not render");
+    }
+  }, [bridgeData]);
 
   return (
     <div className="relative flex flex-col h-screen overflow-hidden bg-[#DEDEE9]">
@@ -170,6 +209,7 @@ export default function ChatPage() {
                 onSwapRouterUpdate={setSwapRouterData}
                 onPoolCalculatorUpdate={setPoolCalculatorData}
                 onMarketInsightsUpdate={setMarketInsightsData}
+                onBridgeUpdate={handleBridgeUpdate}
               />
             </div>
           </div>
@@ -190,7 +230,8 @@ export default function ChatPage() {
                 !swapData &&
                 !swapRouterData &&
                 !poolCalculatorData &&
-                !marketInsightsData && (
+                !marketInsightsData &&
+                !bridgeData && (
                   <div className="flex items-center justify-center h-[400px] bg-white/60 backdrop-blur-md rounded-xl border-2 border-dashed border-[#DBDBE5] shadow-elevation-sm">
                     <div className="text-center">
                       <div className="text-6xl mb-4">💰</div>
@@ -252,6 +293,27 @@ export default function ChatPage() {
                   <MarketInsightsCard data={marketInsightsData} />
                 </div>
               )}
+
+              {/* Bridge Card - Always check if bridgeData exists */}
+              {(() => {
+                console.log("🌉 Render check - bridgeData:", bridgeData);
+                if (bridgeData) {
+                  console.log("🌉 Rendering BridgeCard with data:", bridgeData);
+                  return (
+                    <div className="mb-4">
+                      <BridgeCard
+                        data={bridgeData}
+                        onBridgeInitiate={(protocol) => {
+                          console.log("Initiating bridge with protocol:", protocol);
+                        }}
+                      />
+                    </div>
+                  );
+                } else {
+                  console.log("🌉 Not rendering BridgeCard - bridgeData is null/undefined");
+                  return null;
+                }
+              })()}
             </div>
           </div>
         </div>

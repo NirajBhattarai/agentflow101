@@ -212,6 +212,9 @@ export interface BridgeTransaction {
   bridge_protocol: string;
   transaction_hash?: string | null;
   status: string;
+  bridge_contract_address?: string;
+  source_chain_id?: number;
+  destination_chain_id?: number;
 }
 
 /**
@@ -220,11 +223,15 @@ export interface BridgeTransaction {
 export interface BridgeOption {
   bridge_protocol: string;
   bridge_fee: string;
-  bridge_fee_usd: number; // For sorting
+  bridge_fee_usd?: number; // For sorting
   estimated_time: string;
   min_amount?: string;
   max_amount?: string;
   is_recommended?: boolean;
+  token_address?: string; // Token address for approval
+  bridge_contract_address?: string; // Bridge contract address
+  source_chain_id?: number; // LayerZero chain ID
+  destination_chain_id?: number; // LayerZero chain ID
 }
 
 /**
@@ -511,6 +518,7 @@ export interface DeFiChatProps {
   onSwapRouterUpdate?: (data: SwapRouterData | null) => void;
   onPoolCalculatorUpdate?: (data: PoolCalculatorData | null) => void;
   onMarketInsightsUpdate?: (data: MarketInsightsData | null) => void;
+  onBridgeUpdate?: (data: BridgeData | null) => void;
 }
 
 /**

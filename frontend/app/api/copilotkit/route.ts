@@ -16,6 +16,7 @@ export async function POST(request: NextRequest) {
   const poolCalculatorAgentUrl = process.env.POOL_CALCULATOR_AGENT_URL || "http://localhost:9996";
   const marketInsightsAgentUrl = process.env.MARKET_INSIGHTS_AGENT_URL || "http://localhost:9992";
   const swapRouterAgentUrl = process.env.SWAP_ROUTER_AGENT_URL || "http://localhost:9993";
+  const bridgeAgentUrl = process.env.BRIDGE_AGENT_URL || "http://localhost:9998";
 
   // STEP 2: Define orchestrator URL (speaks AG-UI Protocol)
   const orchestratorUrl = process.env.ORCHESTRATOR_URL || "http://localhost:9000";
@@ -31,7 +32,7 @@ export async function POST(request: NextRequest) {
   // 4. Routing messages between orchestrator and A2A agents
   const a2aMiddlewareAgent = new A2AMiddlewareAgent({
     description:
-      "DeFi orchestrator with balance, multi-chain liquidity, pool calculator, swap, and swap router agents (Hedera, Polygon, Ethereum)",
+      "DeFi orchestrator with balance, multi-chain liquidity, pool calculator, swap, swap router, and bridge agents (Hedera, Polygon, Ethereum)",
     agentUrls: [
       balanceAgentUrl, // Balance Agent (ADK) - Port 9997
       multichainLiquidityAgentUrl, // Multi-Chain Liquidity Agent (ADK) - Port 9994
@@ -39,6 +40,7 @@ export async function POST(request: NextRequest) {
       marketInsightsAgentUrl, // Market Insights Agent (ADK) - Port 9992
       swapAgentUrl, // Swap Agent (ADK) - Port 9995
       swapRouterAgentUrl, // Swap Router Agent (ADK) - Port 9993
+      bridgeAgentUrl, // Bridge Agent (ADK) - Port 9998
     ],
     orchestrationAgent,
     instructions: `
@@ -83,6 +85,13 @@ export async function POST(request: NextRequest) {
          - Creates swap transactions and tracks their status
          - Use for smaller swaps or single-chain swaps
 
+      6. **Bridge Agent** (ADK)
+         - Handles token bridging between Hedera and Polygon using EtaBridge
+         - Supports bridging tokens (USDC, USDT, HBAR, MATIC)
+         - Provides bridge quotes and executes bridges
+         - Use for queries like "bridge 100 USDC from Hedera to Polygon"
+         - Returns bridge options with fees and estimated time
+
       WORKFLOW STRATEGY (SEQUENTIAL - ONE AT A TIME):
 
       0. **FIRST STEP - Gather Requirements**:
@@ -118,6 +127,18 @@ export async function POST(request: NextRequest) {
            * slippageTolerance: Extract slippage if mentioned (e.g., "0.5" for 0.5%) or default to "0.5"
          - Wait for the user to submit the complete requirements
          - Use the returned values for all subsequent agent calls
+
+         **For Bridge Queries**:
+         - Before doing ANYTHING else when user asks to bridge tokens, call 'gather_bridge_requirements' to collect essential information
+         - Try to extract any mentioned details from the user's message (account address, source chain, destination chain, token, amount)
+         - Pass any extracted values as parameters to pre-fill the form:
+           * accountAddress: Extract account address if mentioned (e.g., "0.0.123456", "0x1234...")
+           * sourceChain: Extract source chain if mentioned (e.g., "hedera", "polygon")
+           * destinationChain: Extract destination chain if mentioned (e.g., "hedera", "polygon")
+           * tokenSymbol: Extract token symbol if mentioned (e.g., "USDC", "USDT", "HBAR", "MATIC")
+           * amount: Extract amount to bridge if mentioned (e.g., "100", "100.0")
+         - Wait for the user to submit the complete requirements
+         - Use the returned values for all subsequent agent calls
          
       1. **Balance Agent** - If user requests balance information
          - Pass: wallet address and chain (polygon, hedera, or all) from gathered requirements
@@ -151,13 +172,33 @@ export async function POST(request: NextRequest) {
          
          - **Note**: TEMPORARY - Swap Agent executes directly without getting quotes first. This will be updated later to include quote comparison.
 
+      4. **Bridge Agent** - If user requests to bridge tokens
+         - **Step 1**: First check balance using Balance Agent:
+           * Query: "Get balance for account [accountAddress] on [sourceChain] for token [tokenSymbol]"
+           * Verify the user has sufficient balance
+         
+         - **Step 2**: Get bridge options (ONLY ONCE):
+           * Format: "Bridge [amount] [tokenSymbol] from [sourceChain] to [destinationChain] for account [accountAddress]"
+           * Example: "Bridge 100 USDC from Hedera to Polygon for account 0.0.123456"
+           * Bridge Agent will return bridge options with fees and estimated time
+           * **CRITICAL**: After bridge options are returned, the bridge card will AUTOMATICALLY appear in the UI (just like swap card)
+           * **CRITICAL**: After bridge options are returned, DO NOT call Bridge Agent again
+           * **CRITICAL**: Simply acknowledge: "Bridge options are ready. The bridge card is now displayed below with approve and bridge buttons."
+           * **CRITICAL**: If user says "confirm bridge", "execute bridge", "bridge with EtaBridge", etc., DO NOT call Bridge Agent - the frontend bridge card handles execution
+         
+         - **CRITICAL RULE**: Once bridge options are returned, the bridge card will AUTOMATICALLY appear in the UI (same as swap card)
+         - **CRITICAL RULE**: User will click "Approve" and "Bridge with EtaBridge" buttons in the bridge card UI to execute
+         - **CRITICAL RULE**: DO NOT call Bridge Agent again after getting options - the frontend handles everything
+
       CRITICAL RULES:
       - **ALWAYS START by calling 'gather_balance_requirements' FIRST when user asks for balance information**
       - **ALWAYS START by calling 'gather_liquidity_requirements' FIRST when user asks for liquidity information**
       - **ALWAYS START by calling 'gather_swap_requirements' FIRST when user asks to swap tokens**
+      - **ALWAYS START by calling 'gather_bridge_requirements' FIRST when user asks to bridge tokens**
       - For balance queries, always gather requirements before calling agents
       - For liquidity queries, always gather requirements before calling agents
       - For swap queries, always gather requirements before calling agents
+      - For bridge queries, always gather requirements before calling agents
       - Call tools/agents ONE AT A TIME - never make multiple tool calls simultaneously
       - After making a tool call, WAIT for the result before making the next call
       - Pass information from gathered requirements to subsequent agent calls
@@ -188,10 +229,24 @@ export async function POST(request: NextRequest) {
       - "Swap 0.01 HBAR to USDC" -> gather_swap_requirements, then Swap Agent
       - "I want to swap USDC for HBAR on Hedera" -> gather_swap_requirements, then Swap Agent
       - "Swap 50 MATIC to USDC on Polygon" -> gather_swap_requirements, then Swap Agent
+      - "Bridge 100 USDC from Hedera to Polygon" -> gather_bridge_requirements, then Bridge Agent (ONCE)
+      - "I want to bridge USDT from Polygon to Hedera" -> gather_bridge_requirements, then Bridge Agent (ONCE)
+      - "Bridge 50 USDC from Hedera to Polygon for account 0.0.123456" -> gather_bridge_requirements, then Bridge Agent (ONCE)
+      - "confirm bridge" or "execute bridge" -> DO NOT call Bridge Agent, just acknowledge (frontend handles execution)
+      - "bridge with EtaBridge" -> DO NOT call Bridge Agent, just acknowledge (frontend handles execution)
 
       **LOOP PREVENTION**: Once you have received ANY response from an agent (success, error, or partial), 
       do NOT call that agent again. Use what you received and present it to the user. 
       Never retry failed calls. Never call the same agent twice for the same request.
+      
+      **BRIDGE EXECUTION PREVENTION**: 
+      - After Bridge Agent returns bridge options, DO NOT call it again for ANY reason
+      - The bridge card will AUTOMATICALLY appear in the UI (just like swap card) with approve and bridge buttons
+      - If user says "confirm", "execute", "bridge with [protocol]", "proceed with bridge", etc., DO NOT call Bridge Agent
+      - Simply acknowledge: "The bridge card is displayed below. Please use the 'Approve' and 'Bridge with EtaBridge' buttons to execute."
+      - The frontend bridge card handles ALL execution - user clicks buttons in the UI
+      - NEVER call Bridge Agent for execution - only for getting initial options (ONCE per bridge request)
+      - If you already called Bridge Agent and got bridge options, that's it - DO NOT call again
     `,
   });
 

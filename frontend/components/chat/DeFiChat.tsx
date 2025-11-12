@@ -17,6 +17,7 @@ import "@copilotkit/react-ui/styles.css";
 import { BalanceRequirementsForm } from "../forms/balance/BalanceRequirementsForm";
 import { LiquidityRequirementsForm } from "../forms/liquidity/LiquidityRequirementsForm";
 import { SwapRequirementsForm } from "../forms/swap/SwapRequirementsForm";
+import { BridgeRequirementsForm } from "../forms/bridge/BridgeRequirementsForm";
 import { MessageToA2A } from "./a2a/MessageToA2A";
 import { MessageFromA2A } from "./a2a/MessageFromA2A";
 import type {
@@ -28,6 +29,7 @@ import type {
   SwapRouterData,
   PoolCalculatorData,
   MarketInsightsData,
+  BridgeData,
   MessageActionRenderProps,
 } from "@/types";
 
@@ -38,6 +40,7 @@ const ChatInner = ({
   onSwapRouterUpdate,
   onPoolCalculatorUpdate,
   onMarketInsightsUpdate,
+  onBridgeUpdate,
 }: DeFiChatProps) => {
   const { visibleMessages } = useCopilotChat();
 
@@ -50,6 +53,7 @@ const ChatInner = ({
         if (msg.type === "ResultMessage" && msg.actionName === "send_message_to_a2a_agent") {
           try {
             const result = msg.result;
+            console.log("📥 Raw A2A result:", typeof result, result?.substring?.(0, 200) || result);
             let parsed;
 
             if (typeof result === "string") {
@@ -57,7 +61,93 @@ const ChatInner = ({
               if (result.startsWith("A2A Agent Response: ")) {
                 cleanResult = result.substring("A2A Agent Response: ".length);
               }
-              parsed = JSON.parse(cleanResult);
+
+              // Try to parse as JSON directly
+              try {
+                parsed = JSON.parse(cleanResult);
+              } catch (e) {
+                // If direct parsing fails, try to extract JSON from the string
+                // Strategy: Find the largest valid JSON object in the string
+                let found = false;
+                let bestMatch = null;
+                let bestLength = 0;
+
+                // Find all potential JSON object starts
+                for (let i = 0; i < cleanResult.length; i++) {
+                  if (cleanResult[i] === "{") {
+                    // Try to find the matching closing brace
+                    let braceCount = 0;
+                    let j = i;
+                    while (j < cleanResult.length) {
+                      if (cleanResult[j] === "{") braceCount++;
+                      if (cleanResult[j] === "}") {
+                        braceCount--;
+                        if (braceCount === 0) {
+                          // Found a complete JSON object
+                          const candidate = cleanResult.substring(i, j + 1);
+                          try {
+                            const candidateParsed = JSON.parse(candidate);
+                            // Verify it's a valid structured response with a type field
+                            if (
+                              candidateParsed &&
+                              typeof candidateParsed === "object" &&
+                              candidateParsed.type
+                            ) {
+                              if (candidate.length > bestLength) {
+                                bestMatch = candidateParsed;
+                                bestLength = candidate.length;
+                                found = true;
+                              }
+                            }
+                          } catch (e2) {
+                            // Not valid JSON, continue
+                          }
+                          break;
+                        }
+                      }
+                      j++;
+                    }
+                  }
+                }
+
+                if (found && bestMatch) {
+                  parsed = bestMatch;
+                  console.log("✅ Extracted JSON with type:", parsed.type, "Length:", bestLength);
+                } else {
+                  // Try one more time with a simpler approach - look for bridge type specifically
+                  const bridgeMatch = cleanResult.match(/type["\s]*:["\s]*"bridge"/i);
+                  if (bridgeMatch) {
+                    // Try to extract a larger JSON block around the bridge type
+                    const startIdx = cleanResult.indexOf("{");
+                    const endIdx = cleanResult.lastIndexOf("}");
+                    if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+                      try {
+                        const candidate = cleanResult.substring(startIdx, endIdx + 1);
+                        parsed = JSON.parse(candidate);
+                        console.log("✅ Extracted bridge JSON with fallback method");
+                      } catch (e) {
+                        console.warn(
+                          "No valid JSON found in result string. Raw result:",
+                          cleanResult.substring(0, 500),
+                        );
+                        return; // Skip this message
+                      }
+                    } else {
+                      console.warn(
+                        "No valid JSON found in result string. Raw result:",
+                        cleanResult.substring(0, 500),
+                      );
+                      return; // Skip this message
+                    }
+                  } else {
+                    console.warn(
+                      "No valid JSON found in result string. Raw result:",
+                      cleanResult.substring(0, 500),
+                    );
+                    return; // Skip this message
+                  }
+                }
+              }
             } else if (typeof result === "object" && result !== null) {
               parsed = result;
             }
@@ -132,6 +222,46 @@ const ChatInner = ({
                 });
                 onMarketInsightsUpdate?.(parsed as MarketInsightsData);
               }
+              // Check if it's bridge data
+              else if (parsed.type === "bridge") {
+                console.log("🌉 Bridge Data Received:", {
+                  type: parsed.type,
+                  source_chain: parsed.source_chain,
+                  destination_chain: parsed.destination_chain,
+                  token_symbol: parsed.token_symbol,
+                  amount: parsed.amount,
+                  account_address: parsed.account_address,
+                  has_transaction: !!parsed.transaction,
+                  has_bridge_options: !!parsed.bridge_options,
+                  bridge_options_count: parsed.bridge_options?.length || 0,
+                  has_balance_check: !!parsed.balance_check,
+                  full_data: parsed,
+                });
+                // Always call onBridgeUpdate when bridge data is received (even if bridge_options is empty)
+                // The bridge card will handle displaying the appropriate state
+                try {
+                  console.log("🌉 About to call onBridgeUpdate callback...");
+                  console.log("🌉 onBridgeUpdate exists?", typeof onBridgeUpdate === "function");
+                  if (onBridgeUpdate) {
+                    const bridgeData = parsed as BridgeData;
+                    console.log("🌉 Calling onBridgeUpdate with:", bridgeData);
+                    onBridgeUpdate(bridgeData);
+                    console.log("✅ Bridge data passed to onBridgeUpdate callback");
+                    console.log("✅ Bridge data structure:", JSON.stringify(parsed, null, 2));
+                  } else {
+                    console.error("❌ onBridgeUpdate callback is not defined!");
+                  }
+                } catch (error) {
+                  console.error("❌ Error calling onBridgeUpdate:", error);
+                  console.error(
+                    "❌ Error stack:",
+                    error instanceof Error ? error.stack : "No stack",
+                  );
+                }
+              } else if (parsed.type) {
+                // Debug: log what type we got (but only if it has a type)
+                console.log("🔍 Received data type:", parsed.type, "Full parsed:", parsed);
+              }
             }
           } catch (e) {
             // Silently ignore parsing errors
@@ -149,6 +279,7 @@ const ChatInner = ({
     onSwapRouterUpdate,
     onPoolCalculatorUpdate,
     onMarketInsightsUpdate,
+    onBridgeUpdate,
   ]);
 
   // Register HITL balance requirements form (collects account info at start)
@@ -259,6 +390,50 @@ const ChatInner = ({
     },
   });
 
+  // Register HITL bridge requirements form (collects bridge details at start)
+  useCopilotAction({
+    name: "gather_bridge_requirements",
+    description:
+      "Gather bridge requirements from the user (account address, source chain, destination chain, token, amount)",
+    parameters: [
+      {
+        name: "accountAddress",
+        type: "string",
+        description:
+          "The account address to bridge from (Hedera format: 0.0.123456 or EVM format: 0x...). May be pre-filled from user message.",
+        required: false,
+      },
+      {
+        name: "sourceChain",
+        type: "string",
+        description: "Source chain: hedera or polygon. May be pre-filled from user message.",
+        required: false,
+      },
+      {
+        name: "destinationChain",
+        type: "string",
+        description: "Destination chain: hedera or polygon. May be pre-filled from user message.",
+        required: false,
+      },
+      {
+        name: "tokenSymbol",
+        type: "string",
+        description:
+          "Token symbol to bridge (e.g., USDC). Note: EtaBridge only supports USDC. May be pre-filled from user message.",
+        required: false,
+      },
+      {
+        name: "amount",
+        type: "string",
+        description: "Amount to bridge (e.g., 100.0). May be pre-filled from user message.",
+        required: false,
+      },
+    ],
+    renderAndWaitForResponse: ({ args, respond }) => {
+      return <BridgeRequirementsForm args={args} respond={respond} />;
+    },
+  });
+
   // Register A2A message visualizer (renders green/blue communication boxes)
   useCopilotAction({
     name: "send_message_to_a2a_agent",
@@ -306,6 +481,8 @@ export default function DeFiChat({
   onSwapUpdate,
   onSwapRouterUpdate,
   onPoolCalculatorUpdate,
+  onMarketInsightsUpdate,
+  onBridgeUpdate,
 }: DeFiChatProps) {
   return (
     <CopilotKit runtimeUrl="/api/copilotkit" showDevConsole={false} agent="a2a_chat">
@@ -315,6 +492,8 @@ export default function DeFiChat({
         onSwapUpdate={onSwapUpdate}
         onSwapRouterUpdate={onSwapRouterUpdate}
         onPoolCalculatorUpdate={onPoolCalculatorUpdate}
+        onMarketInsightsUpdate={onMarketInsightsUpdate}
+        onBridgeUpdate={onBridgeUpdate}
       />
     </CopilotKit>
   );
