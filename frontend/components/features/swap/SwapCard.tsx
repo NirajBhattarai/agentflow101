@@ -11,6 +11,8 @@ import { SwapData } from "@/types";
 import { useAppKitAccount } from "@reown/appkit/react";
 import { useWalletClient } from "wagmi";
 import { executeSwap as executeSwapTransaction } from "@/lib/features/swap";
+import { useAppDispatch, useAppSelector } from "@/lib/store/hooks";
+import { resetSwapState } from "@/lib/store/slices/swapSlice";
 import {
   SwapCardHeader,
   ErrorMessage,
@@ -46,12 +48,41 @@ export const SwapCard: React.FC<SwapCardProps> = ({ data, onSwapInitiate }) => {
   const [swappingState, setSwappingState] = useState<"idle" | "swapping" | "done">("idle");
   const [selectedDex, setSelectedDex] = useState<string | null>(null);
   const [showApprovalDialog, setShowApprovalDialog] = useState(false);
-  const [txHash, setTxHash] = useState<string | null>(null);
   const [swapError, setSwapError] = useState<string | null>(null);
+
+  // Redux hooks
+  const dispatch = useAppDispatch();
+  const {
+    approvalStatus,
+    isSwapping,
+    swapError: reduxSwapError,
+    txHash,
+  } = useAppSelector((state) => state.swap);
 
   // Wallet connection hooks
   const { address, isConnected } = useAppKitAccount?.() || ({} as any);
   const { data: walletClient } = useWalletClient();
+
+  // Reset swap state when component unmounts or transaction changes
+  useEffect(() => {
+    return () => {
+      dispatch(resetSwapState());
+    };
+  }, [dispatch, transaction]);
+
+  // Sync Redux swap error with local state
+  useEffect(() => {
+    if (reduxSwapError) {
+      setSwapError(reduxSwapError);
+    }
+  }, [reduxSwapError]);
+
+  // Show approval dialog when approval is needed
+  useEffect(() => {
+    if (approvalStatus?.status === "needs_approval") {
+      setShowApprovalDialog(true);
+    }
+  }, [approvalStatus]);
 
   /**
    * Execute swap - uses centralized swap executor
@@ -75,22 +106,30 @@ export const SwapCard: React.FC<SwapCardProps> = ({ data, onSwapInitiate }) => {
     setSwappingState("swapping");
     setSwapError(null);
     setShowApprovalDialog(false);
+    dispatch(resetSwapState());
 
-    const result = await executeSwapTransaction(transaction as any, walletClient, address, {
-      onStateChange: (state) => {
-        setSwappingState(state);
+    const result = await executeSwapTransaction(
+      transaction as any,
+      walletClient,
+      address,
+      dispatch,
+      {
+        onStateChange: (state) => {
+          setSwappingState(state);
+        },
+        onError: (error) => {
+          setSwapError(error);
+          setSwappingState("idle");
+        },
+        onTxHash: (hash) => {
+          // TxHash is now managed by Redux
+          console.log("Transaction hash:", hash);
+        },
+        onProgress: (message) => {
+          console.log(message);
+        },
       },
-      onError: (error) => {
-        setSwapError(error);
-        setSwappingState("idle");
-      },
-      onTxHash: (hash) => {
-        setTxHash(hash);
-      },
-      onProgress: (message) => {
-        console.log(message);
-      },
-    });
+    );
 
     if (result.success) {
       onSwapInitiate?.(transaction?.dex_name || selectedDex || "SaucerSwap");

@@ -53,7 +53,7 @@ export const CHAIN_DEX_CONFIG: Record<string, Record<string, DexConfig>> = {
 
 // Default DEX by chain
 export const DEFAULT_DEX: Record<string, string> = {
-  polygon: "quickswap",
+  polygon: "uniswap", // Use Uniswap for Polygon swaps
   hedera: "saucerswap",
 };
 

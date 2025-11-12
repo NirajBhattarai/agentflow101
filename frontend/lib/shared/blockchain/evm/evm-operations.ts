@@ -19,10 +19,15 @@ const ERC20_ABI = [
 ];
 
 /**
- * Check if address is native token (ETH/MATIC/etc)
+ * Check if address is native token (ETH/MATIC/POL/etc)
+ * Polygon uses 0x0000000000000000000000000000000000001010 for native token
  */
 export function isEvmNative(address: string): boolean {
-  return address.toLowerCase() === "0x0000000000000000000000000000000000000000";
+  const addrLower = address.toLowerCase();
+  return (
+    addrLower === "0x0000000000000000000000000000000000000000" ||
+    addrLower === "0x0000000000000000000000000000000000001010" // Polygon native token address
+  );
 }
 
 /**
@@ -93,6 +98,7 @@ export async function getEvmBalance(
   accountAddress: string,
   tokenAddress?: string,
 ): Promise<{ balance: string; balanceRaw: string; decimals: number }> {
+  // Check if tokenAddress is native (zero address or Polygon native address)
   if (!tokenAddress || isEvmNative(tokenAddress)) {
     // Fetch native token balance
     const nativeBalance = await fetchNativeBalance(provider, accountAddress);
@@ -102,13 +108,25 @@ export async function getEvmBalance(
       decimals: 18, // Native tokens typically have 18 decimals
     };
   } else {
-    // Fetch ERC20 token balance
-    const tokenBalance = await fetchTokenBalance(provider, tokenAddress, accountAddress);
-    return {
-      balance: tokenBalance.balance,
-      balanceRaw: tokenBalance.balanceRaw,
-      decimals: tokenBalance.decimals,
-    };
+    try {
+      // Fetch ERC20 token balance
+      const tokenBalance = await fetchTokenBalance(provider, tokenAddress, accountAddress);
+      return {
+        balance: tokenBalance.balance,
+        balanceRaw: tokenBalance.balanceRaw,
+        decimals: tokenBalance.decimals,
+      };
+    } catch (error: any) {
+      // If token call fails, it might be a native token with special address
+      // Try fetching native balance as fallback
+      console.warn(`   Token balance fetch failed, trying native: ${error.message}`);
+      const nativeBalance = await fetchNativeBalance(provider, accountAddress);
+      return {
+        balance: nativeBalance.balance,
+        balanceRaw: nativeBalance.balanceRaw,
+        decimals: 18,
+      };
+    }
   }
 }
 
