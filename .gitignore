@@ -46,3 +46,6 @@ build/
 *.temp
 .cache/
 
+# External x402 directories (only track frontend implementation)
+x402-hedera/
+
