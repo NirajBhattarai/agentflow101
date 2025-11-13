@@ -106,14 +106,28 @@ export async function POST(request: NextRequest) {
          - Wait for the user to submit the complete requirements
          - Use the returned values for all subsequent agent calls
 
-         **For Liquidity Queries**:
-         - Before doing ANYTHING else when user asks for liquidity, call 'gather_liquidity_requirements' to collect essential information
-         - Try to extract any mentioned details from the user's message (chain, token pair)
-         - Pass any extracted values as parameters to pre-fill the form:
-           * chain: Extract chain if mentioned (e.g., "hedera", "polygon") or default to "all"
-           * tokenPair: Extract token pair if mentioned (e.g., "HBAR/USDC", "MATIC/USDC")
-         - Wait for the user to submit the complete requirements
-         - Use the returned values for all subsequent agent calls
+         **For Liquidity Queries** (MANDATORY PAYMENT REQUIRED):
+         - **CRITICAL: Payment is ALWAYS required for liquidity queries - NO EXCEPTIONS**
+         - **STEP 1 - Payment Sign & Verify (MANDATORY FIRST STEP)**: 
+           * IMMEDIATELY when user asks for liquidity (ANY liquidity query), call 'gather_liquidity_payment' FIRST
+           * This includes queries like: "Get liquidity", "Find pools", "Show liquidity", "ETH/USDT", "HBAR/USDC", etc.
+           * DO NOT skip payment - it is required for ALL liquidity queries
+           * The user must sign and verify payment (0.1 HBAR) to access liquidity data
+           * Payment flow: Sign → Verify (settlement happens AFTER liquidity response)
+           * Wait for payment verification to complete
+           * DO NOT proceed to next step until payment is verified
+         - **STEP 2 - Requirements (AFTER PAYMENT VERIFICATION)**: 
+           * ONLY after payment is verified, call 'gather_liquidity_requirements' to collect essential information
+           * Try to extract any mentioned details from the user's message (chain, token pair)
+           * Pass any extracted values as parameters to pre-fill the form:
+             * chain: Extract chain if mentioned (e.g., "hedera", "polygon") or default to "all"
+             * tokenPair: Extract token pair if mentioned (e.g., "HBAR/USDC", "MATIC/USDC", "ETH/USDT")
+           * Wait for the user to submit the complete requirements
+           * Use the returned values for all subsequent agent calls
+         - **STEP 3 - Agent Call (AFTER REQUIREMENTS)**: 
+           * ONLY after both payment verification AND requirements are complete, call Multi-Chain Liquidity Agent
+           * Format: "Get liquidity for [token_pair]" or "Get liquidity on [chain]"
+           * **NOTE**: Payment settlement will happen automatically AFTER the liquidity response is received
 
          **For Swap Queries**:
          - Before doing ANYTHING else when user asks to swap tokens, call 'gather_swap_requirements' to collect essential information
@@ -153,7 +167,10 @@ export async function POST(request: NextRequest) {
          - Present liquidity information in a clear, organized format
 
       2. **Multi-Chain Liquidity Agent** - For all liquidity queries
-         - Use this agent for all liquidity queries (with or without token pairs)
+         - **CRITICAL: DO NOT CALL THIS AGENT DIRECTLY - Payment is required first!**
+         - **MANDATORY WORKFLOW**: Payment → Requirements → Agent Call
+         - **NEVER skip the payment step for liquidity queries**
+         - Use this agent ONLY after payment is completed and requirements are gathered
          - If user mentions a token pair (e.g., "ETH/USDT", "HBAR/USDC"), extract and normalize it
          - Format: "Get liquidity for [token_pair]" or "Get liquidity on [chain]"
          - Example queries: "Get liquidity for ETH/USDT", "Find liquidity pools for HBAR/USDC", "Get liquidity on Polygon"
@@ -190,13 +207,21 @@ export async function POST(request: NextRequest) {
          - **CRITICAL RULE**: User will click "Approve" and "Bridge with EtaBridge" buttons in the bridge card UI to execute
          - **CRITICAL RULE**: DO NOT call Bridge Agent again after getting options - the frontend handles everything
 
-      CRITICAL RULES:
+      CRITICAL RULES (MUST FOLLOW IN ORDER):
       - **ALWAYS START by calling 'gather_balance_requirements' FIRST when user asks for balance information**
-      - **ALWAYS START by calling 'gather_liquidity_requirements' FIRST when user asks for liquidity information**
+      - **FOR LIQUIDITY QUERIES - MANDATORY 3-STEP PROCESS (NO EXCEPTIONS):**
+        1. **FIRST**: Call 'gather_liquidity_payment' - User signs and verifies payment (0.1 HBAR)
+        2. **SECOND**: After payment is verified, call 'gather_liquidity_requirements'
+        3. **THIRD**: After requirements are gathered, call Multi-Chain Liquidity Agent
+        4. **FOURTH**: After liquidity response is received, payment settlement happens automatically
+        - **NEVER skip step 1 (payment) for liquidity queries**
+        - **NEVER call Multi-Chain Liquidity Agent directly without payment verification**
+        - **NEVER call 'gather_liquidity_requirements' before payment is verified**
+        - **Payment settlement occurs AFTER liquidity data is returned to user**
       - **ALWAYS START by calling 'gather_swap_requirements' FIRST when user asks to swap tokens**
       - **ALWAYS START by calling 'gather_bridge_requirements' FIRST when user asks to bridge tokens**
       - For balance queries, always gather requirements before calling agents
-      - For liquidity queries, always gather requirements before calling agents
+      - For liquidity queries, ALWAYS: payment → requirements → agent (in that exact order)
       - For swap queries, always gather requirements before calling agents
       - For bridge queries, always gather requirements before calling agents
       - Call tools/agents ONE AT A TIME - never make multiple tool calls simultaneously
@@ -223,9 +248,11 @@ export async function POST(request: NextRequest) {
       - "What's my HBAR balance for account 0.0.123456?" -> gather_balance_requirements with accountAddress: "0.0.123456", chain: "hedera"
       - "Get balance for 0x1234... on all chains" -> gather_balance_requirements with accountAddress: "0x1234...", chain: "all"
       - "Check USDC balance" -> gather_balance_requirements with tokenAddress: "USDC"
-      - "Get liquidity for HBAR/USDC" -> Multi-Chain Liquidity Agent
-      - "Show me all pools on Hedera" -> Multi-Chain Liquidity Agent, query: "Get liquidity on hedera"
-      - "Get liquidity for ETH/USDT" -> Multi-Chain Liquidity Agent
+      - "Get liquidity for HBAR/USDC" -> **FIRST**: gather_liquidity_payment, **THEN**: gather_liquidity_requirements, **THEN**: Multi-Chain Liquidity Agent
+      - "Show me all pools on Hedera" -> **FIRST**: gather_liquidity_payment, **THEN**: gather_liquidity_requirements, **THEN**: Multi-Chain Liquidity Agent
+      - "Get liquidity for ETH/USDT" -> **FIRST**: gather_liquidity_payment, **THEN**: gather_liquidity_requirements, **THEN**: Multi-Chain Liquidity Agent
+      - "Find ETH USDT from different chain" -> **FIRST**: gather_liquidity_payment, **THEN**: gather_liquidity_requirements, **THEN**: Multi-Chain Liquidity Agent
+      - "Find liquidity pools" -> **FIRST**: gather_liquidity_payment, **THEN**: gather_liquidity_requirements, **THEN**: Multi-Chain Liquidity Agent
       - "Swap 0.01 HBAR to USDC" -> gather_swap_requirements, then Swap Agent
       - "I want to swap USDC for HBAR on Hedera" -> gather_swap_requirements, then Swap Agent
       - "Swap 50 MATIC to USDC on Polygon" -> gather_swap_requirements, then Swap Agent

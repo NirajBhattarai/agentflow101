@@ -16,6 +16,7 @@ import { useCopilotAction } from "@copilotkit/react-core";
 import "@copilotkit/react-ui/styles.css";
 import { BalanceRequirementsForm } from "../forms/balance/BalanceRequirementsForm";
 import { LiquidityRequirementsForm } from "../forms/liquidity/LiquidityRequirementsForm";
+import { LiquidityPaymentForm } from "../forms/liquidity/LiquidityPaymentForm";
 import { SwapRequirementsForm } from "../forms/swap/SwapRequirementsForm";
 import { BridgeRequirementsForm } from "../forms/bridge/BridgeRequirementsForm";
 import { MessageToA2A } from "./a2a/MessageToA2A";
@@ -169,6 +170,14 @@ const ChatInner = ({
                   all_pairs: parsed.all_pairs?.length || 0,
                 });
                 onLiquidityUpdate?.(parsed as MultiChainLiquidityData);
+                
+                // Trigger payment settlement after receiving liquidity data
+                if (typeof (window as any).__liquidityPaymentSettle === "function") {
+                  console.log("💰 Triggering payment settlement after liquidity response...");
+                  setTimeout(() => {
+                    (window as any).__liquidityPaymentSettle();
+                  }, 1000); // Small delay to ensure UI updates
+                }
               } else if (
                 parsed.type === "liquidity" &&
                 parsed.pairs &&
@@ -310,6 +319,31 @@ const ChatInner = ({
     ],
     renderAndWaitForResponse: ({ args, respond }) => {
       return <BalanceRequirementsForm args={args} respond={respond} />;
+    },
+  });
+
+  // Register HITL liquidity payment form (collects payment before liquidity query)
+  useCopilotAction({
+    name: "gather_liquidity_payment",
+    description: "Collect x402 payment from user before accessing liquidity data",
+    parameters: [
+      {
+        name: "payerAccountId",
+        type: "string",
+        description: "The Hedera account ID that will pay for the liquidity query",
+        required: false,
+      },
+    ],
+    renderAndWaitForResponse: ({ args, respond }) => {
+      return (
+        <LiquidityPaymentForm
+          args={args}
+          respond={respond}
+          onPaymentComplete={(paymentProof) => {
+            console.log("✅ Payment completed:", paymentProof);
+          }}
+        />
+      );
     },
   });
 
