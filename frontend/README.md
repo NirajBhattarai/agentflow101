@@ -12,7 +12,7 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 NEXT_PUBLIC_REOWN_PROJECT_ID=your_project_id_here
 
 # Hedera x402 Facilitator (Optional - for payment processing)
-HEDERA_FACILITATOR_ACCOUNT_ID=0.0.123456
+HEDERA_FACILITATOR_ACCOUNT_ID=0.0.6805685
 HEDERA_FACILITATOR_PRIVATE_KEY=302e0201...
 ```
 
@@ -87,12 +87,20 @@ The facilitator exposes the following Next.js API routes:
 To enable the facilitator, add these environment variables to your `.env.local`:
 
 ```bash
-# Hedera Facilitator Configuration
-HEDERA_FACILITATOR_ACCOUNT_ID=0.0.123456  # Your Hedera account ID (ECDSA format)
+# Hedera Facilitator Configuration (Required)
+HEDERA_FACILITATOR_ACCOUNT_ID=0.0.6805685  # Your Hedera account ID (ECDSA format)
 HEDERA_FACILITATOR_PRIVATE_KEY=302e0201...  # Your ECDSA private key (DER format)
+
+# Delegated Account Configuration (Optional - for wallet signing flow)
+# If not set, the facilitator account will be used as fallback
+DELEGATED_ACCOUNT_PRIVATE_KEY=302e0201...  # Private key for delegated account (e.g., 0.0.6805685)
+# OR
+HEDERA_DELEGATED_ACCOUNT_PRIVATE_KEY=302e0201...  # Alternative variable name
 ```
 
-**Note**: The facilitator account should be funded with HBAR to pay for transaction fees.
+**Note**: 
+- The facilitator account should be funded with HBAR to pay for transaction fees.
+- For wallet signing flow, you can optionally set up a delegated account. If `DELEGATED_ACCOUNT_PRIVATE_KEY` is not set, the facilitator account will be used to sign transactions.
 
 ### Supported Networks
 

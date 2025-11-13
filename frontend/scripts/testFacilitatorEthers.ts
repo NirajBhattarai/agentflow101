@@ -15,7 +15,6 @@
  *   HEDERA_ACCOUNT_ID - Your Hedera account ID (payer)
  *   HEDERA_PRIVATE_KEY - Your Hedera private key (payer) - can be 0x format
  *   HEDERA_FACILITATOR_ACCOUNT_ID - Facilitator account ID (from .env.local)
- *   HEDERA_FACILITATOR_PRIVATE_KEY - Facilitator private key (from .env.local)
  *   FACILITATOR_URL - Facilitator API URL (default: http://localhost:3000)
  *   PAYMENT_TYPE - "hbar" or "token" (default: "hbar")
  *   AMOUNT - Payment amount (default: "50000000" = 0.5 HBAR in tinybars)
@@ -35,7 +34,6 @@ import {
   TokenId,
 } from "@hashgraph/sdk";
 import {
-  createHederaSigner,
   serializeTransaction,
   PaymentPayload,
   PaymentRequirements,
@@ -48,10 +46,10 @@ dotenv.config();
 // CONFIGURATION
 // ============================================================================
 
-const HEDERA_ACCOUNT_ID = process.env.HEDERA_ACCOUNT_ID;
-const HEDERA_PRIVATE_KEY = process.env.HEDERA_PRIVATE_KEY;
+// Hardcoded payer account for testing (will be moved to env later)
+const HEDERA_ACCOUNT_ID = process.env.HEDERA_ACCOUNT_ID || "0.0.7191699";
+const HEDERA_PRIVATE_KEY = process.env.HEDERA_PRIVATE_KEY || ""; // TODO: Add private key here
 const HEDERA_FACILITATOR_ACCOUNT_ID = process.env.HEDERA_FACILITATOR_ACCOUNT_ID;
-const HEDERA_FACILITATOR_PRIVATE_KEY = process.env.HEDERA_FACILITATOR_PRIVATE_KEY;
 const FACILITATOR_URL = process.env.FACILITATOR_URL || "http://localhost:3000";
 const PAYMENT_TYPE = (process.env.PAYMENT_TYPE || "hbar").toLowerCase();
 const AMOUNT = process.env.AMOUNT || "50000000"; // 0.5 HBAR in tinybars
@@ -71,11 +69,11 @@ if (!HEDERA_ACCOUNT_ID || !HEDERA_PRIVATE_KEY) {
   process.exit(1);
 }
 
-if (!HEDERA_FACILITATOR_ACCOUNT_ID || !HEDERA_FACILITATOR_PRIVATE_KEY) {
-  console.error("❌ Missing facilitator environment variables:");
+if (!HEDERA_FACILITATOR_ACCOUNT_ID) {
+  console.error("❌ Missing facilitator environment variable:");
   console.error("   HEDERA_FACILITATOR_ACCOUNT_ID - Facilitator account ID");
-  console.error("   HEDERA_FACILITATOR_PRIVATE_KEY - Facilitator private key");
-  console.error("\n   These should be set in your .env.local file");
+  console.error("\n   This should be set in your .env.local file");
+  console.error("   Note: HEDERA_FACILITATOR_PRIVATE_KEY is only needed on the facilitator server, not in this test script");
   process.exit(1);
 }
 

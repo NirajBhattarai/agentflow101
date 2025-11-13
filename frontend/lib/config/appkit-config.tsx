@@ -3,7 +3,7 @@
 import { createAppKit } from "@reown/appkit/react";
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
 import { cookieStorage, createStorage } from "@wagmi/core";
-import { polygon, mainnet, hedera } from "@reown/appkit/networks";
+import { polygon, mainnet, hedera, hederaTestnet } from "@reown/appkit/networks";
 import type { AppKitNetwork } from "@reown/appkit/networks";
 
 // Delayed, client-only initialization to avoid module-eval side effects
@@ -24,7 +24,7 @@ export function initAppKit() {
   };
 
   const appKitNetworks: [AppKitNetwork, ...AppKitNetwork[]] = [polygon, mainnet, hedera];
-  const wagmiNetworks = [polygon, mainnet, hedera];
+  const wagmiNetworks = [polygon, mainnet, hedera,hederaTestnet];
 
   const wagmiAdapter = new WagmiAdapter({
     storage: createStorage({
